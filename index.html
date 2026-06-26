@@ -761,9 +761,10 @@
         </div>
       </div>
       </sc-if>
+      <div style="display:flex; gap:4px; background:var(--surface); border-radius:12px; padding:4px; margin-bottom:12px; width:fit-content"><sc-for list="{{ todoFilterTabs }}" as="f" hint-placeholder-count="3"><span onclick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</span></sc-for></div>
       <div style="background:var(--surface); border-radius:20px; padding:18px 22px">
         <sc-for list="{{ todos }}" as="t" hint-placeholder-count="6">
-          <div onclick="{{ t.toggle }}" style="display:flex; align-items:center; gap:11px; padding:12px 0; border-bottom:1px solid var(--hair); cursor:pointer"><span style="{{ t.boxStyle }}">{{ t.check }}</span><div style="flex:1; min-width:0"><span style="{{ t.textStyle }}">{{ t.text }}</span><sc-if value="{{ t.hasDesc }}" hint-placeholder-val="{{ false }}"><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px; line-height:1.4">{{ t.desc }}</div></sc-if></div><sc-if value="{{ t.fromCreator }}" hint-placeholder-val="{{ false }}"><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); background:var(--signalsoft); padding:3px 8px; border-radius:6px; white-space:nowrap">DU CRÉATEUR</span></sc-if><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--muted); padding:3px 8px; border-radius:6px; background:var(--rowhover); white-space:nowrap">{{ t.creatorLabel }}</span><sc-if value="{{ t.hasPriority }}" hint-placeholder-val="{{ false }}"><span style="{{ t.priorityStyle }}">{{ t.priorityLabel }}</span></sc-if><span style="font:500 10px 'Inter',sans-serif; color:var(--faint); width:50px; text-align:right; flex-shrink:0">{{ t.due }}</span></div>
+          <div onclick="{{ t.toggle }}" style="display:flex; align-items:center; gap:11px; padding:12px 0; border-bottom:1px solid var(--hair); cursor:pointer"><span style="{{ t.boxStyle }}">{{ t.check }}</span><div style="flex:1; min-width:0"><span style="{{ t.textStyle }}">{{ t.text }}</span><sc-if value="{{ t.hasDesc }}" hint-placeholder-val="{{ false }}"><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px; line-height:1.4">{{ t.desc }}</div></sc-if></div><sc-if value="{{ t.fromCreator }}" hint-placeholder-val="{{ false }}"><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); background:var(--signalsoft); padding:3px 8px; border-radius:6px; white-space:nowrap">DU CRÉATEUR</span></sc-if><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--muted); padding:3px 8px; border-radius:6px; background:var(--rowhover); white-space:nowrap">{{ t.creatorLabel }}</span><sc-if value="{{ t.hasPriority }}" hint-placeholder-val="{{ false }}"><span style="{{ t.priorityStyle }}">{{ t.priorityLabel }}</span></sc-if><span style="font:500 10px 'Inter',sans-serif; color:var(--faint); width:50px; text-align:right; flex-shrink:0">{{ t.due }}</span><span onclick="{{ t.del }}" title="Supprimer la tâche" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div>
         </sc-for>
       </div>
       </sc-if>
@@ -849,14 +850,29 @@
         <div style="display:flex; gap:8px; margin-top:18px"><div style="padding:11px 18px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">ENVOYER UN EMAIL</div><div style="padding:11px 18px; border-radius:11px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer">APPELER</div></div>
       </div>
       </sc-if>
+      <div style="display:flex; gap:4px; background:var(--surface); border-radius:12px; padding:4px; margin-bottom:16px; width:fit-content"><sc-for list="{{ contactsViewTabs }}" as="v" hint-placeholder-count="2"><span onclick="{{ v.pick }}" style="{{ v.style }}">{{ v.label }}</span></sc-for></div>
+      <sc-if value="{{ contactsGrid }}" hint-placeholder-val="{{ true }}">
       <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px">
         <sc-for list="{{ contacts }}" as="k" hint-placeholder-count="6">
           <div onclick="{{ k.open }}" style="background:var(--surface); border-radius:20px; padding:20px; cursor:pointer" style-hover="background:var(--rowhover)">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start"><div style="{{ k.avatarStyle }}">{{ k.initials }}</div><span style="{{ k.tagStyle }}">{{ k.tag }}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start"><div style="{{ k.avatarStyle }}">{{ k.initials }}</div><div style="display:flex; align-items:center; gap:8px"><span style="{{ k.tagStyle }}">{{ k.tag }}</span><span onclick="{{ k.del }}" title="Supprimer le contact" style="width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div></div>
             <div style="font:600 16px 'Inter',sans-serif; color:var(--text); margin-top:14px">{{ k.brand }}</div>
             <div style="font:500 12px 'Inter',sans-serif; color:var(--text); margin-top:8px">{{ k.person }}</div>
             <div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ k.role }}</div>
             <div style="display:flex; gap:8px; margin-top:16px"><div style="flex:1; padding:9px 0; text-align:center; border-radius:10px; background:var(--text); color:var(--bg); font:600 10px 'Inter',sans-serif">CONTACTER</div><div style="width:36px; padding:9px 0; text-align:center; border-radius:10px; border:1px solid var(--hair); color:var(--text); font:600 11px 'Inter',sans-serif">↗</div></div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ contactsList }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:20px; padding:8px 20px">
+        <sc-for list="{{ contacts }}" as="k" hint-placeholder-count="6">
+          <div onclick="{{ k.open }}" style="display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--hair); cursor:pointer" style-hover="background:var(--rowhover)">
+            <div style="{{ k.avatarStyleSm }}">{{ k.initials }}</div>
+            <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text)">{{ k.brand }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ k.person }} · {{ k.role }}</div></div>
+            <div style="font:500 11px 'Inter',sans-serif; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px">{{ k.email }}</div>
+            <span style="{{ k.tagStyle }}">{{ k.tag }}</span>
+            <span onclick="{{ k.del }}" title="Supprimer le contact" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
           </div>
         </sc-for>
       </div>
@@ -1495,10 +1511,14 @@ class Component extends DCLogic {
         textStyle: "flex:1;font:400 13px 'Inter',sans-serif;"+(isDone?'color:var(--faint);text-decoration:line-through;':'color:var(--text);'),
         tagStyle: "font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);padding:3px 8px;border-radius:6px;background:var(--rowhover);",
         toggle: () => this.setState(s => ({ doneSet: Object.assign({}, s.doneSet, { [i]: !(s.doneSet && s.doneSet[i]) }) })),
+        del: (e) => { if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer cette tâche ?'))return; this.setState(s=>{ const items=(s.todoItems||this.todoRaw).slice(); items.splice(i,1); const od=s.doneSet||{}; const nd={}; Object.keys(od).forEach(kk=>{ const k=+kk; if(k<i) nd[k]=od[k]; else if(k>i) nd[k-1]=od[k]; }); return { todoItems:items, doneSet:nd }; }); },
       };
     };
     const todoItems = this.state.todoItems || this.todoRaw;
-    const todos = todoItems.map(mkTodo);
+    const todoFilter = this.state.todoFilter || 'todo';
+    const _allTodos = todoItems.map((t,i)=>{ const o=mkTodo(t,i); o._done=!!done[i]; return o; });
+    const todos = _allTodos.filter(x=> todoFilter==='all' ? true : (todoFilter==='done' ? x._done : !x._done));
+    const todoFilterTabs = [['todo','À faire'],['done','Terminées'],['all','Toutes']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(todoFilter===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({todoFilter:k});})() }));
     const ntPr = this.state.ntPriority||'moyenne';
     const ntCreatorChips = [{name:'Agence',val:null}].concat(this.rosterRaw.map(c=>({name:c.name.split(' ')[0],val:c.name}))).map(o=>({ name:o.name, style:'padding:6px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.ntCreator===undefined?null:this.state.ntCreator))===o.val?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const v=o.val;return ()=>this.setState({ntCreator:v});})() }));
     const ntPriorityChips = [['haute','Haute','indigo'],['moyenne','Moyenne','cyan'],['basse','Basse','signal']].map(p=>({ label:p[1], style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(ntPr===p[0]?'background:'+this.toneHex(p[2],dark)+';color:#fff;':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({ntPriority:k});})() }));
@@ -1547,7 +1567,10 @@ class Component extends DCLogic {
     const pipeline = this.pipeRaw.map(p=>({ label:p.label, amount:p.amount, dotStyle:dotS(p.tone,false) }));
     const invoices = this.invoiceRaw.map(v=>{ const st=this.invStatus(v.status); return { ref:v.ref, party:v.party, amount:v.amount, date:v.date, statusLabel:st.label, dotStyle:dotS(st.tone,false), chipStyle:this.chip() }; });
     const cbase = this.state.contactsData || this.contactRaw;
-    const contacts = cbase.map((k,i)=>({ brand:k.brand, person:k.person, role:k.role, tag:k.tag, initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,44), tagStyle:"padding:5px 10px;border-radius:20px;background:var(--rowhover);font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);white-space:nowrap;", open:()=>this.setState({openContact:i}) }));
+    const contactsView = this.state.contactsView || 'grid';
+    const contactsGrid = contactsView === 'grid', contactsList = contactsView === 'list';
+    const contactsViewTabs = [['grid','Cartes'],['list','Liste']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(contactsView===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({contactsView:k});})() }));
+    const contacts = cbase.map((k,i)=>({ brand:k.brand, person:k.person, role:k.role, tag:k.tag, email:k.email||'—', phone:k.phone||'—', initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,44), avatarStyleSm:this.avatarStyle(k.tone,dark,38), tagStyle:"padding:5px 10px;border-radius:20px;background:var(--rowhover);font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);white-space:nowrap;", open:()=>this.setState({openContact:i}), del:(()=>{const ii=i,nm=k.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le contact '+nm+' ?'))return; this.setState(s=>{ const base=(s.contactsData||this.contactRaw).slice(); base.splice(ii,1); return { contactsData:base, openContact:(s.openContact===ii?null:s.openContact) }; }); };})() }));
     const objCreators = this.objRaw.map(o=>({ name:o.name, ca:o.ca, target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex(o.tone,dark)+';' })).concat((this.state.customObjs||[]).map(o=>({ name:o.name, ca:'—', target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex('indigo',dark)+';' })));
     const pricing = this.pricingRaw;
     const briefItems = this.state.briefItems || this.briefRaw;
@@ -1824,7 +1847,7 @@ class Component extends DCLogic {
       pAccueil:this.state.portalTab==='accueil', pBriefs:this.state.portalTab==='briefs', pPlanning:this.state.portalTab==='planning', pStats:this.state.portalTab==='stats', pProfil:this.state.portalTab==='profil',
       goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}),
       goRoster, goFacturation, goObjectifs, goContacts, goPlanning, goBriefs, goTodo, goProspection, goEngagement, goRosterUgc,
-      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), prospectCols, mod,
+      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod,
       me, myAgenda, myTodos, myBriefs, loginCreators,
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('c'+(ci!=null?ci:0)),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
