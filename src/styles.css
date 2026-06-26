@@ -1,0 +1,55 @@
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  input { font-family:'Inter',sans-serif; }
+  ::selection { background: var(--signal); color: var(--onsignal); }
+  @keyframes ttp-pulse { 0%,100% { opacity:1; transform:scale(1);} 50% { opacity:.25; transform:scale(.6);} }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: var(--hair); border-radius: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  /* ===================== RESPONSIVE / MOBILE ===================== */
+  .dc-bottombar { display:none; }
+  .dc-backdrop { display:none; }
+  @media (max-width: 860px) {
+    .dc-pad { padding:0 !important; }
+    .dc-shell { border-radius:0 !important; min-height:100vh !important; }
+    /* sidebar -> slide-in drawer */
+    .dc-sidebar { position:fixed !important; top:0; left:0; bottom:0; width:280px !important; max-width:86vw; z-index:300; background:var(--bg); overflow-y:auto; transform:translateX(-106%); transition:transform .26s ease; box-shadow:0 0 50px rgba(0,0,0,.4); }
+    .dc-shell.nav-open .dc-sidebar { transform:translateX(0); }
+    .dc-backdrop { display:block; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:250; opacity:0; pointer-events:none; transition:opacity .26s; }
+    .dc-shell.nav-open .dc-backdrop { opacity:1; pointer-events:auto; }
+    .dc-main { border-radius:0 !important; max-height:none !important; min-height:100vh; }
+    .dc-content { padding:8px 14px 92px !important; overflow-x:auto; }
+    /* bottom tab bar */
+    .dc-bottombar { display:flex !important; position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--surface); border-top:1px solid var(--hair); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); box-shadow:0 -4px 22px rgba(0,0,0,.07); }
+    /* stack card-layout grids into a single column
+       (selectors match the CSSOM-normalized inline style: "prop: value") */
+    #dc-root [style*="grid-template-columns: 1fr 1fr"],
+    #dc-root [style*="grid-template-columns: repeat(2"],
+    #dc-root [style*="grid-template-columns: repeat(3"],
+    #dc-root [style*="grid-template-columns: repeat(4"],
+    #dc-root [style*="grid-template-columns: repeat(5"],
+    #dc-root [style*="grid-template-columns: 2fr 1fr 1fr"],
+    #dc-root [style*="grid-template-columns: 1.1fr 1fr"],
+    #dc-root [style*="grid-template-columns: 1.3fr 1fr"],
+    #dc-root [style*="grid-template-columns: 1fr 1.15fr"],
+    #dc-root [style*="grid-template-columns: repeat(12"] { grid-template-columns:1fr !important; }
+    /* children of the 12-col financial layout span columns — reset so they stack */
+    #dc-root [style*="grid-template-columns: repeat(12"] > * { grid-column:auto !important; }
+    /* scale down oversized page titles */
+    #dc-root [style*="font: 500 46px"],
+    #dc-root [style*="font: 500 40px"],
+    #dc-root [style*="font: 700 40px"],
+    #dc-root [style*="font: 700 38px"] { font-size:30px !important; letter-spacing:-1px !important; }
+    #dc-root [style*="font: 700 34px"],
+    #dc-root [style*="font: 500 34px"],
+    #dc-root [style*="font: 500 32px"],
+    #dc-root [style*="font: 500 30px"] { font-size:23px !important; }
+    /* topbar search fills width */
+    #dc-root [style*="max-width: 340px"] { max-width:none !important; }
+    /* wide data tables keep their columns but the content area scrolls horizontally */
+    #dc-root [style*="grid-template-columns: 2.4fr"],
+    #dc-root [style*="grid-template-columns: 1fr 2.2fr"],
+    #dc-root [style*="grid-template-columns: 2fr 0.9fr 1fr 2fr"],
+    #dc-root [style*="grid-template-columns: repeat(7"] { min-width:560px; }
+  }
