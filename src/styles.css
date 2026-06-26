@@ -20,36 +20,45 @@
     .dc-shell.nav-open .dc-backdrop { opacity:1; pointer-events:auto; }
     .dc-main { border-radius:0 !important; max-height:none !important; min-height:100vh; }
     .dc-content { padding:8px 14px 92px !important; overflow-x:auto; }
+    /* compact top bar: single-line search, hide user name/role text, keep avatar */
+    .dc-topbar { gap:8px !important; padding:10px 14px 2px !important; }
+    .dc-search { max-width:none !important; padding:10px 13px !important; }
+    .dc-usermeta { display:none !important; }
+    .dc-userpill { padding:6px !important; }
     /* bottom tab bar */
     .dc-bottombar { display:flex !important; position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--surface); border-top:1px solid var(--hair); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); box-shadow:0 -4px 22px rgba(0,0,0,.07); }
-    /* stack card-layout grids into a single column
-       (selectors match the CSSOM-normalized inline style: "prop: value") */
-    #dc-root [style*="grid-template-columns: 1fr 1fr"],
-    #dc-root [style*="grid-template-columns: repeat(2"],
-    #dc-root [style*="grid-template-columns: repeat(3"],
-    #dc-root [style*="grid-template-columns: repeat(4"],
-    #dc-root [style*="grid-template-columns: repeat(5"],
-    #dc-root [style*="grid-template-columns: 2fr 1fr 1fr"],
-    #dc-root [style*="grid-template-columns: 1.1fr 1fr"],
-    #dc-root [style*="grid-template-columns: 1.3fr 1fr"],
-    #dc-root [style*="grid-template-columns: 1fr 1.15fr"],
-    #dc-root [style*="grid-template-columns: repeat(12"] { grid-template-columns:1fr !important; }
-    /* children of the 12-col financial layout span columns — reset so they stack */
-    #dc-root [style*="grid-template-columns: repeat(12"] > * { grid-column:auto !important; }
+    /* stack multi-column CARD grids to a single column.
+       Selectors are EXACT (trailing ";") so "1fr 1fr;" never matches "1fr 1fr 1fr;"
+       — small data rows (pricing 2fr 1fr 1fr, etc.) stay as compact rows. */
+    #dc-root [style*="grid-template-columns: 1fr 1fr;"],
+    #dc-root [style*="grid-template-columns: 1.1fr 1fr;"],
+    #dc-root [style*="grid-template-columns: 1.3fr 1fr;"],
+    #dc-root [style*="grid-template-columns: 1fr 1.15fr;"],
+    #dc-root [style*="grid-template-columns: repeat(2,"],
+    #dc-root [style*="grid-template-columns: repeat(3,"],
+    #dc-root [style*="grid-template-columns: repeat(4,"],
+    #dc-root [style*="grid-template-columns: repeat(5,"],
+    #dc-root [style*="grid-template-columns: repeat(12,"] { grid-template-columns:1fr !important; }
+    /* children of stacked grids: reset spans + allow shrinking (min-width:0)
+       so wide inner content can't force the column past the viewport */
+    #dc-root [style*="grid-template-columns: repeat(12,"] > *,
+    #dc-root [style*="grid-template-columns: 1fr 1fr;"] > *,
+    #dc-root [style*="grid-template-columns: repeat(2,"] > *,
+    #dc-root [style*="grid-template-columns: repeat(3,"] > *,
+    #dc-root [style*="grid-template-columns: repeat(4,"] > *,
+    #dc-root [style*="grid-template-columns: repeat(5,"] > * { grid-column:auto !important; min-width:0 !important; }
     /* scale down oversized page titles */
     #dc-root [style*="font: 500 46px"],
     #dc-root [style*="font: 500 40px"],
     #dc-root [style*="font: 700 40px"],
-    #dc-root [style*="font: 700 38px"] { font-size:30px !important; letter-spacing:-1px !important; }
+    #dc-root [style*="font: 700 38px"] { font-size:28px !important; letter-spacing:-1px !important; }
     #dc-root [style*="font: 700 34px"],
     #dc-root [style*="font: 500 34px"],
     #dc-root [style*="font: 500 32px"],
-    #dc-root [style*="font: 500 30px"] { font-size:23px !important; }
-    /* topbar search fills width */
-    #dc-root [style*="max-width: 340px"] { max-width:none !important; }
+    #dc-root [style*="font: 500 30px"] { font-size:22px !important; }
     /* wide data tables keep their columns but the content area scrolls horizontally */
     #dc-root [style*="grid-template-columns: 2.4fr"],
     #dc-root [style*="grid-template-columns: 1fr 2.2fr"],
     #dc-root [style*="grid-template-columns: 2fr 0.9fr 1fr 2fr"],
-    #dc-root [style*="grid-template-columns: repeat(7"] { min-width:560px; }
+    #dc-root [style*="grid-template-columns: repeat(7,"] { min-width:560px; }
   }
