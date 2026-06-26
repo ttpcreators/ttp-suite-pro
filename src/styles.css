@@ -25,6 +25,9 @@
     .dc-search { max-width:none !important; padding:10px 13px !important; }
     .dc-usermeta { display:none !important; }
     .dc-userpill { padding:6px !important; }
+    /* document rows: let the action buttons wrap to a second line */
+    .dc-docrow { flex-wrap:wrap !important; row-gap:10px !important; }
+    .dc-docname { flex:1 1 60% !important; }
     /* bottom tab bar */
     .dc-bottombar { display:flex !important; position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--surface); border-top:1px solid var(--hair); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); box-shadow:0 -4px 22px rgba(0,0,0,.07); }
     /* stack multi-column CARD grids to a single column.
