@@ -1,0 +1,57 @@
+/* ===== Police ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ===== Tokens de design — thème clair (par défaut) ===== */
+:root {
+  --bg: #FFFFFF;
+  --panel: #F4F5F7;
+  --surface: #FFFFFF;
+  --text: #181D25;
+  --muted: #606E80;
+  --faint: #9AA6B4;
+  --hair: #EAECEF;
+  --rowhover: #F4F5F7;
+  --signal: #70FC8E;
+  --signaltext: #16A34A;
+  --signalsoft: #E6FBEC;
+  --indigo: #3765F6;
+  --amber: #3765F6;
+  --cyan: #8590A1;
+  --onsignal: #181D25;
+}
+
+/* ===== Thème sombre ===== */
+:root[data-theme='dark'] {
+  --bg: #000000;
+  --panel: #0B0B0C;
+  --surface: #161616;
+  --text: #F2F3F6;
+  --muted: #A8B0BA;
+  --faint: #74808C;
+  --hair: #242424;
+  --rowhover: #1A1A1A;
+  --signal: #70FC8E;
+  --signaltext: #70FC8E;
+  --signalsoft: #15301E;
+  --indigo: #5B82F8;
+  --amber: #5B82F8;
+  --cyan: #9AA6B4;
+  --onsignal: #10141A;
+}
+
+/* ===== Base ===== */
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: background .25s, color .25s;
+}
+input, textarea, button { font-family: 'Inter', sans-serif; }
+a { color: inherit; }
+::selection { background: var(--signal); color: var(--onsignal); }
+@keyframes ttp-pulse { 0%,100% { opacity:1; transform:scale(1);} 50% { opacity:.25; transform:scale(.6);} }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--hair); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
