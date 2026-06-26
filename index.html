@@ -1046,6 +1046,19 @@
           <div style="display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:12px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="{{ r.dotStyle }}"></span><div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text)">{{ r.a }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ r.b }}</div></div><span style="{{ r.chipStyle }}">{{ r.c }}</span><span onclick="{{ r.edit }}" title="Modifier" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 11px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:var(--text)">✎</span><span onclick="{{ r.del }}" title="Supprimer" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div>
         </sc-for>
       </div>
+      <sc-if value="{{ vTemplatesMsg }}" hint-placeholder-val="{{ false }}">
+      <div style="font:600 14px 'Inter',sans-serif; color:var(--text); margin:26px 0 12px">Modèles de messages</div>
+      <div style="display:flex; gap:4px; background:var(--surface); border-radius:12px; padding:4px; margin-bottom:16px; width:fit-content; flex-wrap:wrap"><sc-for list="{{ msgChannelTabs }}" as="t" hint-placeholder-count="5"><span onclick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</span></sc-for></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+        <sc-for list="{{ msgTemplatesList }}" as="m" hint-placeholder-count="4">
+          <div style="background:var(--surface); border-radius:18px; padding:18px; display:flex; flex-direction:column">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px"><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">{{ m.title }}</div><span style="{{ m.chanStyle }}">{{ m.channelLabel }}</span></div>
+            <div style="font:400 12px 'Inter',sans-serif; color:var(--muted); line-height:1.6; margin-top:10px; white-space:pre-wrap; flex:1">{{ m.preview }}</div>
+            <div onclick="{{ m.copy }}" style="margin-top:14px; padding:10px 0; text-align:center; border-radius:11px; background:var(--text); color:var(--bg); font:600 10px 'Inter',sans-serif; cursor:pointer">⧉ {{ m.copyLabel }}</div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
       </sc-if>
 
     </div>
@@ -1442,6 +1455,17 @@ class Component extends DCLogic {
   briefStatus(s){ return ({ valider:{label:'À VALIDER',tone:'indigo'}, cours:{label:'EN COURS',tone:'cyan'}, attente:{label:'EN ATTENTE',tone:'signal'} })[s] || {label:'EN COURS',tone:'cyan'}; }
   chip(label, dark){ return "display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;border:1px solid var(--hair);font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);white-space:nowrap;"; }
 
+  msgTemplatesRaw = [
+    {channel:'gmail', title:'Proposition de collaboration', body:"Bonjour [Prénom],\n\nJe suis [Votre nom] de l'agence TTP, qui accompagne des créateurs comme [Créateur] (audience [X]K, ER [X]%).\n\nNous pensons que [Créateur] correspondrait parfaitement à l'univers de [Marque] pour une campagne [format]. Seriez-vous disponible pour un appel cette semaine ?\n\nBien à vous,\n[Votre nom] — TTP Agency"},
+    {channel:'gmail', title:'Relance facture impayée', body:"Bonjour [Prénom],\n\nSauf erreur de notre part, la facture #[Réf] d'un montant de [Montant] (échéance le [Date]) reste en attente de règlement.\n\nPourriez-vous nous indiquer une date de paiement ? Je reste disponible pour tout justificatif.\n\nMerci d'avance,\n[Votre nom] — TTP Agency"},
+    {channel:'gmail', title:'Envoi du media kit', body:"Bonjour [Prénom],\n\nComme convenu, vous trouverez ci-joint le media kit de [Créateur] : statistiques d'audience, formats proposés et exemples de collaborations passées.\n\nN'hésitez pas si vous souhaitez un devis personnalisé.\n\nBelle journée,\n[Votre nom] — TTP Agency"},
+    {channel:'linkedin', title:'Demande de connexion (marque)', body:"Bonjour [Prénom], je gère les partenariats créateurs chez TTP Agency. Nous travaillons avec des profils qui pourraient coller à vos campagnes [secteur]. Au plaisir d'échanger !"},
+    {channel:'linkedin', title:'Pitch partenariat', body:"Bonjour [Prénom],\n\nMerci pour votre connexion ! Je représente [Créateur], spécialisé(e) en [niche] avec une communauté très engagée. Une collaboration avec [Marque] aurait beaucoup de sens. Êtes-vous la bonne personne pour en discuter, ou pourriez-vous m'orienter ?\n\nMerci !"},
+    {channel:'instagram', title:'DM première approche', body:"Hello [Marque] 👋 Je gère les collabs de [Créateur] chez TTP. On adore ce que vous faites ! Une idée de collaboration nous trotte en tête — on vous envoie ça par mail ?"},
+    {channel:'instagram', title:'Négociation tarif', body:"Merci pour votre retour ! Pour ce format ([livrables]), notre tarif est de [Montant]. Il inclut [droits/exclusivité]. On peut ajuster selon le volume — dites-moi ce qui colle à votre budget 🙌"},
+    {channel:'tiktok', title:'DM collab UGC', body:"Salut ! 👋 [Créateur] crée du contenu UGC qui performe (ER [X]%). On serait ravis de produire des vidéos pour [Marque]. Je vous envoie un exemple + nos tarifs UGC ?"},
+  ];
+
   modules = {
     rosterugc: { title:'Roster UGC', section:'Créateurs', sub:'Créateurs UGC', action:'+ CRÉATEUR UGC', rows:[
       {a:'JADE NGUYEN', b:'Food · 9 deals ce mois', c:'8,1% ER', tone:'signal'},
@@ -1588,6 +1612,11 @@ class Component extends DCLogic {
 
     // generic module
     const mod = (this.modules[this.state.view]) ? (() => { const view=this.state.view; const m=this.modules[view]; const baseRows=(this.state.moduleRows&&this.state.moduleRows[view])||m.rows; return Object.assign({}, m, { rows: baseRows.map(r=>({ a:r.a, b:r.b, c:r.c, dotStyle:dotS(r.tone,false), chipStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);padding:5px 10px;border-radius:20px;background:var(--rowhover);white-space:nowrap;", del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer cet élément ?'))return; this.setState(s=>{ const mr=Object.assign({}, s.moduleRows); mr[view]=baseRows.filter(x=>x!==r); return { moduleRows:mr }; }); }, edit:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const na=window.prompt('Titre :', r.a); if(na==null)return; const nb=window.prompt('Sous-titre :', r.b); if(nb==null)return; this.setState(s=>{ const mr=Object.assign({}, s.moduleRows); mr[view]=baseRows.map(x=> x===r ? Object.assign({},x,{a:(na.trim()||x.a), b:(nb.trim()||x.b)}) : x); return { moduleRows:mr }; }); } })) }); })() : { title:'', section:'', sub:'', action:'', rows:[] };
+    const vTemplatesMsg = this.state.view==='templates';
+    const msgChannel = this.state.msgChannel || 'tous';
+    const _chanMeta = { gmail:{label:'Gmail', tone:'indigo'}, linkedin:{label:'LinkedIn', tone:'cyan'}, instagram:{label:'Instagram', tone:'signal'}, tiktok:{label:'TikTok', tone:'indigo'} };
+    const msgChannelTabs = [['tous','Tous'],['gmail','Gmail'],['linkedin','LinkedIn'],['instagram','Instagram'],['tiktok','TikTok']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(msgChannel===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({msgChannel:k});})() }));
+    const msgTemplatesList = this.msgTemplatesRaw.filter(m=> msgChannel==='tous'?true:m.channel===msgChannel).map(m=>{ const cm=_chanMeta[m.channel]||{label:m.channel,tone:'cyan'}; const hex=this.toneHex(cm.tone,dark); const copied=this.state.copied==='tpl'+m.title; return { title:m.title, channelLabel:cm.label, body:m.body, preview:(m.body.length>140?m.body.slice(0,140)+'…':m.body), chanStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 10px;border-radius:20px;white-space:nowrap;color:"+hex+";background:"+hex+"18;", copyLabel:copied?'COPIÉ ✓':'COPIER', copy:(()=>{const b=m.body,t=m.title;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); try{ if(navigator.clipboard){navigator.clipboard.writeText(b).catch(()=>{});} }catch(_){} this.setState({copied:'tpl'+t}); setTimeout(()=>this.setState(s=>s.copied==='tpl'+t?{copied:null}:{}),1500); };})() }; });
 
     // ---- creator portal (me) ----
     const ci = this.state.creatorId;
@@ -1850,7 +1879,7 @@ class Component extends DCLogic {
       pAccueil:this.state.portalTab==='accueil', pBriefs:this.state.portalTab==='briefs', pPlanning:this.state.portalTab==='planning', pStats:this.state.portalTab==='stats', pProfil:this.state.portalTab==='profil',
       goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}),
       goRoster, goFacturation, goObjectifs, goContacts, goPlanning, goBriefs, goTodo, goProspection, goEngagement, goRosterUgc,
-      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod,
+      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators,
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('c'+(ci!=null?ci:0)),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
