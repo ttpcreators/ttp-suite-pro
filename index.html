@@ -278,18 +278,64 @@
   ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-thumb { background: var(--hair); border-radius: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
+  /* ===================== RESPONSIVE / MOBILE ===================== */
+  .dc-bottombar { display:none; }
+  .dc-backdrop { display:none; }
+  @media (max-width: 860px) {
+    .dc-pad { padding:0 !important; }
+    .dc-shell { border-radius:0 !important; min-height:100vh !important; }
+    /* sidebar -> slide-in drawer */
+    .dc-sidebar { position:fixed !important; top:0; left:0; bottom:0; width:280px !important; max-width:86vw; z-index:300; background:var(--bg); overflow-y:auto; transform:translateX(-106%); transition:transform .26s ease; box-shadow:0 0 50px rgba(0,0,0,.4); }
+    .dc-shell.nav-open .dc-sidebar { transform:translateX(0); }
+    .dc-backdrop { display:block; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:250; opacity:0; pointer-events:none; transition:opacity .26s; }
+    .dc-shell.nav-open .dc-backdrop { opacity:1; pointer-events:auto; }
+    .dc-main { border-radius:0 !important; max-height:none !important; min-height:100vh; }
+    .dc-content { padding:8px 14px 92px !important; overflow-x:auto; }
+    /* bottom tab bar */
+    .dc-bottombar { display:flex !important; position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--surface); border-top:1px solid var(--hair); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); box-shadow:0 -4px 22px rgba(0,0,0,.07); }
+    /* stack card-layout grids into a single column
+       (selectors match the CSSOM-normalized inline style: "prop: value") */
+    #dc-root [style*="grid-template-columns: 1fr 1fr"],
+    #dc-root [style*="grid-template-columns: repeat(2"],
+    #dc-root [style*="grid-template-columns: repeat(3"],
+    #dc-root [style*="grid-template-columns: repeat(4"],
+    #dc-root [style*="grid-template-columns: repeat(5"],
+    #dc-root [style*="grid-template-columns: 2fr 1fr 1fr"],
+    #dc-root [style*="grid-template-columns: 1.1fr 1fr"],
+    #dc-root [style*="grid-template-columns: 1.3fr 1fr"],
+    #dc-root [style*="grid-template-columns: 1fr 1.15fr"],
+    #dc-root [style*="grid-template-columns: repeat(12"] { grid-template-columns:1fr !important; }
+    /* children of the 12-col financial layout span columns — reset so they stack */
+    #dc-root [style*="grid-template-columns: repeat(12"] > * { grid-column:auto !important; }
+    /* scale down oversized page titles */
+    #dc-root [style*="font: 500 46px"],
+    #dc-root [style*="font: 500 40px"],
+    #dc-root [style*="font: 700 40px"],
+    #dc-root [style*="font: 700 38px"] { font-size:30px !important; letter-spacing:-1px !important; }
+    #dc-root [style*="font: 700 34px"],
+    #dc-root [style*="font: 500 34px"],
+    #dc-root [style*="font: 500 32px"],
+    #dc-root [style*="font: 500 30px"] { font-size:23px !important; }
+    /* topbar search fills width */
+    #dc-root [style*="max-width: 340px"] { max-width:none !important; }
+    /* wide data tables keep their columns but the content area scrolls horizontally */
+    #dc-root [style*="grid-template-columns: 2.4fr"],
+    #dc-root [style*="grid-template-columns: 1fr 2.2fr"],
+    #dc-root [style*="grid-template-columns: 2fr 0.9fr 1fr 2fr"],
+    #dc-root [style*="grid-template-columns: repeat(7"] { min-width:560px; }
+  }
 </style>
 </helmet>
 
-<div style="--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25; {{ themeVars }} background:var(--bg); color:var(--text); min-height:100vh; font-family:'Inter',sans-serif; transition:background .25s, color .25s; padding:14px">
+<div class="dc-pad" style="--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25; {{ themeVars }} background:var(--bg); color:var(--text); min-height:100vh; font-family:'Inter',sans-serif; transition:background .25s, color .25s; padding:14px">
 
-<div style="background:var(--bg); border-radius:22px; display:flex; min-height:calc(100vh - 28px); overflow:hidden">
+<div class="dc-shell{{ navOpenCls }}" style="background:var(--bg); border-radius:22px; display:flex; min-height:calc(100vh - 28px); overflow:hidden">
 
   <!-- ================= AGENCY SPACE ================= -->
   <sc-if value="{{ isAgency }}" hint-placeholder-val="{{ true }}">
 
   <!-- ---------- SIDEBAR ---------- -->
-  <div style="width:236px; flex-shrink:0; padding:8px 10px 16px 18px; display:flex; flex-direction:column; min-height:0">
+  <div class="dc-sidebar" style="width:236px; flex-shrink:0; padding:8px 10px 16px 18px; display:flex; flex-direction:column; min-height:0">
     <div style="display:flex; align-items:center; gap:11px; padding:14px 8px 14px">
       <div style="width:42px; height:42px; border-radius:12px; background:#14181E; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div>
       <div><div style="font:700 15px 'Inter',sans-serif; letter-spacing:.2px; color:var(--text)">TTP</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:1px">Trust the Process</div></div>
@@ -335,8 +381,15 @@
     </div>
   </div>
 
+  <!-- ---------- MOBILE: backdrop + bottom bar ---------- -->
+  <div onclick="{{ closeMobileNav }}" class="dc-backdrop"></div>
+  <div class="dc-bottombar">
+    <sc-for list="{{ bottomNav }}" as="b" hint-placeholder-count="5">
+      <div onclick="{{ b.tap }}" style="{{ b.style }}"><span style="font:600 18px 'Inter',sans-serif; line-height:1; display:flex; align-items:center; justify-content:center; height:20px">{{ b.icon }}{{ b.iconTxt }}</span><span>{{ b.label }}</span></div>
+    </sc-for>
+  </div>
   <!-- ---------- MAIN PANEL ---------- -->
-  <div style="flex:1; min-width:0; background:var(--panel); border-radius:22px; display:flex; flex-direction:column; max-height:calc(100vh - 28px); overflow:hidden">
+  <div class="dc-main" style="flex:1; min-width:0; background:var(--panel); border-radius:22px; display:flex; flex-direction:column; max-height:calc(100vh - 28px); overflow:hidden">
 
     <!-- top bar -->
     <div style="display:flex; align-items:center; gap:16px; padding:16px 24px; flex-shrink:0">
@@ -349,7 +402,7 @@
       <div style="display:flex; align-items:center; gap:10px"><div style="position:relative"><div onclick="{{ toggleNotif }}" style="width:40px; height:40px; border-radius:13px; background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); position:relative" style-hover="background:var(--rowhover)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><sc-if value="{{ hasNotif }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:6px; right:7px; min-width:15px; height:15px; padding:0 4px; border-radius:8px; background:var(--signal); color:var(--onsignal); font:700 8px 'Inter',sans-serif; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface)">{{ notifCount }}</span></sc-if></div><sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute; top:48px; right:0; width:320px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:0 18px 50px -16px rgba(0,0,0,.3); padding:8px; z-index:80"><div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px"><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">Notifications</span><span onclick="{{ closeNotif }}" style="font:600 9px 'Inter',sans-serif; color:var(--signaltext); cursor:pointer">Fermer</span></div><sc-for list="{{ notifications }}" as="n" hint-placeholder-count="4"><div style="display:flex; gap:11px; align-items:flex-start; padding:11px 12px; border-radius:11px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="{{ n.iconStyle }}">{{ n.icon }}</span><div style="flex:1; min-width:0"><div style="font:500 12px 'Inter',sans-serif; color:var(--text); line-height:1.4">{{ n.title }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ n.time }}</div></div></div></sc-for></div></sc-if></div><div onclick="{{ toggleTheme }}" style="width:40px; height:40px; border-radius:13px; background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; font:600 14px 'Inter',sans-serif; color:var(--text)" style-hover="background:var(--rowhover)">{{ themeGlyph }}</div></div>
     </div>
 
-    <div style="flex:1; overflow-y:auto; padding:6px 24px 28px">
+    <div class="dc-content" style="flex:1; overflow-y:auto; padding:6px 24px 28px">
 
       <!-- ============ APERÇU ============ -->
       <sc-if value="{{ vApercu }}" hint-placeholder-val="{{ true }}">
@@ -1016,13 +1069,13 @@
     <div onclick="{{ backToAgency }}" style="display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; cursor:pointer; color:var(--muted)" style-hover="background:var(--rowhover)"><span style="font:600 13px 'Inter',sans-serif">←</span><span style="font:500 12px 'Inter',sans-serif">Espace agence</span></div>
   </div>
 
-  <div style="flex:1; min-width:0; background:var(--panel); border-radius:22px; display:flex; flex-direction:column; max-height:calc(100vh - 28px); overflow:hidden">
+  <div class="dc-main" style="flex:1; min-width:0; background:var(--panel); border-radius:22px; display:flex; flex-direction:column; max-height:calc(100vh - 28px); overflow:hidden">
     <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; flex-shrink:0">
       <div style="display:flex; align-items:center; gap:6px; padding:9px 13px; border-radius:13px; background:var(--surface); font:600 10px 'Inter',sans-serif; color:var(--text)"><span style="width:7px; height:7px; border-radius:50%; background:var(--signal); animation:ttp-pulse 1.6s infinite"></span>JEU 26 JUIN</div>
       <div style="display:flex; align-items:center; gap:10px"><div style="position:relative"><div onclick="{{ toggleNotif }}" style="width:40px; height:40px; border-radius:13px; background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); position:relative" style-hover="background:var(--rowhover)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><sc-if value="{{ hasNotif }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:6px; right:7px; min-width:15px; height:15px; padding:0 4px; border-radius:8px; background:var(--signal); color:var(--onsignal); font:700 8px 'Inter',sans-serif; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface)">{{ notifCount }}</span></sc-if></div><sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute; top:48px; right:0; width:320px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:0 18px 50px -16px rgba(0,0,0,.3); padding:8px; z-index:80"><div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px"><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">Notifications</span><span onclick="{{ closeNotif }}" style="font:600 9px 'Inter',sans-serif; color:var(--signaltext); cursor:pointer">Fermer</span></div><sc-for list="{{ notifications }}" as="n" hint-placeholder-count="4"><div style="display:flex; gap:11px; align-items:flex-start; padding:11px 12px; border-radius:11px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="{{ n.iconStyle }}">{{ n.icon }}</span><div style="flex:1; min-width:0"><div style="font:500 12px 'Inter',sans-serif; color:var(--text); line-height:1.4">{{ n.title }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ n.time }}</div></div></div></sc-for></div></sc-if></div><div onclick="{{ toggleTheme }}" style="width:40px; height:40px; border-radius:13px; background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; font:600 14px 'Inter',sans-serif; color:var(--text)" style-hover="background:var(--rowhover)">{{ themeGlyph }}</div></div>
     </div>
 
-    <div style="flex:1; overflow-y:auto; padding:6px 24px 28px">
+    <div class="dc-content" style="flex:1; overflow-y:auto; padding:6px 24px 28px">
       <!-- portal: ACCUEIL -->
       <sc-if value="{{ pAccueil }}" hint-placeholder-val="{{ true }}">
       <div style="margin-bottom:22px"><div style="font:400 12px 'Inter',sans-serif; color:var(--faint)">Jeudi 26 juin</div><div style="font:500 40px 'Inter',sans-serif; letter-spacing:-1.5px; color:var(--text); margin-top:6px">Hello {{ me.first }} ✌️</div></div>
@@ -1342,7 +1395,7 @@ class Component extends DCLogic {
     const d=M[name]||['M5 12h14'];
     return React.createElement('svg',{width:17,height:17,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, d.map((p,i)=>React.createElement('path',{key:i,d:p})));
   }
-  navItem(key, icon, label){ const active=this.state.view===key; const col=active?'var(--bg)':'var(--muted)'; const _bc={roster:this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).length, briefs:(this.state.briefItems||this.briefRaw).length, todo:(this.state.todoItems||this.todoRaw).length, messages:2, idees:(this.state.ideasData||this.ideasRaw).filter(x=>x&&x.source==='creator').length}; const _b=_bc[key]||0; return { icon:this.icon(key), label, active, hasBadge:_b>0, badge:String(_b), badgeStyle:'min-width:18px;height:17px;padding:0 5px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(active?'background:var(--bg);color:var(--text);':'background:var(--rowhover);color:var(--muted);'), itemStyle:'display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({view:key, rosterDetail:null}) }; }
+  navItem(key, icon, label){ const active=this.state.view===key; const col=active?'var(--bg)':'var(--muted)'; const _bc={roster:this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).length, briefs:(this.state.briefItems||this.briefRaw).length, todo:(this.state.todoItems||this.todoRaw).length, messages:2, idees:(this.state.ideasData||this.ideasRaw).filter(x=>x&&x.source==='creator').length}; const _b=_bc[key]||0; return { icon:this.icon(key), label, active, hasBadge:_b>0, badge:String(_b), badgeStyle:'min-width:18px;height:17px;padding:0 5px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(active?'background:var(--bg);color:var(--text);':'background:var(--rowhover);color:var(--muted);'), itemStyle:'display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({view:key, rosterDetail:null, mobileNav:false}) }; }
   pNavItem(key, icon, label){ const active=this.state.portalTab===key; const col=active?'var(--bg)':'var(--muted)'; return { icon:this.icon(key), label, itemStyle:'display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({portalTab:key}) }; }
   invStatus(s){ return ({ payee:{label:'PAYÉE',tone:'signal'}, attente:{label:'EN ATTENTE',tone:'indigo'}, retard:{label:'EN RETARD',tone:'indigo'}, brouillon:{label:'BROUILLON',tone:'cyan'} })[s] || {label:'BROUILLON',tone:'cyan'}; }
   briefStatus(s){ return ({ valider:{label:'À VALIDER',tone:'indigo'}, cours:{label:'EN COURS',tone:'cyan'}, attente:{label:'EN ATTENTE',tone:'signal'} })[s] || {label:'EN COURS',tone:'cyan'}; }
@@ -1382,6 +1435,13 @@ class Component extends DCLogic {
 
   renderVals(){
     const dark = this.state.theme === 'dark';
+    const mobileNav = !!this.state.mobileNav;
+    const navOpenCls = mobileNav ? ' nav-open' : '';
+    const openMobileNav = () => this.setState({mobileNav:true});
+    const closeMobileNav = () => this.setState({mobileNav:false});
+    const _bbStyle = (key) => "flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:"+(this.state.view===key?'var(--text)':'var(--faint)')+";font:600 9px 'Inter',sans-serif";
+    const _bbMk = (key,label,extra) => ({ icon:this.icon(key), iconTxt:'', label, style:_bbStyle(key), tap:()=>this.setState(Object.assign({view:key, mobileNav:false}, extra||{})) });
+    const bottomNav = [ _bbMk('apercu','Accueil'), _bbMk('roster','Roster',{rosterDetail:null}), _bbMk('messages','Messages'), _bbMk('planning','Planning'), { icon:'', iconTxt:'☰', label:'Menu', style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:var(--faint);font:600 9px 'Inter',sans-serif", tap:openMobileNav } ];
     const themeVars = dark
       ? '--bg:#000000;--panel:#0B0B0C;--surface:#161616;--text:#F2F3F6;--muted:#A8B0BA;--faint:#74808C;--hair:#242424;--rowhover:#1A1A1A;--signal:#70FC8E;--signaltext:#70FC8E;--signalsoft:#15301E;--indigo:#5B82F8;--amber:#5B82F8;--cyan:#9AA6B4;--onsignal:#10141A;'
       : '--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25;';
@@ -1649,6 +1709,7 @@ class Component extends DCLogic {
 
     return {
       themeVars, themeGlyph: dark ? '☀' : '☾',
+      bottomNav, navOpenCls, openMobileNav, closeMobileNav,
       notifOpen:!!this.state.notifOpen, toggleNotif:()=>this.setState(s=>({notifOpen:!s.notifOpen})), closeNotif:()=>this.setState({notifOpen:false}),
       hasNotif:true, notifCount:'4',
       notifications:[ {icon:'◆', title:'Inès a proposé une idée de contenu', time:'il y a 12 min', tone:'signal'}, {icon:'✉', title:'Nouveau message — campagne Sephora', time:'il y a 1 h', tone:'indigo'}, {icon:'◷', title:'Échéance brief Sephora · 02/07', time:'demain', tone:'cyan'}, {icon:'€', title:'Facture L\u2019Oréal en retard de paiement', time:'il y a 2 j', tone:'indigo'} ].map(n=>({ icon:n.icon, title:n.title, time:n.time, iconStyle:'width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 12px \'Inter\',sans-serif;background:'+this.toneHex(n.tone,dark)+'18;color:'+this.toneHex(n.tone,dark)+';' })),
@@ -1721,7 +1782,7 @@ class Component extends DCLogic {
       isCreatorSpace: this.state.space === 'creator',
       needsLogin: this.state.space === 'creator' && this.state.creatorId == null,
       loggedIn: this.state.space === 'creator' && this.state.creatorId != null,
-      enterPortal: () => this.setState({ space:'creator' }),
+      enterPortal: () => this.setState({ space:'creator', mobileNav:false }),
       backToAgency: () => this.setState({ space:'agency' }),
       navApercu: [ this.navItem('apercu','◴','Dashboard'), this.navItem('objectifs','◎','Objectifs') ],
       navCreators: [ this.navItem('roster','◵','Roster'), this.navItem('engagement','✦','Engagement'), this.navItem('pricing','€','Pricing'), this.navItem('briefs','✎','Briefs'), this.navItem('todo','☑','To-do'), this.navItem('documents','▤','Documents'), this.navItem('mediakit','△','Media kit') ],
