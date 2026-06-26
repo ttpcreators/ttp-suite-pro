@@ -1,0 +1,10 @@
+{
+  "name": "ttp-suite-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TTP Suite — plateforme de gestion d'agence de créateurs (web app statique).",
+  "scripts": {
+    "start": "npx --yes serve@14 .",
+    "dev": "npx --yes serve@14 -l 3000 ."
+  }
+}
