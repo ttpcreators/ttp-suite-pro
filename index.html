@@ -9,6 +9,9 @@
 <!-- React/ReactDOM vendored locally: dc-runtime skips its unpkg CDN fetch when window.React is already present -->
 <script src="assets/react.production.min.js"></script>
 <script src="assets/react-dom.production.min.js"></script>
+<!-- Supabase: config + client (clé publishable, publique par design — sécurité via RLS) -->
+<script>window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
+<script src="assets/supabase.js"></script>
 <script src="assets/dc-runtime.js"></script>
 </head>
 <body>
@@ -1390,6 +1393,27 @@ class Component extends DCLogic {
   dots(n, pct, fill, empty){ const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:8px;height:8px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
+  componentDidMount(){
+    try {
+      if (window.supabase && window.__SB_URL__ && window.__SB_KEY__) {
+        this._sb = window.supabase.createClient(window.__SB_URL__, window.__SB_KEY__);
+        this._loadCreators();
+      }
+    } catch(e){ console.warn('[supabase] init failed', e); }
+  }
+  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend }; }
+  async _loadCreators(){
+    try {
+      const { data, error } = await this._sb.from('creators').select('*').order('sort_order');
+      if (error) { console.warn('[supabase] load creators:', error.message); return; }
+      if (data && data.length) {
+        this.rosterRaw = data.map(r=>this._mapCreator(r));
+        this.rosterInfoRaw = {};
+        data.forEach((r,i)=>{ this.rosterInfoRaw[i] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
+        this.setState({ deletedRoster:{}, creatorsLoaded:true });
+      }
+    } catch(e){ console.warn('[supabase] load creators failed', e); }
+  }
   icon(name){
     const M={ apercu:['M3 12l9-8 9 8','M5 10v10h14V10'], objectifs:['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18','M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10','M12 12h.01'], roster:['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2','M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8','M22 21v-2a4 4 0 0 0-3-3.9','M16 3.1a4 4 0 0 1 0 7.8'], engagement:['M3 12h4l3 8 4-16 3 8h4'], pricing:['M17 7a6 6 0 1 0 0 10','M4 10h9','M4 14h9'], briefs:['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6','M8 13h8','M8 17h5'], todo:['M9 11l3 3 8-8','M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'], documents:['M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], mediakit:['M3 5h18v14H3z','M3 16l5-5 4 4 3-3 6 6','M8.5 9a1.5 1.5 0 1 0-.001-.001'], messages:['M4 5h16v14H4z','M4 7l8 6 8-6'], contacts:['M5 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2'], planning:['M4 6h16v15H4z','M4 10h16','M8 3v4','M16 3v4'], contrats:['M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z','M14 3v6h6','M9 14h6','M9 17h4'], facturation:['M4 5h16v15l-3-2-3 2-3-2-3 2z','M8 9h8','M8 13h5'], checklist:['M9 6h11','M9 12h11','M9 18h11','M4 5.5l1 1 2-2','M4 11.5l1 1 2-2','M4 17.5l1 1 2-2'], prospection:['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14','M21 21l-4-4'], alertes:['M12 3l9 17H3z','M12 9v5','M12 17h.01'], idees:['M9 18h6','M10 22h4','M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A7 7 0 0 0 12 2'], debrief:['M3 12a9 9 0 1 0 2.6-6.3','M3 4v5h5'], templates:['M3 3h8v8H3z','M13 3h8v8h-8z','M13 13h8v8h-8z','M3 13h8v8H3z'], accueil:['M3 12l9-8 9 8','M5 10v10h14V10'], stats:['M4 20V4','M4 20h16','M8 20v-7','M13 20V8','M18 20v-4'], profil:['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8','M5 21a7 7 0 0 1 14 0'] };
     const d=M[name]||['M5 12h14'];
@@ -1512,7 +1536,7 @@ class Component extends DCLogic {
 
     // ---- roster / engagement ----
     const rf = this.state.rosterFilter||'all';
-    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')) this.setState(s=>({ deletedRoster:Object.assign({}, s.deletedRoster||{}, {[ii]:true}), rosterDetail:(s.rosterDetail===ii?null:s.rosterDetail) })); };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
+    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.setState(s=>({ deletedRoster:Object.assign({}, s.deletedRoster||{}, {[ii]:true}), rosterDetail:(s.rosterDetail===ii?null:s.rosterDetail) })); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
     const roster = rosterAll.filter(c=> rf==='all'?true:(rf==='ugc'?c.isUgc:!c.isUgc));
     const rosterTab=(k,label)=>({ label, style:'padding:7px 13px;border-radius:9px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(rf===k?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({rosterFilter:kk, rosterDetail:null});})() });
     const rosterTabs=[rosterTab('all','TOUS'),rosterTab('influence','INFLUENCE'),rosterTab('ugc','UGC')];
@@ -1750,7 +1774,7 @@ class Component extends DCLogic {
       addBrief:()=>{ const br=(this.state.nbBrand||'').trim(); if(!br)return; const ci=this.state.nbCreator||0; const nm=this.rosterRaw[ci].name; const tone=this.rosterRaw[ci].tone; const cur=(this.state.briefItems||this.briefRaw).slice(); cur.unshift({brand:br, creator:nm, deliverables:this.state.nbDeliv||'\u2014', due:this.state.nbDue||'\u2014', status:'attente', tone:tone, who:nm}); this.setState({briefItems:cur, showBriefForm:false, nbBrand:'', nbDeliv:'', nbDue:''}); },
       showCreatorForm:!!this.state.showCreatorForm, openCreatorForm:()=>this.setState({showCreatorForm:true}), closeCreatorForm:()=>this.setState({showCreatorForm:false}),
       ncName:this.state.ncName||'', ncHandle:this.state.ncHandle||'', ncNiche:this.state.ncNiche||'', onNcName:(e)=>{const v=e.target.value;this.setState({ncName:v});}, onNcHandle:(e)=>{const v=e.target.value;this.setState({ncHandle:v});}, onNcNiche:(e)=>{const v=e.target.value;this.setState({ncNiche:v});},
-      addCreator:()=>{ const nm=(this.state.ncName||'').trim(); if(!nm)return; const tones=['signal','indigo','cyan']; this.rosterRaw.push({name:nm.toUpperCase(), handle:this.state.ncHandle||'@nouveau', niche:this.state.ncNiche||'Lifestyle', plat:'Instagram', followers:'0', reach:'0', er:'0%', ca:'0 \u20ac', status:'actif', tone:tones[this.rosterRaw.length%3], trend:0}); this.setState({showCreatorForm:false, ncName:'', ncHandle:'', ncNiche:''}); },
+      addCreator:()=>{ const nm=(this.state.ncName||'').trim(); if(!nm)return; const tones=['signal','indigo','cyan']; const nc={name:nm.toUpperCase(), handle:this.state.ncHandle||'@nouveau', niche:this.state.ncNiche||'Lifestyle', plat:'Instagram', followers:'0', reach:'0', er:'0%', ca:'0 \u20ac', status:'actif', tone:tones[this.rosterRaw.length%3], trend:0}; this.rosterRaw.push(nc); this.setState({showCreatorForm:false, ncName:'', ncHandle:'', ncNiche:''}); if(this._sb){ this._sb.from('creators').insert({sort_order:this.rosterRaw.length-1, name:nc.name, handle:nc.handle, niche:nc.niche, platform:nc.plat, followers:nc.followers, reach:nc.reach, er:nc.er, ca:nc.ca, status:nc.status, tone:nc.tone, trend:nc.trend}).select().then(({data,error})=>{ if(error){ console.warn('[supabase] insert:', error.message); return; } if(data&&data[0]){ nc.id=data[0].id; } }); } },
       onAddDocMe:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const ci2=this.state.creatorId!=null?this.state.creatorId:0; const fm=(b)=>b<1024?b+' o':(b<1048576?(b/1024).toFixed(0)+' Ko':(b/1048576).toFixed(1).replace('.',',')+' Mo'); const url=URL.createObjectURL(f); const b0=this.state.docs||this.docsRaw; const cur=Object.assign({},b0); const list=(cur[ci2]||[]).slice(); list.unshift({name:f.name,type:'autre',date:'ajouté auj.',size:fm(f.size),url,external:true}); cur[ci2]=list; this.setState({docs:cur}); e.target.value=''; },
       previewOpen:!!this.state.previewDoc, previewName:this.state.previewDoc?this.state.previewDoc.name:'', previewUrl:this.state.previewDoc?this.state.previewDoc.url:'', previewIsImage:!!(this.state.previewDoc&&this.state.previewDoc.isImage), previewIsDoc:!(this.state.previewDoc&&this.state.previewDoc.isImage), closePreview:()=>this.setState({previewDoc:null}), stopProp:(e)=>{e.stopPropagation();}, previewMedia: this.state.previewDoc ? (this.state.previewDoc.isImage ? React.createElement('div',{style:{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}, React.createElement('img',{src:this.state.previewDoc.url,style:{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',borderRadius:'8px'}})) : React.createElement('iframe',{src:this.state.previewDoc.url,style:{width:'100%',height:'100%',border:'none',background:'#fff'}})) : null,
       bankFormOpen:!!this.state.showBankForm, toggleBankForm:()=>this.setState(s=>({showBankForm:!s.showBankForm})),
