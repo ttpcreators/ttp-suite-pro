@@ -344,7 +344,16 @@
   }
   function cssToObj(css) {
     const o = {};
-    for (const decl of css.split(";")) {
+    const decls = [];
+    let depth = 0, start = 0;
+    for (let k = 0; k < css.length; k++) {
+      const ch = css[k];
+      if (ch === "(") depth++;
+      else if (ch === ")") { if (depth > 0) depth--; }
+      else if (ch === ";" && depth === 0) { decls.push(css.slice(start, k)); start = k + 1; }
+    }
+    decls.push(css.slice(start));
+    for (const decl of decls) {
       const i = decl.indexOf(":");
       if (i < 0) continue;
       const prop = decl.slice(0, i).trim();
