@@ -1483,16 +1483,44 @@ class Component extends DCLogic {
   _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefNotes','customObjs','threadMsgs','msgsData']; }
   // override setState so every data change is mirrored to localStorage
   setState(update, cb){ super.setState(update, ()=>{ try{ this._persist(); }catch(e){} if(cb) cb(); }); }
+  // keys synced to Supabase (cross-device). Roster lives in the `creators`
+  // table, photos stay device-local (kept out of the shared blob).
+  _cloudKeys(){ return this._persistKeys().filter(k=> k!=='deletedRoster' && k!=='photos'); }
   _persist(){
-    if (typeof localStorage === 'undefined') return;
-    // debounce: rapid setStates (e.g. typing) shouldn't each serialize to disk
+    // debounce: rapid setStates (e.g. typing) shouldn't each serialize/sync
     clearTimeout(this._persistT);
-    this._persistT = setTimeout(()=>{
-      const out = {};
-      this._persistKeys().forEach(k=>{ const v=this.state[k]; if (v!==undefined && v!==null) out[k]=v; });
+    this._persistT = setTimeout(()=>{ this._persistNow(); }, 350);
+  }
+  _persistNow(){
+    const out = {};
+    this._persistKeys().forEach(k=>{ const v=this.state[k]; if (v!==undefined && v!==null) out[k]=v; });
+    if (typeof localStorage !== 'undefined') {
       try { localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }
-      catch(e){ try{ delete out.photos; localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }catch(_){} }
-    }, 350);
+      catch(e){ try{ const o2=Object.assign({},out); delete o2.photos; localStorage.setItem('ttp_state_v1', JSON.stringify(o2)); }catch(_){} }
+    }
+    this._syncCloud(out);
+  }
+  _syncCloud(out){
+    if (!this._sb || !this._cloudReady) return; // wait until initial cloud load knows the row id
+    const cloud = {}; this._cloudKeys().forEach(k=>{ if (out[k]!==undefined) cloud[k]=out[k]; });
+    let json; try { json = JSON.stringify(cloud); } catch(_){ return; }
+    try {
+      if (this._cloudRowId){
+        this._sb.from('module_rows').update({a:json}).eq('id', this._cloudRowId).then(({error})=>{ if(error) console.warn('[cloud] update:', error.message); });
+      } else if (!this._cloudInserting){
+        this._cloudInserting = true;
+        this._sb.from('module_rows').insert({module:'__app_state__', a:json}).select('id').then(({data,error})=>{ this._cloudInserting=false; if(error){ console.warn('[cloud] insert:', error.message); return; } if(data&&data[0]) this._cloudRowId=data[0].id; });
+      }
+    } catch(e){ console.warn('[cloud] sync failed', e); }
+  }
+  async _loadCloudState(){
+    if (!this._sb) return;
+    try {
+      const { data, error } = await this._sb.from('module_rows').select('id,a').eq('module','__app_state__').order('created_at',{ascending:false}).limit(1);
+      if (error){ console.warn('[cloud] load:', error.message); this._cloudReady=true; return; }
+      if (data && data[0]){ this._cloudRowId = data[0].id; let o=null; try{ o=JSON.parse(data[0].a); }catch(_){} if (o && typeof o==='object') this.setState(o); }
+    } catch(e){ console.warn('[cloud] load failed', e); }
+    finally { this._cloudReady = true; this._persistNow(); } // flush current state to cloud (seeds the row if empty)
   }
   _restore(){
     if (typeof localStorage === 'undefined') return;
@@ -1509,6 +1537,7 @@ class Component extends DCLogic {
       if (window.supabase && window.__SB_URL__ && window.__SB_KEY__) {
         this._sb = window.supabase.createClient(window.__SB_URL__, window.__SB_KEY__);
         this._loadCreators();
+        this._loadCloudState();
       }
     } catch(e){ console.warn('[supabase] init failed', e); }
   }

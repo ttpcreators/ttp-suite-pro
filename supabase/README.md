@@ -29,7 +29,23 @@ supprimé reste supprimé après un rafraîchissement (sur le même appareil).
 Le Roster, lui, est persisté côté **Supabase** (table `creators`) : suppressions
 et ajouts y sont définitifs et partagés entre appareils.
 
-## Tranche 3+ — étendre Supabase aux autres entités
+## Persistance cross-device — ACTIVE (via Supabase)
+
+Depuis la migration `0002_app_data.sql`, l'app synchronise **automatiquement**
+tout l'état (factures, contacts, prospects, todos, briefs, idées, événements,
+modules, thème…) avec Supabase, en plus de localStorage :
+- au démarrage, l'app charge l'instantané depuis Supabase (donc tes données te
+  suivent entre l'ordinateur et le téléphone) ;
+- à chaque modification, l'instantané est ré-écrit (anti-rebond 350 ms).
+
+Détail d'implémentation : l'instantané JSON est stocké dans la table
+`module_rows` sur une ligne réservée `module = '__app_state__'` (colonne `a`).
+Cela réutilise les tables de `0002` sans SQL supplémentaire. Le Roster, lui,
+reste dans la table `creators`. Les photos restent locales à l'appareil.
+
+> Si Supabase est injoignable, l'app retombe proprement sur localStorage.
+
+## Tranche 3+ — modèle relationnel par entité (optionnel)
 
 - `migrations/0002_app_data.sql` : crée les tables `invoices`, `contacts`,
   `prospects`, `todos`, `briefs`, `ideas`, `events`, `module_rows` (RLS anon
