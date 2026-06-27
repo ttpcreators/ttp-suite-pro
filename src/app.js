@@ -1251,7 +1251,7 @@ class Component extends DCLogic {
             const { data, error } = await this._sb.auth.signInWithPassword({ email, password:pwd });
             if(!error && data && data.user){
               const uemail=(data.user.email||email||'').toLowerCase();
-              const agencyEmails=['marcbouraoui@gmail.com','agence@ttp.com'];
+              const agencyEmails=['partnerships@ttpcreators.pro','marcbouraoui@gmail.com','agence@ttp.com'];
               let role=null, creatorId=null;
               if(agencyEmails.indexOf(uemail)>=0){ role='agency'; }
               else {
