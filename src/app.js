@@ -545,7 +545,7 @@ class Component extends DCLogic {
     const ntCreatorChips = [{name:'Agence',val:null}].concat(this.rosterRaw.map(c=>({name:c.name.split(' ')[0],val:c.name}))).map(o=>({ name:o.name, style:'padding:6px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.ntCreator===undefined?null:this.state.ntCreator))===o.val?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const v=o.val;return ()=>this.setState({ntCreator:v});})() }));
     const ntPriorityChips = [['haute','Haute','indigo'],['moyenne','Moyenne','cyan'],['basse','Basse','signal']].map(p=>({ label:p[1], style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(ntPr===p[0]?'background:'+this.toneHex(p[2],dark)+';color:#fff;':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({ntPriority:k});})() }));
     const ideasItems = this.state.ideasData || this.ideasRaw;
-    const ideaTone = (s)=>/valid/i.test(s)?'signal':(/cours/i.test(s)?'cyan':'indigo');
+    const ideaTone = (s)=>/valid|termin/i.test(s)?'signal':(/cours/i.test(s)?'cyan':'indigo');
     const _mkIdea = (o,i)=>({ text:o.text, creatorLabel:o.creator||'Toutes', creator:o.creator||'Toutes', status:o.status, source:o.source==='creator'?'Proposée par le créateur':'Ajoutée par l’agence', fromCreator:o.source==='creator', dotStyle:dotS(ideaTone(o.status),false), statusStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 9px;border-radius:20px;white-space:nowrap;color:"+this.toneHex(ideaTone(o.status),dark)+";background:"+this.toneHex(ideaTone(o.status),dark)+"18;", open:(()=>{const k=i;return ()=>this.setState({ideaOpen:k});})(), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer cette idée ?'))return; this.setState(s=>({ ideasData:(s.ideasData||this.ideasRaw).filter(x=>x!==o), ideaOpen:null })); }, edit:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const nv=window.prompt("Modifier l'idée :", o.text); if(nv==null)return; const v=nv.trim(); if(!v)return; this.setState(s=>({ ideasData:(s.ideasData||this.ideasRaw).map(x=> x===o ? Object.assign({},x,{text:v}) : x) })); } });
     const ideas = ideasItems.map(_mkIdea);
     const _ideaOpenIdx = this.state.ideaOpen;
@@ -571,8 +571,10 @@ class Component extends DCLogic {
     const closeDebrief = ()=>this.setState({debriefOpen:null});
     const niCreatorChips = [{name:'Toutes',val:null}].concat(this.rosterRaw.map(c=>({name:c.name.split(' ')[0],val:c.name}))).map(o=>({ name:o.name, style:'padding:6px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.niCreator===undefined?null:this.state.niCreator))===o.val?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const v=o.val;return ()=>this.setState({niCreator:v});})() }));
     const niStatusChips = ['\u00c0 explorer','En cours','Valid\u00e9e'].map(s=>({ label:s, style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+((this.state.niStatus||'\u00c0 explorer')===s?'background:var(--signal);color:var(--onsignal);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=s;return ()=>this.setState({niStatus:k});})() }));
-    const myCreatorName = (this.state.creatorId!=null)?this.rosterRaw[this.state.creatorId].name:null;
-    const myIdeas = ideasItems.map((o,idx)=>({o,idx})).filter(x=>x.o.creator===myCreatorName).map(x=>({ text:x.o.text, status:x.o.status, fromCreator:x.o.source==='creator', dotStyle:dotS(ideaTone(x.o.status),false), statusStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 9px;border-radius:20px;white-space:nowrap;color:"+this.toneHex(ideaTone(x.o.status),dark)+";background:"+this.toneHex(ideaTone(x.o.status),dark)+"18;" }));
+    const _meCr=(this.state.creatorId!=null?this.rosterRaw[this.state.creatorId]:null)||this.rosterRaw[0];
+    const myCreatorName = _meCr?_meCr.name:null;
+    const _ideaCycle=['À faire','En cours','Terminée'];
+    const myIdeas = ideasItems.map((o,idx)=>({o,idx})).filter(x=>x.o.creator===myCreatorName).map(x=>{ const cur=x.o.status||'À faire'; const ni=_ideaCycle.indexOf(cur); const next=_ideaCycle[(ni+1)%_ideaCycle.length]; return { text:x.o.text, status:cur, fromCreator:x.o.source==='creator', dotStyle:dotS(ideaTone(cur),false), statusStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:5px 11px;border-radius:20px;white-space:nowrap;cursor:pointer;color:"+this.toneHex(ideaTone(cur),dark)+";background:"+this.toneHex(ideaTone(cur),dark)+"18;", cycleStatus:(()=>{const obj=x.o;return ()=>{ this.setState(s=>({ ideasData:(s.ideasData||this.ideasRaw).map(z=> z===obj ? Object.assign({},z,{status:next}) : z) })); };})() }; });
 
     // ---- events / calendar ----
     const events = this.state.events || this.eventsRaw;
@@ -915,7 +917,7 @@ class Component extends DCLogic {
     const _toneOf = (name)=>{ const c=this.rosterRaw.find(x=>x.name===name); return c?c.tone:'indigo'; };
     // full meta map : seed campaigns + broadcast + conversations directes créées
     const aMetaAll = Object.assign({ 2:{creator:'__all__', campaign:'Annonce agence', tone:'signal'} }, aMetaSeed);
-    _customConvos.forEach(c=>{ aMetaAll[c.key]={ creator:c.creator, campaign:'Conversation directe', tone:c.tone||_toneOf(c.creator) }; });
+    _customConvos.forEach(c=>{ aMetaAll[c.key]={ creator:c.creator, campaign:(c.kind==='agencyDM'?'Échange avec l’agence':'Conversation directe'), tone:c.tone||_toneOf(c.creator) }; });
     const aMeta = aMetaAll;
     const _bubble=(mine)=> 'max-width:75%;padding:11px 15px;border-radius:16px;font:400 13px \'Inter\',sans-serif;line-height:1.5;'+(mine?'background:var(--signal);color:var(--onsignal);border-bottom-right-radius:5px;':'background:var(--surface);color:var(--text);border:1px solid var(--hair);border-bottom-left-radius:5px;');
     const _delConvo=(key)=>{ if(!window.confirm('Supprimer cette discussion ?'))return; this.setState(s=>{ const dc=Object.assign({},s.deletedConvos,{[key]:true}); const cc=(s.customConvos||[]).filter(c=>c.key!==key); const tm=Object.assign({},(s.threadMsgs||this.msgsRaw)); delete tm[key]; return { deletedConvos:dc, customConvos:cc, threadMsgs:tm, openAThread:(s.openAThread===key?null:s.openAThread), openThread:(s.openThread===key?null:s.openThread) }; }); toast('Discussion supprimée'); };
@@ -1120,6 +1122,7 @@ class Component extends DCLogic {
       pMessages:this.state.portalTab==='messages', announcements, threads, bannerStyle, onPhotoBanner: mkPhoto('banner'),
       msgListShown: this.state.openThread==null, threadOpen: this.state.openThread!=null, convMsgs, convTitle, draft:this.state.draft,
       onDraft:(e)=>{const v=e.target.value;this.setState({draft:v});}, backThreads:()=>this.setState({openThread:null}),
+      writeToAgency:()=>{ const nm=cr?cr.name:''; const key='cdm:'+nm; this.setState(s=>{ const cc=(s.customConvos||[]).slice(); if(!cc.some(c=>c.key===key)) cc.push({key, creator:nm, tone:(cr?cr.tone:'signal'), kind:'agencyDM'}); const dc=Object.assign({},s.deletedConvos); delete dc[key]; return { customConvos:cc, deletedConvos:dc, openThread:key }; }); },
       sendMsg:()=>{ const ot=this.state.openThread; if(ot==null)return; const d=(this.state.draft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); cur[ot]=[...(cur[ot]||[]),{from:'me',text:d}]; this.setState({threadMsgs:cur, draft:''}); },
       rosterListShown: this.state.view==='roster' && this.state.rosterDetail==null,
       rosterDetailShown: this.state.view==='roster' && this.state.rosterDetail!=null,
@@ -1131,13 +1134,13 @@ class Component extends DCLogic {
       onAddDoc:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const ci2=this.state.docCreator!=null?this.state.docCreator:0; const ty=this.state.docType||'brief'; const fm=(b)=>b<1024?b+' o':(b<1048576?(b/1024).toFixed(0)+' Ko':(b/1048576).toFixed(1).replace('.',',')+' Mo'); const url=URL.createObjectURL(f); const b0=this.state.docs||this.docsRaw; const cur=Object.assign({},b0); const list=(cur[ci2]||[]).slice(); list.unshift({name:f.name,type:ty,date:'ajout\u00e9 auj.',size:fm(f.size),url,external:true}); cur[ci2]=list; this.setState({docs:cur}); e.target.value=''; },
       pDocuments:this.state.portalTab==='documents', myDocs, myDocsEmpty:myDocs.length===0,
       vMediaKit:this.state.view==='mediakit', goMediaKit:()=>this.setState({view:'mediakit'}), mk, mkStats, mkGeo, mkBrands, mkFormats, mkCreatorChips,
-      vIdees:this.state.view==='idees', ideas, ideaOpenObj, ideaDetailOpen, ideaListMode:!ideaDetailOpen, closeIdea, myIdeas, myIdeasEmpty:myIdeas.length===0,
+      vIdees:this.state.view==='idees', ideas, ideaOpenObj, ideaDetailOpen, ideaListMode:!ideaDetailOpen, closeIdea, myIdeas, myIdeasEmpty:myIdeas.length===0, myIdeasHas:myIdeas.length>0,
       pTodo:this.state.portalTab==='todo', pIdees:this.state.portalTab==='idees',
       ntCreatorChips, ntPriorityChips, niCreatorChips, niStatusChips,
       showTodoForm:!!this.state.showTodoForm, openTodoForm:()=>this.setState({showTodoForm:true}), closeTodoForm:()=>this.setState({showTodoForm:false}),
       ntText:this.state.ntText||'', ntDue:this.state.ntDue||'', onNtText:(e)=>{const v=e.target.value;this.setState({ntText:v});}, onNtDue:(e)=>{const v=e.target.value;this.setState({ntDue:v});},
       addTodo:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:(this.state.ntCreator?'CR\u00c9ATEUR':'AGENCE'), due:this.state.ntDue||'\u2014', creator:this.state.ntCreator||null, priority:this.state.ntPriority||'moyenne', source:'agency'}); this.setState({todoItems:cur, showTodoForm:false, ntText:'', ntDue:''}); },
-      addTodoMe:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const ci=this.state.creatorId; const nm=ci!=null?this.rosterRaw[ci].name:null; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:'PERSO', due:this.state.ntDue||'\u2014', creator:nm, priority:this.state.ntPriority||'moyenne', source:'creator'}); this.setState({todoItems:cur, ntText:'', ntDue:'', ntDesc:''}); },
+      addTodoMe:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const ci=this.state.creatorId; const crr=(ci!=null?this.rosterRaw[ci]:null)||this.rosterRaw[0]; const nm=crr?crr.name:null; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:'PERSO', due:this.state.ntDue||'\u2014', creator:nm, priority:this.state.ntPriority||'moyenne', source:'creator'}); this.setState({todoItems:cur, ntText:'', ntDue:'', ntDesc:'', ntPriority:'moyenne'}); toast('T\u00e2che ajout\u00e9e \u2713'); },
       ntDesc:this.state.ntDesc||'', onNtDesc:(e)=>{const v=e.target.value;this.setState({ntDesc:v});},
       showIdeaForm:!!this.state.showIdeaForm, toggleIdeaForm:()=>this.setState(s=>({showIdeaForm:!s.showIdeaForm})),
       niText:this.state.niText||'', onNiText:(e)=>{const v=e.target.value;this.setState({niText:v});},
@@ -1302,7 +1305,7 @@ class Component extends DCLogic {
       relanceSub: _firstRetard ? ('Facture en retard · '+_firstRetard.date) : 'Tout est à jour',
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
-      me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, briefFilterTabs, pTodoFilterTabs,
+      me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
       calendarCells: cells, eventTypes,
@@ -1317,7 +1320,7 @@ class Component extends DCLogic {
       onNEDay: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{day:v})})); },
       onNETime: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{time:v})})); },
       addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:null}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
-      addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const cr2=this.state.creatorId!=null?this.rosterRaw[this.state.creatorId].name:null; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
+      addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const crr=(this.state.creatorId!=null?this.rosterRaw[this.state.creatorId]:null)||this.rosterRaw[0]; const cr2=crr?crr.name:null; const day=ne.date?Number(String(ne.date).split('-')[2]):(Number(ne.day)||26); const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:day||26, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}], showEventForm:false, ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'} }); },
       incomeDots: this.dots(126, _incomeFill, sig, empty, 11),
       paidDots: this.dots(126, Math.max(8,Math.min(100,Math.round(finReverse/(finEncaisse||1)*100))), sig, empty, 11),
       periodLabel: ({hebdo:'HEBDO',mensuel:'MENSUEL',trimestre:'TRIMESTRE',annuel:'ANNUEL'})[this.state.caPeriod||'mensuel'],
