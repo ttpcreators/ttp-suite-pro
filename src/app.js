@@ -1042,10 +1042,26 @@ class Component extends DCLogic {
       loginSegCreatorStyle: "flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 0; border-radius:11px; font:600 12px 'Inter',sans-serif; letter-spacing:.2px; cursor:pointer; transition:all .15s; "+((this.state.loginTab||'agency')==='creator'?'background:#fff; color:#0A0A0B;':'color:rgba(255,255,255,.5);'),
       loginCtaLabel: (this.state.loginTab||'agency')==='agency' ? 'Se connecter à l’espace agence' : 'Se connecter à mon espace',
       loginHint: (this.state.loginTab||'agency')==='agency' ? 'Démo agence — agence@ttp.com · ttp2026' : 'Démo créateur — prénom@ttp.com · mot de passe = prénom (ex : camille / camille)',
-      doLogin: () => {
+      doLogin: async () => {
         const tab=this.state.loginTab||'agency';
         const email=(this.state.loginEmail||'').trim().toLowerCase();
         const pwd=this.state.loginPwd||'';
+        // 1) Real Supabase Auth (used as soon as the accounts exist in Supabase).
+        if(this._sb && this._sb.auth && this._sb.auth.signInWithPassword){
+          try {
+            const { data, error } = await this._sb.auth.signInWithPassword({ email, password:pwd });
+            if(!error && data && data.user){
+              let role='agency', creatorId=null;
+              try { const r=await this._sb.from('profiles').select('role,creator_name').eq('user_id',data.user.id).maybeSingle(); const prof=r&&r.data; if(prof){ role=prof.role||'agency'; if(role==='creator'){ const idx=this.rosterRaw.findIndex(c=>c.name===prof.creator_name); creatorId=idx>=0?idx:0; } } } catch(_){}
+              this._authReal=true;
+              this.setState({ authed:true, authRole:role, space:(role==='creator'?'creator':'agency'), creatorId, view:'apercu', portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false });
+              try{ this._cloudReady=false; this._cloudRowId=null; this._loadCloudState(); }catch(_){}
+              return;
+            }
+            // if Supabase returned a hard error other than bad creds, fall through to built-in
+          } catch(_){}
+        }
+        // 2) Built-in credentials (transition before Supabase Auth is set up).
         if(tab==='agency'){
           const accounts=[ {email:'agence@ttp.com', pwd:'ttp2026'}, {email:'marcbouraoui@gmail.com', pwd:'Louigi2OO1'} ];
           if(accounts.some(a=> a.email===email && a.pwd===pwd)){ this.setState({ authed:true, authRole:'agency', space:'agency', view:'apercu', creatorId:null, loginEmail:'', loginPwd:'', loginError:'', mobileNav:false }); }
@@ -1056,7 +1072,7 @@ class Component extends DCLogic {
           else { this.setState({ loginError:'Email ou mot de passe créateur incorrect.' }); }
         }
       },
-      logout: () => this.setState({ authed:false, authRole:null, space:'agency', creatorId:null, view:'apercu', portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false, notifOpen:false }),
+      logout: () => { try{ if(this._sb&&this._sb.auth&&this._authReal){ this._sb.auth.signOut(); } }catch(_){} this._authReal=false; this.setState({ authed:false, authRole:null, space:'agency', creatorId:null, view:'apercu', portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false, notifOpen:false }); },
       isAgency: this.state.authed===true && this.state.authRole==='agency' && this.state.space === 'agency',
       isCreatorSpace: this.state.authed===true && this.state.space === 'creator',
       needsLogin: this.state.space === 'creator' && this.state.creatorId == null,
