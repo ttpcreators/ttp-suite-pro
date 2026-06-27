@@ -64,7 +64,7 @@
   <div onclick="{{ closeMobileNav }}" class="dc-backdrop"></div>
   <div class="dc-bottombar">
     <sc-for list="{{ bottomNav }}" as="b" hint-placeholder-count="5">
-      <div onclick="{{ b.tap }}" style="{{ b.style }}"><span style="font:600 18px 'Inter',sans-serif; line-height:1; display:flex; align-items:center; justify-content:center; height:20px">{{ b.icon }}{{ b.iconTxt }}</span><span>{{ b.label }}</span></div>
+      <div onclick="{{ b.tap }}" class="{{ b.cls }}" style="{{ b.style }}"><span class="bn-ic" style="font:600 18px 'Inter',sans-serif; line-height:1; display:flex; align-items:center; justify-content:center; height:20px">{{ b.icon }}{{ b.iconTxt }}</span><span class="bn-lbl">{{ b.label }}</span></div>
     </sc-for>
   </div>
   <!-- ---------- MAIN PANEL ---------- -->
@@ -830,7 +830,7 @@
   <div onclick="{{ closeMobileNav }}" class="dc-backdrop"></div>
   <div class="dc-bottombar">
     <sc-for list="{{ portalBottomNav }}" as="b" hint-placeholder-count="5">
-      <div onclick="{{ b.tap }}" style="{{ b.style }}"><span style="font:600 18px 'Inter',sans-serif; line-height:1; display:flex; align-items:center; justify-content:center; height:20px">{{ b.icon }}{{ b.iconTxt }}</span><span>{{ b.label }}</span></div>
+      <div onclick="{{ b.tap }}" class="{{ b.cls }}" style="{{ b.style }}"><span class="bn-ic" style="font:600 18px 'Inter',sans-serif; line-height:1; display:flex; align-items:center; justify-content:center; height:20px">{{ b.icon }}{{ b.iconTxt }}</span><span class="bn-lbl">{{ b.label }}</span></div>
     </sc-for>
   </div>
 
