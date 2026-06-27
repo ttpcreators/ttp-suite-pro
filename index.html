@@ -358,25 +358,23 @@
       border-top:1px solid var(--hair); font:600 13px 'Inter',sans-serif !important; }
     #dc-root .m-row > [data-l]::before { content:attr(data-l); color:var(--faint);
       font:600 9px 'Inter',sans-serif; letter-spacing:.8px; flex-shrink:0; }
-    /* ---- ROSTER: compact mobile card — name on top, 2x2 metric tiles,
-       status row, delete in the corner (cleaner than one row per stat) ---- */
+    /* ---- ROSTER: list view on mobile — one compact tappable row per creator;
+       tap opens the full detail (all stats/invoices/briefs/etc.) ---- */
     #dc-root .r-head { display:none !important; }
-    #dc-root .r-row { display:grid !important; grid-template-columns:1fr 1fr !important; gap:12px;
-      padding:15px !important; border:1px solid var(--hair); border-radius:16px; margin:0 0 10px;
-      background:var(--surface); position:relative; align-items:start !important; }
-    #dc-root .r-row > * { min-width:0 !important; width:auto !important; height:auto !important; grid-column:auto !important; justify-self:start !important; }
-    #dc-root .r-row > :first-child { grid-column:1 / -1 !important; }
-    #dc-root .r-row > [data-l="NICHE"], #dc-root .r-row > [data-l="ABONNÉS"],
-    #dc-root .r-row > [data-l="ER"], #dc-root .r-row > [data-l="CA · MOIS"] {
-      display:flex !important; flex-direction:column; gap:3px; align-items:flex-start; text-align:left !important; }
-    #dc-root .r-row > [data-l="NICHE"]::before, #dc-root .r-row > [data-l="ABONNÉS"]::before,
-    #dc-root .r-row > [data-l="ER"]::before, #dc-root .r-row > [data-l="CA · MOIS"]::before {
-      content:attr(data-l); color:var(--faint); font:600 8px 'Inter',sans-serif; letter-spacing:.6px; }
-    #dc-root .r-row > [data-l="STATUT"] { grid-column:1 / -1 !important; display:flex !important;
-      flex-direction:row !important; align-items:center; gap:7px; justify-content:flex-start !important;
-      padding-top:9px; border-top:1px solid var(--hair); }
-    #dc-root .r-row > [data-l="STATUT"]::before { content:'STATUT'; color:var(--faint); font:600 8px 'Inter',sans-serif; letter-spacing:.6px; }
-    #dc-root .r-row > [data-l="RETIRER"] { position:absolute !important; top:13px; right:13px; width:26px !important; height:26px !important; }
+    #dc-root .r-row { display:flex !important; grid-template-columns:none !important; align-items:center; gap:12px;
+      padding:13px 8px !important; border:none !important; border-bottom:1px solid var(--hair) !important;
+      border-radius:0 !important; margin:0 !important; background:transparent !important; }
+    #dc-root .r-row > * { min-width:0 !important; width:auto !important; height:auto !important; grid-column:auto !important; }
+    #dc-root .r-row > :first-child { flex:1 1 auto !important; min-width:0; }
+    /* hide detailed metrics in the list (they live in the creator detail) */
+    #dc-root .r-row > [data-l="ABONNÉS"], #dc-root .r-row > [data-l="ER"], #dc-root .r-row > [data-l="CA · MOIS"] { display:none !important; }
+    /* keep niche as a small muted hint on the right */
+    #dc-root .r-row > [data-l="NICHE"] { display:block !important; flex:0 0 auto; text-align:right !important; font:500 11px 'Inter',sans-serif !important; color:var(--faint) !important; }
+    #dc-root .r-row > [data-l="NICHE"]::before { content:none !important; }
+    /* status: just the dot + label on the right */
+    #dc-root .r-row > [data-l="STATUT"] { display:flex !important; flex:0 0 auto; align-items:center; gap:5px; justify-content:flex-end !important; }
+    #dc-root .r-row > [data-l="STATUT"]::before { content:none !important; }
+    #dc-root .r-row > [data-l="RETIRER"] { position:static !important; flex:0 0 auto; width:26px !important; height:26px !important; }
     /* ---- wide non-table grids (the month calendar) -> contained horizontal scroll
        so only the calendar scrolls sideways, never the whole page ---- */
     #dc-root .m-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
