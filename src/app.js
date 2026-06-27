@@ -867,6 +867,23 @@ class Component extends DCLogic {
     const clearNotifs = ()=>{ const all=Object.assign({}, this.state.dismissedNotifs); _ntVisible.forEach(n=>{ all[n.id]=true; }); this.setState({ dismissedNotifs:all, notifOpen:false }); toast('Notifications effacées'); };
     const notifEmpty = notifications.length===0;
 
+    // ===== DASHBOARD FINANCE — derived from real invoices + objectives =====
+    const _invAll = this.state.invoiceData||this.invoiceRaw;
+    const _eur = (s)=>Number(String(s||'').replace(/[^0-9]/g,''))||0;
+    const _sumInv = (st)=>_invAll.filter(v=>v.status===st).reduce((a,v)=>a+_eur(v.amount),0);
+    const _cntInv = (st)=>_invAll.filter(v=>v.status===st).length;
+    const finEncaisse=_sumInv('payee'), finAttente=_sumInv('attente'), finRetard=_sumInv('retard');
+    const finCommission=20;                                   // commission agence (%)
+    const finReverse=Math.round(finEncaisse*(1-finCommission/100));
+    const finTotalFacture=finEncaisse+finAttente+finRetard;
+    const _fmtE=(n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
+    const _perF={hebdo:0.25,mensuel:1,trimestre:3,annuel:12};
+    const _per=this.state.caPeriod||'mensuel';
+    // objectif % = moyenne des objectifs du mois courant
+    const _objArr=(this.state.objByMonth&&this.state.objByMonth[0])||this.objRaw;
+    const finObjPct = _objArr.length ? Math.round(_objArr.reduce((a,o)=>a+(Number(o.pct)||0),0)/_objArr.length) : 0;
+    const _incomeFill = Math.max(8, Math.min(100, finObjPct));
+
     // ---- action handlers (add / contact / export) ----
     const addInvoice = () => { const party=window.prompt('Marque × Créateur :',''); if(party==null||!party.trim())return; const amount=window.prompt('Montant (ex : 12 000 €) :',''); if(amount==null)return; this.setState(s=>{ const base=(s.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0'); return { invoiceData:[{ref:ref, party:party.trim(), amount:(amount.trim()||'—'), date:'—', status:'brouillon'}].concat(base) }; }); toast('Facture créée'); };
     // ---- NEW CONTACT (proper form) ----
@@ -944,7 +961,7 @@ class Component extends DCLogic {
       showTodoForm:!!this.state.showTodoForm, openTodoForm:()=>this.setState({showTodoForm:true}), closeTodoForm:()=>this.setState({showTodoForm:false}),
       ntText:this.state.ntText||'', ntDue:this.state.ntDue||'', onNtText:(e)=>{const v=e.target.value;this.setState({ntText:v});}, onNtDue:(e)=>{const v=e.target.value;this.setState({ntDue:v});},
       addTodo:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:(this.state.ntCreator?'CR\u00c9ATEUR':'AGENCE'), due:this.state.ntDue||'\u2014', creator:this.state.ntCreator||null, priority:this.state.ntPriority||'moyenne', source:'agency'}); this.setState({todoItems:cur, showTodoForm:false, ntText:'', ntDue:''}); },
-      addTodoMe:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const ci=this.state.creatorId; const nm=ci!=null?this.rosterRaw[ci].name:null; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:'PERSO', due:this.state.ntDue||'\u2014', creator:nm, priority:this.state.ntPriority||'moyenne', source:'creator'}); this.setState({todoItems:cur, ntText:'', ntDue:''}); },
+      addTodoMe:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const ci=this.state.creatorId; const nm=ci!=null?this.rosterRaw[ci].name:null; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:'PERSO', due:this.state.ntDue||'\u2014', creator:nm, priority:this.state.ntPriority||'moyenne', source:'creator'}); this.setState({todoItems:cur, ntText:'', ntDue:'', ntDesc:''}); },
       ntDesc:this.state.ntDesc||'', onNtDesc:(e)=>{const v=e.target.value;this.setState({ntDesc:v});},
       showIdeaForm:!!this.state.showIdeaForm, toggleIdeaForm:()=>this.setState(s=>({showIdeaForm:!s.showIdeaForm})),
       niText:this.state.niText||'', onNiText:(e)=>{const v=e.target.value;this.setState({niText:v});},
@@ -1078,11 +1095,15 @@ class Component extends DCLogic {
       onNETime: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{time:v})})); },
       addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:null}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
       addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const cr2=this.state.creatorId!=null?this.rosterRaw[this.state.creatorId].name:null; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
-      incomeDots: this.dots(126, ({hebdo:28,mensuel:42,trimestre:60,annuel:82})[this.state.caPeriod||'mensuel'], sig, empty, 11),
-      paidDots: this.dots(126, ({hebdo:34,mensuel:78,trimestre:64,annuel:88})[this.state.caPeriod||'mensuel'], sig, empty, 11),
+      incomeDots: this.dots(126, _incomeFill, sig, empty, 11),
+      paidDots: this.dots(126, Math.max(8,Math.min(100,Math.round(finReverse/(finEncaisse||1)*100))), sig, empty, 11),
       periodLabel: ({hebdo:'HEBDO',mensuel:'MENSUEL',trimestre:'TRIMESTRE',annuel:'ANNUEL'})[this.state.caPeriod||'mensuel'],
-      incomeValue: ({hebdo:'24 200 €',mensuel:'96 700 €',trimestre:'271 400 €',annuel:'1 284 000 €'})[this.state.caPeriod||'mensuel'],
-      paidValue: ({hebdo:'19 600 €',mensuel:'78 540 €',trimestre:'220 300 €',annuel:'1 041 000 €'})[this.state.caPeriod||'mensuel'],
+      incomeValue: _fmtE(finEncaisse*_perF[_per]),
+      paidValue: _fmtE(finReverse*_perF[_per]),
+      objMonthlyPct: finObjPct+'%', margePct: String(finCommission),
+      caHeadline: _fmtE(finEncaisse+finAttente), caCumul: _fmtE(finTotalFacture),
+      finAttenteValue: _fmtE(finAttente), finRetardValue: _fmtE(finRetard), finEncaisseValue: _fmtE(finEncaisse),
+      finAttenteCount: String(_cntInv('attente'))+' facture'+(_cntInv('attente')>1?'s':''),
       caMenuIncome: this.state.caMenu==='income', caMenuPaid: this.state.caMenu==='paid',
       toggleIncomeMenu:()=>this.setState(s=>({caMenu:s.caMenu==='income'?null:'income'})),
       togglePaidMenu:()=>this.setState(s=>({caMenu:s.caMenu==='paid'?null:'paid'})),

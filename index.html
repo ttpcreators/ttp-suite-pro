@@ -623,11 +623,11 @@
         <div style="grid-column:span 2; display:flex; flex-direction:column; gap:16px">
           <div onclick="{{ goObjectifs }}" style="background:var(--surface); border-radius:20px; padding:18px; display:flex; flex-direction:column; align-items:center; text-align:center; flex:1; cursor:pointer">
             <div style="width:34px; height:34px; border-radius:10px; background:var(--rowhover); color:var(--text); display:flex; align-items:center; justify-content:center; font:600 14px 'Inter',sans-serif">⚿</div>
-            <div style="font:700 22px 'Inter',sans-serif; color:var(--text); margin-top:14px; letter-spacing:-1px">88%</div>
+            <div style="font:700 22px 'Inter',sans-serif; color:var(--text); margin-top:14px; letter-spacing:-1px">{{ objMonthlyPct }}</div>
             <div style="font:400 9px 'Inter',sans-serif; color:var(--faint); margin-top:3px">Objectif mensuel</div>
           </div>
           <div style="background:var(--surface); border-radius:20px; padding:18px; flex:1; display:flex; flex-direction:column">
-            <div style="display:flex; justify-content:space-between; align-items:baseline"><div style="font:700 22px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px">22<span style="font-size:13px">%</span></div><div style="font:400 8px 'Inter',sans-serif; color:var(--faint); text-align:right; line-height:1.3">Marge<br>agence</div></div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline"><div style="font:700 22px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px">{{ margePct }}<span style="font-size:13px">%</span></div><div style="font:400 8px 'Inter',sans-serif; color:var(--faint); text-align:right; line-height:1.3">Marge<br>agence</div></div>
             <div style="display:flex; align-items:flex-end; gap:3px; height:42px; margin-top:14px"><sc-for list="{{ margeBars }}" as="b" hint-placeholder-count="11"><span style="{{ b.style }}"></span></sc-for></div>
           </div>
         </div>
@@ -669,10 +669,10 @@
         </div>
 
         <div style="grid-column:span 4; background:var(--surface); border-radius:20px; padding:22px; display:flex; flex-direction:column">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start"><div style="width:32px; height:32px; border-radius:10px; background:var(--rowhover); color:var(--text); display:flex; align-items:center; justify-content:center; font:600 14px 'Inter',sans-serif">↗</div><div style="text-align:right"><div style="font:700 22px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px; white-space:nowrap">248 600 €</div></div></div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start"><div style="width:32px; height:32px; border-radius:10px; background:var(--rowhover); color:var(--text); display:flex; align-items:center; justify-content:center; font:600 14px 'Inter',sans-serif">↗</div><div style="text-align:right"><div style="font:700 22px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px; white-space:nowrap">{{ caHeadline }}</div></div></div>
           <svg viewBox="0 0 360 70" preserveAspectRatio="none" style="width:100%; height:64px; margin:18px 0; display:block"><path d="M4,46 C30,30 46,52 70,40 C96,28 110,54 134,42 C160,30 174,18 200,30 C226,42 240,24 266,32 C292,40 306,18 332,22 C346,24 352,20 356,18" fill="none" stroke="var(--signal)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path></svg>
           <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:auto">
-            <div><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">CA mensuel</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:3px">cumul 1 284 000 €</div></div>
+            <div><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">CA en cours · facturé</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:3px">total facturé {{ caCumul }}</div></div>
             <div style="font:600 12px 'Inter',sans-serif; color:var(--signaltext); padding:5px 10px; border-radius:9px; background:var(--signalsoft)">▲ +12,4%</div>
           </div>
         </div>
@@ -997,10 +997,10 @@
       <sc-if value="{{ vFacturation }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px"><div><div style="font:500 46px 'Inter',sans-serif; letter-spacing:-2px; color:var(--text)">Facturation</div><div style="display:flex; align-items:center; gap:9px; margin-top:10px; font:500 12px 'Inter',sans-serif; color:var(--faint)"><span>Agence</span><span>›</span><span style="color:var(--text)">Juin 2026</span></div></div><div onclick="{{ addInvoice }}" style="padding:11px 16px; border-radius:13px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">+ NOUVELLE FACTURE</div></div>
       <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
-        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">FACTURÉ · JUIN</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">138 400 €</div></div>
-        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ENCAISSÉ</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">96 700 €</div><div style="font:600 10px 'Inter',sans-serif; color:var(--signaltext); margin-top:5px">▲ 70%</div></div>
-        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">EN ATTENTE</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">66 200 €</div><div style="font:600 10px 'Inter',sans-serif; color:var(--indigo); margin-top:5px">5 factures</div></div>
-        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">EN RETARD</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">18 000 €</div><div style="font:600 10px 'Inter',sans-serif; color:var(--indigo); margin-top:5px">à relancer</div></div>
+        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">FACTURÉ · TOTAL</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ caCumul }}</div></div>
+        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ENCAISSÉ</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ finEncaisseValue }}</div><div style="font:600 10px 'Inter',sans-serif; color:var(--signaltext); margin-top:5px">payé</div></div>
+        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">EN ATTENTE</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ finAttenteValue }}</div><div style="font:600 10px 'Inter',sans-serif; color:var(--indigo); margin-top:5px">{{ finAttenteCount }}</div></div>
+        <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">EN RETARD</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ finRetardValue }}</div><div style="font:600 10px 'Inter',sans-serif; color:var(--indigo); margin-top:5px">à relancer</div></div>
       </div>
       <div style="background:var(--surface); border-radius:20px; padding:8px 8px 6px">
         <div class="m-head" style="display:grid; grid-template-columns:1fr 2.2fr 1.3fr 1fr 1.2fr 1.5fr; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>RÉF.</span><span>MARQUE × CRÉATEUR</span><span style="text-align:right">MONTANT</span><span style="text-align:center">ÉCHÉANCE</span><span style="text-align:right">STATUT</span><span style="text-align:right">ACTIONS</span></div>
@@ -1557,7 +1557,11 @@
       <!-- portal: TO-DO -->
       <sc-if value="{{ pTodo }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; flex-wrap:wrap; gap:12px"><div><div style="font:500 40px 'Inter',sans-serif; letter-spacing:-1.5px; color:var(--text)">Mes tâches</div><div style="font:400 12px 'Inter',sans-serif; color:var(--faint); margin-top:6px">Ajoutées par TTP · et les vôtres</div></div><div style="display:flex; gap:4px; background:var(--surface); border-radius:12px; padding:4px"><sc-for list="{{ pTodoFilterTabs }}" as="t" hint-placeholder-count="3"><span onclick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</span></sc-for></div></div>
-      <div style="background:var(--surface); border-radius:16px; padding:14px; margin-bottom:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap"><input value="{{ ntText }}" oninput="{{ onNtText }}" placeholder="Ajouter une tâche…" style="flex:1; min-width:160px; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 13px 'Inter',sans-serif; outline:none"><input value="{{ ntDue }}" oninput="{{ onNtDue }}" placeholder="Échéance" style="width:100px; padding:11px 12px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"><div onclick="{{ addTodoMe }}" style="padding:11px 20px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">AJOUTER</div></div>
+      <div style="background:var(--surface); border-radius:16px; padding:16px; margin-bottom:14px">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap"><input value="{{ ntText }}" oninput="{{ onNtText }}" placeholder="Ajouter une tâche…" style="flex:1; min-width:160px; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 13px 'Inter',sans-serif; outline:none"><input value="{{ ntDue }}" oninput="{{ onNtDue }}" placeholder="Échéance" style="width:100px; padding:11px 12px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
+        <textarea value="{{ ntDesc }}" oninput="{{ onNtDesc }}" placeholder="Description (optionnel)…" style="width:100%; min-height:48px; resize:vertical; margin-top:10px; padding:11px 13px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:400 12px 'Inter',sans-serif; outline:none"></textarea>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap"><span style="font:600 9px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">PRIORITÉ</span><sc-for list="{{ ntPriorityChips }}" as="p" hint-placeholder-count="3"><div onclick="{{ p.pick }}" style="{{ p.style }}">{{ p.label }}</div></sc-for><div onclick="{{ addTodoMe }}" style="margin-left:auto; padding:11px 22px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">AJOUTER</div></div>
+      </div>
       <div style="background:var(--surface); border-radius:20px; padding:8px 20px"><sc-for list="{{ myTodos }}" as="t" hint-placeholder-count="4"><div onclick="{{ t.toggle }}" style="display:flex; align-items:center; gap:11px; padding:13px 0; border-bottom:1px solid var(--hair); cursor:pointer"><span style="{{ t.boxStyle }}">{{ t.check }}</span><div style="flex:1; min-width:0"><span style="{{ t.textStyle }}">{{ t.text }}</span><sc-if value="{{ t.hasDesc }}" hint-placeholder-val="{{ false }}"><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px; line-height:1.4">{{ t.desc }}</div></sc-if></div><sc-if value="{{ t.fromCreator }}" hint-placeholder-val="{{ false }}"><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); background:var(--signalsoft); padding:3px 8px; border-radius:6px; white-space:nowrap">PERSO</span></sc-if><sc-if value="{{ t.hasPriority }}" hint-placeholder-val="{{ false }}"><span style="{{ t.priorityStyle }}">{{ t.priorityLabel }}</span></sc-if><span style="font:500 10px 'Inter',sans-serif; color:var(--faint); width:44px; text-align:right; flex-shrink:0">{{ t.due }}</span><span onclick="{{ t.edit }}" title="Modifier" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 11px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:var(--text)">✎</span><span onclick="{{ t.del }}" title="Supprimer" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div></sc-for></div>
       </sc-if>
 
@@ -2526,6 +2530,23 @@ class Component extends DCLogic {
     const clearNotifs = ()=>{ const all=Object.assign({}, this.state.dismissedNotifs); _ntVisible.forEach(n=>{ all[n.id]=true; }); this.setState({ dismissedNotifs:all, notifOpen:false }); toast('Notifications effacées'); };
     const notifEmpty = notifications.length===0;
 
+    // ===== DASHBOARD FINANCE — derived from real invoices + objectives =====
+    const _invAll = this.state.invoiceData||this.invoiceRaw;
+    const _eur = (s)=>Number(String(s||'').replace(/[^0-9]/g,''))||0;
+    const _sumInv = (st)=>_invAll.filter(v=>v.status===st).reduce((a,v)=>a+_eur(v.amount),0);
+    const _cntInv = (st)=>_invAll.filter(v=>v.status===st).length;
+    const finEncaisse=_sumInv('payee'), finAttente=_sumInv('attente'), finRetard=_sumInv('retard');
+    const finCommission=20;                                   // commission agence (%)
+    const finReverse=Math.round(finEncaisse*(1-finCommission/100));
+    const finTotalFacture=finEncaisse+finAttente+finRetard;
+    const _fmtE=(n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
+    const _perF={hebdo:0.25,mensuel:1,trimestre:3,annuel:12};
+    const _per=this.state.caPeriod||'mensuel';
+    // objectif % = moyenne des objectifs du mois courant
+    const _objArr=(this.state.objByMonth&&this.state.objByMonth[0])||this.objRaw;
+    const finObjPct = _objArr.length ? Math.round(_objArr.reduce((a,o)=>a+(Number(o.pct)||0),0)/_objArr.length) : 0;
+    const _incomeFill = Math.max(8, Math.min(100, finObjPct));
+
     // ---- action handlers (add / contact / export) ----
     const addInvoice = () => { const party=window.prompt('Marque × Créateur :',''); if(party==null||!party.trim())return; const amount=window.prompt('Montant (ex : 12 000 €) :',''); if(amount==null)return; this.setState(s=>{ const base=(s.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0'); return { invoiceData:[{ref:ref, party:party.trim(), amount:(amount.trim()||'—'), date:'—', status:'brouillon'}].concat(base) }; }); toast('Facture créée'); };
     // ---- NEW CONTACT (proper form) ----
@@ -2603,7 +2624,7 @@ class Component extends DCLogic {
       showTodoForm:!!this.state.showTodoForm, openTodoForm:()=>this.setState({showTodoForm:true}), closeTodoForm:()=>this.setState({showTodoForm:false}),
       ntText:this.state.ntText||'', ntDue:this.state.ntDue||'', onNtText:(e)=>{const v=e.target.value;this.setState({ntText:v});}, onNtDue:(e)=>{const v=e.target.value;this.setState({ntDue:v});},
       addTodo:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:(this.state.ntCreator?'CR\u00c9ATEUR':'AGENCE'), due:this.state.ntDue||'\u2014', creator:this.state.ntCreator||null, priority:this.state.ntPriority||'moyenne', source:'agency'}); this.setState({todoItems:cur, showTodoForm:false, ntText:'', ntDue:''}); },
-      addTodoMe:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const ci=this.state.creatorId; const nm=ci!=null?this.rosterRaw[ci].name:null; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:'PERSO', due:this.state.ntDue||'\u2014', creator:nm, priority:this.state.ntPriority||'moyenne', source:'creator'}); this.setState({todoItems:cur, ntText:'', ntDue:''}); },
+      addTodoMe:()=>{ const t=(this.state.ntText||'').trim(); if(!t)return; const ci=this.state.creatorId; const nm=ci!=null?this.rosterRaw[ci].name:null; const cur=(this.state.todoItems||this.todoRaw).slice(); cur.push({text:t, desc:this.state.ntDesc||'', tag:'PERSO', due:this.state.ntDue||'\u2014', creator:nm, priority:this.state.ntPriority||'moyenne', source:'creator'}); this.setState({todoItems:cur, ntText:'', ntDue:'', ntDesc:''}); },
       ntDesc:this.state.ntDesc||'', onNtDesc:(e)=>{const v=e.target.value;this.setState({ntDesc:v});},
       showIdeaForm:!!this.state.showIdeaForm, toggleIdeaForm:()=>this.setState(s=>({showIdeaForm:!s.showIdeaForm})),
       niText:this.state.niText||'', onNiText:(e)=>{const v=e.target.value;this.setState({niText:v});},
@@ -2737,11 +2758,15 @@ class Component extends DCLogic {
       onNETime: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{time:v})})); },
       addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:null}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
       addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const cr2=this.state.creatorId!=null?this.rosterRaw[this.state.creatorId].name:null; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
-      incomeDots: this.dots(126, ({hebdo:28,mensuel:42,trimestre:60,annuel:82})[this.state.caPeriod||'mensuel'], sig, empty, 11),
-      paidDots: this.dots(126, ({hebdo:34,mensuel:78,trimestre:64,annuel:88})[this.state.caPeriod||'mensuel'], sig, empty, 11),
+      incomeDots: this.dots(126, _incomeFill, sig, empty, 11),
+      paidDots: this.dots(126, Math.max(8,Math.min(100,Math.round(finReverse/(finEncaisse||1)*100))), sig, empty, 11),
       periodLabel: ({hebdo:'HEBDO',mensuel:'MENSUEL',trimestre:'TRIMESTRE',annuel:'ANNUEL'})[this.state.caPeriod||'mensuel'],
-      incomeValue: ({hebdo:'24 200 €',mensuel:'96 700 €',trimestre:'271 400 €',annuel:'1 284 000 €'})[this.state.caPeriod||'mensuel'],
-      paidValue: ({hebdo:'19 600 €',mensuel:'78 540 €',trimestre:'220 300 €',annuel:'1 041 000 €'})[this.state.caPeriod||'mensuel'],
+      incomeValue: _fmtE(finEncaisse*_perF[_per]),
+      paidValue: _fmtE(finReverse*_perF[_per]),
+      objMonthlyPct: finObjPct+'%', margePct: String(finCommission),
+      caHeadline: _fmtE(finEncaisse+finAttente), caCumul: _fmtE(finTotalFacture),
+      finAttenteValue: _fmtE(finAttente), finRetardValue: _fmtE(finRetard), finEncaisseValue: _fmtE(finEncaisse),
+      finAttenteCount: String(_cntInv('attente'))+' facture'+(_cntInv('attente')>1?'s':''),
       caMenuIncome: this.state.caMenu==='income', caMenuPaid: this.state.caMenu==='paid',
       toggleIncomeMenu:()=>this.setState(s=>({caMenu:s.caMenu==='income'?null:'income'})),
       togglePaidMenu:()=>this.setState(s=>({caMenu:s.caMenu==='paid'?null:'paid'})),
