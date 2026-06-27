@@ -238,7 +238,7 @@ class Component extends DCLogic {
   // table, photos stay device-local (kept out of the shared blob).
   // prospectData vit dans sa propre table Supabase (étape 1 de la migration) →
   // on l'exclut du blob partagé pour ne pas le dupliquer.
-  _cloudKeys(){ const local={deletedRoster:1,rosterEdited:1,prospectData:1,contactsData:1,invoiceData:1,todoItems:1,briefItems:1,ideasData:1,events:1,photos:1,authed:1,authRole:1,space:1,creatorId:1,portalTab:1}; return this._persistKeys().filter(k=> !local[k]); }
+  _cloudKeys(){ const local={deletedRoster:1,rosterEdited:1,prospectData:1,contactsData:1,invoiceData:1,todoItems:1,briefItems:1,ideasData:1,events:1,threadMsgs:1,photos:1,authed:1,authRole:1,space:1,creatorId:1,portalTab:1}; return this._persistKeys().filter(k=> !local[k]); }
   _persist(){
     // debounce: rapid setStates (e.g. typing) shouldn't each serialize/sync
     clearTimeout(this._persistT);
@@ -276,6 +276,9 @@ class Component extends DCLogic {
         // an older cloud snapshot resurrect deleted creators or drop added ones.
         // Otherwise (no local edit) take the cloud roster so it syncs across devices.
         if (this.state.rosterEdited){ delete o.rosterData; }
+        // entities migrated to their own tables are no longer owned by the blob:
+        // strip them from an older snapshot so it can't override the table data.
+        ['prospectData','contactsData','invoiceData','todoItems','briefItems','ideasData','events','threadMsgs'].forEach(k=>{ delete o[k]; });
         this.setState(o); this._hydrateRoster(o);
       } }
     } catch(e){ console.warn('[cloud] load failed', e); }
@@ -377,6 +380,7 @@ class Component extends DCLogic {
         this._loadBriefs();
         this._loadIdeas();
         this._loadEvents();
+        this._loadMessages();
         this._loadCloudState();
       }
     } catch(e){ console.warn('[supabase] init failed', e); }
@@ -465,6 +469,13 @@ class Component extends DCLogic {
     if(rows.length){ this._eventsTable=true; this.setState({ events: rows.map(map) }); return; }
     const seed=this.eventsRaw.map((e,i)=>({ day:e.day, time:e.time, title:e.title, type:e.type, who:e.who, sort_order:i }));
     try{ const {data,error}=await this._sb.from('events').insert(seed).select(); if(!error&&data){ this._eventsTable=true; this.setState({ events:data.map(map) }); } }catch(e){}
+  }
+  async _loadMessages(){
+    const rows = await this._dbList('messages'); if(rows===null) return;
+    const group=(arr)=>{ const o={}; arr.forEach(r=>{ const k=r.thread_key; (o[k]=o[k]||[]).push({from:r.sender, text:r.body, id:r.id}); }); return o; };
+    if(rows.length){ this._messagesTable=true; this.setState({ threadMsgs: group(rows) }); return; }
+    const seed=[]; Object.keys(this.msgsRaw).forEach(k=>{ this.msgsRaw[k].forEach((m,i)=>{ seed.push({ thread_key:String(k), sender:m.from, body:m.text, sort_order:i }); }); });
+    try{ const {data,error}=await this._sb.from('messages').insert(seed).select(); if(!error&&data){ this._messagesTable=true; this.setState({ threadMsgs: group(data) }); } }catch(e){}
   }
   icon(name){
     const M={ apercu:['M3 12l9-8 9 8','M5 10v10h14V10'], objectifs:['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18','M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10','M12 12h.01'], roster:['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2','M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8','M22 21v-2a4 4 0 0 0-3-3.9','M16 3.1a4 4 0 0 1 0 7.8'], engagement:['M3 12h4l3 8 4-16 3 8h4'], pricing:['M17 7a6 6 0 1 0 0 10','M4 10h9','M4 14h9'], briefs:['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6','M8 13h8','M8 17h5'], todo:['M9 11l3 3 8-8','M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'], documents:['M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], mediakit:['M3 5h18v14H3z','M3 16l5-5 4 4 3-3 6 6','M8.5 9a1.5 1.5 0 1 0-.001-.001'], messages:['M4 5h16v14H4z','M4 7l8 6 8-6'], contacts:['M5 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2'], planning:['M4 6h16v15H4z','M4 10h16','M8 3v4','M16 3v4'], contrats:['M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z','M14 3v6h6','M9 14h6','M9 17h4'], facturation:['M4 5h16v15l-3-2-3 2-3-2-3 2z','M8 9h8','M8 13h5'], checklist:['M9 6h11','M9 12h11','M9 18h11','M4 5.5l1 1 2-2','M4 11.5l1 1 2-2','M4 17.5l1 1 2-2'], prospection:['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14','M21 21l-4-4'], acces:['M7 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8','M11 10h10','M17 10v4','M21 10v3'], alertes:['M12 3l9 17H3z','M12 9v5','M12 17h.01'], idees:['M9 18h6','M10 22h4','M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A7 7 0 0 0 12 2'], debrief:['M3 12a9 9 0 1 0 2.6-6.3','M3 4v5h5'], templates:['M3 3h8v8H3z','M13 3h8v8h-8z','M13 13h8v8h-8z','M3 13h8v8H3z'], accueil:['M3 12l9-8 9 8','M5 10v10h14V10'], stats:['M4 20V4','M4 20h16','M8 20v-7','M13 20V8','M18 20v-4'], profil:['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8','M5 21a7 7 0 0 1 14 0'] };
@@ -991,7 +1002,7 @@ class Component extends DCLogic {
     _customConvos.forEach(c=>{ aMetaAll[c.key]={ creator:c.creator, campaign:(c.kind==='agencyDM'?'Échange avec l’agence':'Conversation directe'), tone:c.tone||_toneOf(c.creator) }; });
     const aMeta = aMetaAll;
     const _bubble=(mine)=> 'max-width:75%;padding:11px 15px;border-radius:16px;font:400 13px \'Inter\',sans-serif;line-height:1.5;'+(mine?'background:var(--signal);color:var(--onsignal);border-bottom-right-radius:5px;':'background:var(--surface);color:var(--text);border:1px solid var(--hair);border-bottom-left-radius:5px;');
-    const _delConvo=(key)=>{ if(!window.confirm('Supprimer cette discussion ?'))return; this.setState(s=>{ const dc=Object.assign({},s.deletedConvos,{[key]:true}); const cc=(s.customConvos||[]).filter(c=>c.key!==key); const tm=Object.assign({},(s.threadMsgs||this.msgsRaw)); delete tm[key]; return { deletedConvos:dc, customConvos:cc, threadMsgs:tm, openAThread:(s.openAThread===key?null:s.openAThread), openThread:(s.openThread===key?null:s.openThread) }; }); toast('Discussion supprimée'); };
+    const _delConvo=(key)=>{ if(!window.confirm('Supprimer cette discussion ?'))return; if(this._messagesTable){ try{ this._sb.from('messages').delete().eq('thread_key', String(key)).then(()=>{}); }catch(_){} } this.setState(s=>{ const dc=Object.assign({},s.deletedConvos,{[key]:true}); const cc=(s.customConvos||[]).filter(c=>c.key!==key); const tm=Object.assign({},(s.threadMsgs||this.msgsRaw)); delete tm[key]; return { deletedConvos:dc, customConvos:cc, threadMsgs:tm, openAThread:(s.openAThread===key?null:s.openAThread), openThread:(s.openThread===key?null:s.openThread) }; }); toast('Discussion supprimée'); };
     // ---- CREATOR PORTAL : only this creator's threads (+ broadcast), non supprimées ----
     const _myThreadKeys = Object.keys(aMetaAll).filter(k=> !_delConvos[k] && (aMetaAll[k].creator===cr.name || aMetaAll[k].creator==='__all__'));
     const threads = _myThreadKeys.map(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; let u=0; for(let j=ms.length-1;j>=0;j--){ if(ms[j].from==='agency') u++; else break; } const last= lm ? (lm.from==='me'?'Toi : ':'Agence : ')+lm.text : '—'; return { campaign:aMetaAll[k].campaign, last, time:'', unread:u>0?String(u):'', hasUnread:u>0, read:u===0, dotStyle:dotS(aMetaAll[k].tone,false), open:(()=>{const kk=k;return ()=>this.setState({openThread:kk});})() }; });
@@ -1194,12 +1205,12 @@ class Component extends DCLogic {
       aDelConvo:()=>{ const at=this.state.openAThread; if(at!=null) _delConvo(at); },
       delConvo:()=>{ const ot=this.state.openThread; if(ot!=null) _delConvo(ot); },
       onADraft:(e)=>{const v=e.target.value;this.setState({adraft:v});}, backAThreads:()=>this.setState({openAThread:null}),
-      sendMsgA:()=>{ const at=this.state.openAThread; if(at==null)return; const d=(this.state.adraft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); cur[at]=[...(cur[at]||[]),{from:'agency',text:d}]; this.setState({threadMsgs:cur, adraft:''}); },
+      sendMsgA:()=>{ const at=this.state.openAThread; if(at==null)return; const d=(this.state.adraft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); const arr=(cur[at]||[]).slice(); const msg={from:'agency',text:d}; arr.push(msg); cur[at]=arr; this.setState({threadMsgs:cur, adraft:''}); if(this._messagesTable){ const cm=aMetaAll[at]&&aMetaAll[at].creator; this._dbInsert('messages',{thread_key:String(at), sender:'agency', body:d, creator:(cm&&cm!=='__all__')?cm:null, sort_order:arr.length}).then(r=>{ if(r&&r.id){ msg.id=r.id; } }); } },
       pMessages:this.state.portalTab==='messages', announcements, threads, bannerStyle, onPhotoBanner: mkPhoto('banner'),
       msgListShown: this.state.openThread==null, threadOpen: this.state.openThread!=null, convMsgs, convTitle, draft:this.state.draft,
       onDraft:(e)=>{const v=e.target.value;this.setState({draft:v});}, backThreads:()=>this.setState({openThread:null}),
       writeToAgency:()=>{ const nm=cr?cr.name:''; const key='cdm:'+nm; this.setState(s=>{ const cc=(s.customConvos||[]).slice(); if(!cc.some(c=>c.key===key)) cc.push({key, creator:nm, tone:(cr?cr.tone:'signal'), kind:'agencyDM'}); const dc=Object.assign({},s.deletedConvos); delete dc[key]; return { customConvos:cc, deletedConvos:dc, openThread:key }; }); },
-      sendMsg:()=>{ const ot=this.state.openThread; if(ot==null)return; const d=(this.state.draft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); cur[ot]=[...(cur[ot]||[]),{from:'me',text:d}]; this.setState({threadMsgs:cur, draft:''}); },
+      sendMsg:()=>{ const ot=this.state.openThread; if(ot==null)return; const d=(this.state.draft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); const arr=(cur[ot]||[]).slice(); const msg={from:'me',text:d}; arr.push(msg); cur[ot]=arr; this.setState({threadMsgs:cur, draft:''}); if(this._messagesTable){ const cm=aMetaAll[ot]&&aMetaAll[ot].creator; this._dbInsert('messages',{thread_key:String(ot), sender:'me', body:d, creator:(cm&&cm!=='__all__')?cm:null, sort_order:arr.length}).then(r=>{ if(r&&r.id){ msg.id=r.id; } }); } },
       rosterListShown: this.state.view==='roster' && this.state.rosterDetail==null,
       rosterDetailShown: this.state.view==='roster' && this.state.rosterDetail!=null,
       rd, backToRoster:()=>this.setState({rosterDetail:null}),
