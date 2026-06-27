@@ -261,7 +261,7 @@
       <sc-if value="{{ rosterDetailShown }}" hint-placeholder-val="{{ false }}">
       <div onclick="{{ backToRoster }}" style="display:flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; color:var(--faint); cursor:pointer; margin-bottom:16px">← ROSTER</div>
       <div style="display:flex; align-items:center; gap:16px; margin-bottom:22px">
-        <div style="{{ rd.bigAvatarStyle }}">{{ rd.initials }}</div>
+        <label style="position:relative; cursor:pointer; flex-shrink:0" title="Changer la photo"><div style="{{ rd.bigAvatarStyle }}">{{ rd.avatarInner }}</div><span style="position:absolute; bottom:-3px; right:-3px; width:20px; height:20px; border-radius:50%; background:var(--text); color:var(--bg); display:flex; align-items:center; justify-content:center; font:700 11px 'Inter',sans-serif; border:2px solid var(--panel)">+</span><input type="file" accept="image/*" onchange="{{ rd.onPhoto }}" style="display:none"></label>
         <div><div style="display:flex; align-items:center; gap:10px"><div style="font:500 32px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text)">{{ rd.name }}</div><span style="display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; border:1px solid var(--hair)"><span style="{{ rd.dotStyle }}"></span><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--muted)">{{ rd.statusLabel }}</span></span></div><div style="font:400 12px 'Inter',sans-serif; color:var(--faint); margin-top:5px">{{ rd.handle }} · {{ rd.niche }} · {{ rd.plat }}</div></div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">

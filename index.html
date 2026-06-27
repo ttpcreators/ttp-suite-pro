@@ -627,7 +627,7 @@
       <sc-if value="{{ rosterDetailShown }}" hint-placeholder-val="{{ false }}">
       <div onclick="{{ backToRoster }}" style="display:flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; color:var(--faint); cursor:pointer; margin-bottom:16px">← ROSTER</div>
       <div style="display:flex; align-items:center; gap:16px; margin-bottom:22px">
-        <div style="{{ rd.bigAvatarStyle }}">{{ rd.initials }}</div>
+        <label style="position:relative; cursor:pointer; flex-shrink:0" title="Changer la photo"><div style="{{ rd.bigAvatarStyle }}">{{ rd.avatarInner }}</div><span style="position:absolute; bottom:-3px; right:-3px; width:20px; height:20px; border-radius:50%; background:var(--text); color:var(--bg); display:flex; align-items:center; justify-content:center; font:700 11px 'Inter',sans-serif; border:2px solid var(--panel)">+</span><input type="file" accept="image/*" onchange="{{ rd.onPhoto }}" style="display:none"></label>
         <div><div style="display:flex; align-items:center; gap:10px"><div style="font:500 32px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text)">{{ rd.name }}</div><span style="display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; border:1px solid var(--hair)"><span style="{{ rd.dotStyle }}"></span><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--muted)">{{ rd.statusLabel }}</span></span></div><div style="font:400 12px 'Inter',sans-serif; color:var(--faint); margin-top:5px">{{ rd.handle }} · {{ rd.niche }} · {{ rd.plat }}</div></div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
@@ -1486,6 +1486,10 @@ class Component extends DCLogic {
   dots(n, pct, fill, empty, size){ const s=size||8; const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:'+s+'px;height:'+s+'px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
+  // per-creator photo, keyed by name so the Roster (agency) and the creator's
+  // own portal edit the SAME photo and it shows everywhere the creator appears.
+  creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
+  avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
   _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefDone','briefNotes','customObjs','threadMsgs','msgsData']; }
   // override setState so every data change is mirrored to localStorage
@@ -1540,6 +1544,13 @@ class Component extends DCLogic {
   }
   componentDidMount(){
     try { this._restore(); } catch(e){ console.warn('[persist] restore', e); }
+    // flush pending state to localStorage immediately on close/refresh/tab-hide
+    try {
+      const flush=()=>{ try{ clearTimeout(this._persistT); const out={}; this._persistKeys().forEach(k=>{ const v=this.state[k]; if(v!==undefined&&v!==null) out[k]=v; }); localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }catch(_){} };
+      window.addEventListener('beforeunload', flush);
+      window.addEventListener('pagehide', flush);
+      document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flush(); });
+    } catch(e){}
     try {
       if (window.supabase && window.__SB_URL__ && window.__SB_KEY__) {
         this._sb = window.supabase.createClient(window.__SB_URL__, window.__SB_KEY__);
@@ -1713,14 +1724,14 @@ class Component extends DCLogic {
 
     // ---- roster / engagement ----
     const rf = this.state.rosterFilter||'all';
-    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.setState(s=>({ deletedRoster:Object.assign({}, s.deletedRoster||{}, {[ii]:true}), rosterDetail:(s.rosterDetail===ii?null:s.rosterDetail) })); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
+    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.setState(s=>({ deletedRoster:Object.assign({}, s.deletedRoster||{}, {[ii]:true}), rosterDetail:(s.rosterDetail===ii?null:s.rosterDetail) })); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
     const q = (this.state.topSearch||'').trim().toLowerCase();
     const _match = (...parts) => !q || parts.join(' ').toLowerCase().includes(q);
     const roster = rosterAll.filter(c=> rf==='all'?true:(rf==='ugc'?c.isUgc:!c.isUgc)).filter(c=> _match(c.name,c.handle,c.niche));
     const rosterTab=(k,label)=>({ label, style:'padding:7px 13px;border-radius:9px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(rf===k?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({rosterFilter:kk, rosterDetail:null});})() });
     const rosterTabs=[rosterTab('all','TOUS'),rosterTab('influence','INFLUENCE'),rosterTab('ugc','UGC')];
     const rosterCount = roster.length+' '+(rf==='ugc'?'UGC':(rf==='influence'?'influence':'représentés'));
-    const engagement = this.rosterRaw.map(c => { const base=Math.round(parseFloat(c.er)); const spark=this.bars([40,55,48,62,58,72,66,80,76,90].map(v=>v*(0.7+base/12)).map(v=>Math.min(100,v)), this.toneHex(c.tone,dark), 3); return { name:c.name, er:c.er, reach:c.reach, initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,30), spark, trend:(c.trend>0?'+':'')+c.trend+' pt', trendColor: c.trend>=0?greenText:redish }; });
+    const engagement = this.rosterRaw.map(c => { const base=Math.round(parseFloat(c.er)); const spark=this.bars([40,55,48,62,58,72,66,80,76,90].map(v=>v*(0.7+base/12)).map(v=>Math.min(100,v)), this.toneHex(c.tone,dark), 3); return { name:c.name, er:c.er, reach:c.reach, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,30), spark, trend:(c.trend>0?'+':'')+c.trend+' pt', trendColor: c.trend>=0?greenText:redish }; });
 
     const topCreators = this.rosterRaw.slice(0,4).map((c,i)=>({ name:c.name, ca:c.ca, rank:String(i+1).padStart(2,'0'), dotStyle:dotS(c.tone, c.status==='live'), open:goRoster }));
     const _aq = (this.state.activitySearch||'').trim().toLowerCase();
@@ -1772,15 +1783,14 @@ class Component extends DCLogic {
       followers: cr.followers, er: cr.er, reach: cr.reach, ca: cr.ca,
       briefsCount: String(myBriefsArr.length || 2), todoCount: String(myTodosArr.length || 3),
       nextRdv: nextEv.title || 'Shoot Galeries Lafayette', nextRdvMeta: (nextEv.time||'10:00')+' · Lyon',
-      avatarStyle: this.avatarStyle(cr.tone, dark, 40), bigAvatarStyle: this.avatarStyle(cr.tone, dark, 72),
+      avatarStyle: this.avatarFor(cr.name, cr.tone, dark, 40), bigAvatarStyle: this.avatarFor(cr.name, cr.tone, dark, 72),
     };
-    const mePhoto = (this.state.photos||{})['c'+(ci!=null?ci:0)] || '';
-    if(mePhoto){ const ov='background-image:url('+mePhoto+');background-size:cover;background-position:center;color:transparent;'; me.avatarStyle=this.avatarStyle(cr.tone,dark,40)+ov; me.bigAvatarStyle=this.avatarStyle(cr.tone,dark,72)+ov; }
+    const mePhoto = this.creatorPhoto(cr.name);
     me.avatarInner = mePhoto ? '' : me.initials;
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
     const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); };
-    const loginCreators = this.rosterRaw.map((c,i)=>({ name:c.name, niche:c.niche, initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,48), login:()=>this.setState({creatorId:i, portalTab:'accueil'}) }));
+    const loginCreators = this.rosterRaw.map((c,i)=>({ name:c.name, niche:c.niche, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,48), login:()=>this.setState({creatorId:i, portalTab:'accueil'}) }));
 
     // ===== ENGAGEMENT CALCULATOR =====
     const fnum = [540000,1200000,480000,320000,210000,95000,64000,175000];
@@ -1865,7 +1875,7 @@ class Component extends DCLogic {
       const rinfoFields=[ {label:'Ville / Pays',value:rinfoBase.ville,onInput:mkRdInfo('ville')}, {label:'Téléphone',value:rinfoBase.phone,onInput:mkRdInfo('phone')}, {label:'Email',value:rinfoBase.email,onInput:mkRdInfo('email')}, {label:'Adresse postale',value:rinfoBase.address,onInput:mkRdInfo('address')}, {label:'SIREN / SIRET',value:rinfoBase.siren,onInput:mkRdInfo('siren')}, {label:'Date de naissance',value:rinfoBase.birth,onInput:mkRdInfo('birth')}, {label:'Commission TTP (%)',value:rinfoBase.commission,onInput:mkRdInfo('commission')} ];
       const mkPaste = async () => { try{ const txt = await navigator.clipboard.readText(); if(!txt) return; const cur = Object.assign({}, this.rosterInfoRaw[rdi]||{}, (this.state.rosterInfo&&this.state.rosterInfo[rdi])||{}); const set=(k,v)=>{ if(v && String(v).trim()) cur[k]=String(v).trim(); }; txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>{ const m=l.match(/^([^:]{2,30}):\s*(.+)$/); if(!m) return; const key=m[1].toLowerCase(); const val=m[2]; if(/ville|pays|localit/.test(key)) set('ville',val); else if(/t[ée]l|phone|mobile|portable|num/.test(key)) set('phone',val); else if(/mail/.test(key)) set('email',val); else if(/adresse|address|rue|postal/.test(key)) set('address',val); else if(/siren|siret|tva/.test(key)) set('siren',val); else if(/naiss|date|dob/.test(key)) set('birth',val); }); const email=txt.match(/[\w.+-]+@[\w-]+\.[\w.-]+/); if(email) set('email',email[0]); const siren=txt.match(/\b\d{3}[\s.]?\d{3}[\s.]?\d{3}\b/); if(siren) set('siren',siren[0]); const phone=txt.match(/(\+?\d[\d\s().-]{8,}\d)/); if(phone){ const d=phone[0].replace(/\D/g,''); const sd=siren?siren[0].replace(/\D/g,''):''; if(d!==sd) set('phone',phone[0].trim()); } const ri=Object.assign({}, this.state.rosterInfo); ri[rdi]=cur; this.setState({rosterInfo:ri}); }catch(e){ alert('Autorise l\'accès au presse-papier pour coller les infos.'); } };
       const toggleExclu = () => { this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); const base=Object.assign({}, this.rosterInfoRaw[rdi]||{}, ri[rdi]||{}); base.exclu=!base.exclu; ri[rdi]=base; return {rosterInfo:ri}; }); };
-      rd={ name:c.name, niche:c.niche, plat:c.plat, handle:c.handle, followers:c.followers, er:c.er, ca:c.ca, reach:c.reach, initials:this.initials(c.name), bigAvatarStyle:this.avatarStyle(c.tone,dark,64), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone,c.status==='live'), invoices:rinv, todos:rtd, briefs:rbf, ideas:rid, infoFields:rinfoFields, paste:mkPaste, exclu:!!rinfoBase.exclu, commission:rinfoBase.commission||'—', excluLabel:rinfoBase.exclu?'EXCLUSIF':'NON EXCLUSIF', excluStyle:'padding:8px 14px;border-radius:10px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(rinfoBase.exclu?'background:var(--signal);color:var(--onsignal);':'border:1px solid var(--hair);color:var(--muted);'), toggleExclu }; }
+      rd={ name:c.name, niche:c.niche, plat:c.plat, handle:c.handle, followers:c.followers, er:c.er, ca:c.ca, reach:c.reach, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), bigAvatarStyle:this.avatarFor(c.name,c.tone,dark,64), avatarInner:this.creatorPhoto(c.name)?'':this.initials(c.name), onPhoto:mkPhoto('cre:'+c.name), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone,c.status==='live'), invoices:rinv, todos:rtd, briefs:rbf, ideas:rid, infoFields:rinfoFields, paste:mkPaste, exclu:!!rinfoBase.exclu, commission:rinfoBase.commission||'—', excluLabel:rinfoBase.exclu?'EXCLUSIF':'NON EXCLUSIF', excluStyle:'padding:8px 14px;border-radius:10px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(rinfoBase.exclu?'background:var(--signal);color:var(--onsignal);':'border:1px solid var(--hair);color:var(--muted);'), toggleExclu }; }
 
     // ===== DOCUMENTS (shared store) =====
     const docTypeMeta = { brief:{label:'Brief',tone:'indigo',glyph:'✎'}, mediakit:{label:'Media kit',tone:'signal',glyph:'▦'}, facture:{label:'Facture',tone:'cyan',glyph:'⊞'}, autre:{label:'Document',tone:'indigo',glyph:'▤'} };
@@ -1873,7 +1883,7 @@ class Component extends DCLogic {
     const docCi = this.state.docCreator!=null ? this.state.docCreator : 0;
     const docTy = this.state.docType || 'brief';
     const mkDoc = (d, ci2, idx)=>{ const tm=docTypeMeta[d.type]||docTypeMeta.autre; const url=d.url||('data:text/plain;charset=utf-8,'+encodeURIComponent('TTP — '+d.name+'\n'+tm.label+'\nDocument de démonstration TTP Suite.')); const filename=d.url?d.name:(d.name.replace(/\.[a-z0-9]+$/i,'')+'.txt'); const hex=this.toneHex(tm.tone,dark); return { name:d.name, glyph:tm.glyph, tagLabel:tm.label, meta:[d.size,d.date].filter(Boolean).join(' · '), url, filename, iconStyle:'width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 16px \'Inter\',sans-serif;background:'+hex+'22;color:'+hex+';', tagStyle:'font:600 8px \'Inter\',sans-serif;letter-spacing:.6px;padding:4px 9px;border-radius:20px;white-space:nowrap;color:'+hex+';background:'+hex+'18;', open:(()=>{const nm=d.name,u=url,fn=filename,im=(/^data:image/.test(url)||/\.(png|jpe?g|gif|webp|svg)$/i.test(d.name));return ()=>this.setState({previewDoc:{name:nm,url:u,filename:fn,isImage:im}});})(), remove:(()=>{const cc=ci2,ii=idx;return ()=>{const b=this.state.docs||this.docsRaw;const cur=Object.assign({},b);cur[cc]=(cur[cc]||[]).filter((_,j)=>j!==ii);this.setState({docs:cur});};})() }; };
-    const docCreatorChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;letter-spacing:.3px;'+(i===docCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({docCreator:k});})() }));
+    const docCreatorChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;letter-spacing:.3px;'+(i===docCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({docCreator:k});})() }));
     const docTypeChips = Object.keys(docTypeMeta).map(k=>({ label:docTypeMeta[k].label, style:'padding:7px 13px;border-radius:18px;font:600 9px \'Inter\',sans-serif;letter-spacing:.4px;cursor:pointer;'+(k===docTy?'background:var(--signalsoft);color:var(--signaltext);':'background:var(--panel);color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({docType:kk});})() }));
     const agencyDocs = (docBase[docCi]||[]).map((d,idx)=>mkDoc(d,docCi,idx));
     const docCreatorName = this.rosterRaw[docCi].name.split(' ')[0];
@@ -1885,12 +1895,12 @@ class Component extends DCLogic {
     const mkc = this.rosterRaw[mkCi]; const mkSeed = this.mediaKitRaw[mkCi]||{}; const mkFn=mkc.name.split(' ')[0];
     const mkGender = mkSeed.gender || 'Femmes 70% · Hommes 30%';
     const mkFemM=/(\d+)%/.exec(mkGender); const mkFem=mkFemM?Number(mkFemM[1]):65;
-    const mk = { name:mkc.name, fn:mkFn, handle:mkc.handle, niche:mkc.niche, plat:mkc.plat, initials:this.initials(mkc.name), avatarStyle:this.avatarStyle(mkc.tone,dark,76), bio: mkSeed.bio || (mkFn+', créateur '+mkc.niche.toLowerCase()+' représenté(e) par TTP Agency. Contenus premium, audience engagée et collaborations à forte conversion.'), age: mkSeed.age||'18–34 ans', agePct: mkSeed.agePct||'64%', gender:mkGender, femStyle:'width:'+mkFem+'%;', homStyle:'width:'+(100-mkFem)+'%;' };
+    const mk = { name:mkc.name, fn:mkFn, handle:mkc.handle, niche:mkc.niche, plat:mkc.plat, initials:this.creatorPhoto(mkc.name)?'':this.initials(mkc.name), avatarStyle:this.avatarFor(mkc.name,mkc.tone,dark,76), bio: mkSeed.bio || (mkFn+', créateur '+mkc.niche.toLowerCase()+' représenté(e) par TTP Agency. Contenus premium, audience engagée et collaborations à forte conversion.'), age: mkSeed.age||'18–34 ans', agePct: mkSeed.agePct||'64%', gender:mkGender, femStyle:'width:'+mkFem+'%;', homStyle:'width:'+(100-mkFem)+'%;' };
     const mkStats=[{label:'ABONNÉS',value:mkc.followers},{label:'ENGAGEMENT',value:mkc.er},{label:'REACH / MOIS',value:mkc.reach},{label:'PLATEFORME',value:mkc.plat}];
     const mkGeo = (mkSeed.geo||['Paris','Lyon','Bruxelles']);
     const mkBrands = (mkSeed.brands||['Sephora','Dior','L’Oréal']);
     const mkFormats = (mkSeed.formats||[{label:'Reel Instagram',price:'1 800 €'},{label:'Story (×3)',price:'700 €'},{label:'Post feed',price:'1 200 €'},{label:'Vidéo UGC',price:'650 €'}]);
-    const mkCreatorChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;'+(i===mkCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({mkCreator:k});})() }));
+    const mkCreatorChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;'+(i===mkCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({mkCreator:k});})() }));
 
     // ===== PORTAL: MESSAGES + IDENTITY =====
     const announcements = [
@@ -1907,7 +1917,7 @@ class Component extends DCLogic {
     const convTitle = _ot!=null ? ['Sephora — Collection été','Dior Beauty — Gifting','Annonce agence'][_ot] : '';
     // ===== AGENCY INBOX (shared store) =====
     const aMeta = { 0:{creator:'CAMILLE ORSINI', campaign:'Sephora — Collection été', tone:'indigo'}, 1:{creator:'CAMILLE ORSINI', campaign:'Dior Beauty — Gifting', tone:'cyan'}, 3:{creator:'THÉO RIVIÈRE', campaign:'Logitech — Sponso', tone:'indigo'}, 4:{creator:'JADE NGUYEN', campaign:'Sephora UGC', tone:'signal'}, 5:{creator:'INÈS KABORÉ', campaign:"L'Oréal — Soin", tone:'cyan'} };
-    const agencyThreads = [0,1,3,4,5].map(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; const w=aMeta[k].creator.split(' ')[0]; const lcap=w.charAt(0)+w.slice(1).toLowerCase(); const last= lm ? (lm.from==='agency'?'Vous : ':lcap+' : ')+lm.text : '—'; return { creator:aMeta[k].creator, campaign:aMeta[k].campaign, initials:this.initials(aMeta[k].creator), avatarStyle:this.avatarStyle(aMeta[k].tone,dark,38), last, hasUnread:(!!lm && lm.from==='me'), open:(()=>{const kk=k;return ()=>this.setState({openAThread:kk});})() }; });
+    const agencyThreads = [0,1,3,4,5].map(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; const w=aMeta[k].creator.split(' ')[0]; const lcap=w.charAt(0)+w.slice(1).toLowerCase(); const last= lm ? (lm.from==='agency'?'Vous : ':lcap+' : ')+lm.text : '—'; return { creator:aMeta[k].creator, campaign:aMeta[k].campaign, initials:this.creatorPhoto(aMeta[k].creator)?'':this.initials(aMeta[k].creator), avatarStyle:this.avatarFor(aMeta[k].creator,aMeta[k].tone,dark,38), last, hasUnread:(!!lm && lm.from==='me'), open:(()=>{const kk=k;return ()=>this.setState({openAThread:kk});})() }; });
     const _at = this.state.openAThread;
     const aConvMsgs = _at!=null ? (_base[_at]||[]).map(m=>({ text:m.text, rowStyle:'display:flex;margin-bottom:10px;'+(m.from==='agency'?'justify-content:flex-end;':'justify-content:flex-start;'), bubbleStyle:'max-width:75%;padding:11px 15px;border-radius:16px;font:400 13px \'Inter\',sans-serif;line-height:1.5;'+(m.from==='agency'?'background:var(--signal);color:var(--onsignal);border-bottom-right-radius:5px;':'background:var(--surface);color:var(--text);border:1px solid var(--hair);border-bottom-left-radius:5px;') })) : [];
     const aConvWho = _at!=null ? aMeta[_at].creator : '';
@@ -1921,14 +1931,16 @@ class Component extends DCLogic {
     me.audience = 'France · 18–34 ans · 65% femmes';
     me.langue = 'Français';
 
-    const alerts = [
-      {title:'Contrat THÉO expire dans 24 j', detail:'Représentation · échéance 20/07', tone:'amber', tag:'CONTRAT'},
-      {title:"Facture L'Oréal impayée +30 j", detail:'#2026-081 · 18 000 € · éch. 30/05', tone:'amber', tag:'IMPAYÉ'},
-      {title:'NOÉ sans activité depuis 24 j', detail:'Dernier post le 02/06', tone:'cyan', tag:'CRÉATEUR'},
-      {title:'Deal Nike sans MAJ depuis 8 j', detail:'Négociation · 24 000 €', tone:'cyan', tag:'DEAL'},
-      {title:'Objectif CA à 88% — palier 80% franchi', detail:'248 600 / 280 000 €', tone:'signal', tag:'OBJECTIF'},
-      {title:'Brief HelloFresh non assigné +48 h', detail:'Reçu le 24/06 · à attribuer', tone:'amber', tag:'BRIEF'},
-    ].map((a,i)=>Object.assign({},a,{_i:i})).filter(a=> !((this.state.dismissedAlerts||{})[a._i])).map(a=>({ title:a.title, detail:a.detail, tag:a.tag, dotStyle:dotS(a.tone,false), tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);padding:5px 10px;border-radius:20px;background:var(--rowhover);white-space:nowrap;", treat:(()=>{const ii=a._i;return ()=>{ this.setState(s=>({dismissedAlerts:Object.assign({},s.dismissedAlerts,{[ii]:true})})); toast('Alerte traitée ✓'); };})() }));
+    // ---- ALERTES : dérivées des données réelles (factures, briefs, créateurs,
+    // prospects) + objectif. Chaque alerte a un id stable -> suppression persistée. ----
+    const _alRaw = [];
+    (this.state.invoiceData||this.invoiceRaw).forEach(v=>{ if(v.status==='retard') _alRaw.push({id:'inv:'+v.ref, title:'Facture '+v.party+' impayée', detail:'#'+v.ref+' · '+v.amount+' · éch. '+v.date, tone:'amber', tag:'IMPAYÉ'}); });
+    briefItems.forEach(b=>{ if(b.status==='valider' && !((this.state.briefDone||{})[b.brand])) _alRaw.push({id:'brief:'+b.brand, title:'Brief '+b.brand+' à valider', detail:(b.who||'créateur à attribuer')+' · échéance '+b.due, tone:'indigo', tag:'BRIEF'}); });
+    this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).forEach(c=>{ if(c.status==='pause') _alRaw.push({id:'crea:'+c.name, title:c.name.split(' ')[0]+' sans activité', detail:'Statut en pause · à relancer', tone:'cyan', tag:'CRÉATEUR'}); });
+    (this.state.prospectData||this.prospectRaw).forEach(p=>{ if(p.stage==='Négociation') _alRaw.push({id:'deal:'+p.brand, title:'Deal '+p.brand+' en négociation', detail:(p.contact||'')+' · '+p.value, tone:'cyan', tag:'DEAL'}); });
+    _alRaw.push({id:'obj:ca', title:'Objectif CA à 88% — palier 80% franchi', detail:'248 600 / 280 000 €', tone:'signal', tag:'OBJECTIF'});
+    const alerts = _alRaw.filter(a=> !((this.state.dismissedAlerts||{})[a.id])).map(a=>({ title:a.title, detail:a.detail, tag:a.tag, dotStyle:dotS(a.tone,false), tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);padding:5px 10px;border-radius:20px;background:var(--rowhover);white-space:nowrap;", treat:(()=>{const id=a.id;return ()=>{ this.setState(s=>({dismissedAlerts:Object.assign({},s.dismissedAlerts,{[id]:true})})); toast('Alerte traitée ✓'); };})() }));
+    const alertsCount = alerts.length;
 
     // ---- action handlers (add / contact / export) ----
     const addInvoice = () => { const party=window.prompt('Marque × Créateur :',''); if(party==null||!party.trim())return; const amount=window.prompt('Montant (ex : 12 000 €) :',''); if(amount==null)return; this.setState(s=>{ const base=(s.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0'); return { invoiceData:[{ref:ref, party:party.trim(), amount:(amount.trim()||'—'), date:'—', status:'brouillon'}].concat(base) }; }); toast('Facture créée'); };
@@ -2052,7 +2064,7 @@ class Component extends DCLogic {
       goRoster, goFacturation, goObjectifs, goContacts, goPlanning, goBriefs, goTodo, goProspection, goEngagement, goRosterUgc,
       topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, briefFilterTabs, pTodoFilterTabs,
-      agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('c'+(ci!=null?ci:0)),
+      agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
       calendarCells: cells, eventTypes,
       showEventForm: this.state.showEventForm,
