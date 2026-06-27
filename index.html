@@ -432,7 +432,15 @@
 
     <!-- top bar -->
     <div class="dc-topbar" style="display:flex; align-items:center; gap:16px; padding:16px 24px; flex-shrink:0">
-      <div class="dc-search" style="flex:1; display:flex; align-items:center; gap:11px; background:var(--surface); border-radius:13px; padding:11px 16px; max-width:340px; cursor:text; min-width:0"><span style="font:600 13px 'Inter',sans-serif; color:var(--faint)">⌕</span><input value="{{ topSearch }}" oninput="{{ onTopSearch }}" placeholder="Rechercher créateur, marque, facture…" class="dc-search-txt" style="flex:1; min-width:0; border:none; background:transparent; outline:none; font:400 12px 'Inter',sans-serif; color:var(--text)"></div>
+      <div style="position:relative; flex:1; max-width:340px; min-width:0">
+        <div class="dc-search" style="display:flex; align-items:center; gap:11px; background:var(--surface); border-radius:13px; padding:11px 16px; cursor:text; min-width:0"><span style="font:600 13px 'Inter',sans-serif; color:var(--faint)">⌕</span><input value="{{ topSearch }}" oninput="{{ onTopSearch }}" placeholder="Rechercher créateur, marque, facture…" class="dc-search-txt" style="flex:1; min-width:0; border:none; background:transparent; outline:none; font:400 12px 'Inter',sans-serif; color:var(--text)"></div>
+        <sc-if value="{{ hasSearch }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; top:48px; left:0; right:0; background:var(--surface); border:1px solid var(--hair); border-radius:14px; box-shadow:0 18px 50px -16px rgba(0,0,0,.35); padding:6px; z-index:90; max-height:340px; overflow-y:auto">
+          <sc-for list="{{ searchResults }}" as="r" hint-placeholder-count="3"><div onclick="{{ r.go }}" style="{{ r.rowStyle }}" style-hover="background:var(--rowhover)"><span style="{{ r.labStyle }}">{{ r.label }}</span><span style="{{ r.subStyle }}">{{ r.sub }}</span></div></sc-for>
+          <sc-if value="{{ searchEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:14px 12px; font:500 12px 'Inter',sans-serif; color:var(--faint); text-align:center">Aucun résultat pour « {{ topSearch }} »</div></sc-if>
+        </div>
+        </sc-if>
+      </div>
 
       <div class="dc-userpill" style="display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:13px; padding:7px 14px 7px 8px">
         <label style="position:relative; cursor:pointer; display:block; flex-shrink:0"><div style="{{ agencyAvatarStyle }}">{{ agencyInner }}</div><span style="position:absolute; bottom:-3px; right:-3px; width:15px; height:15px; border-radius:50%; background:var(--text); color:var(--bg); display:flex; align-items:center; justify-content:center; font:700 9px 'Inter',sans-serif; border:2px solid var(--surface)">+</span><input type="file" accept="image/*" onchange="{{ onPhotoAgency }}" style="display:none"></label>
@@ -1887,6 +1895,13 @@ class Component extends DCLogic {
       themeVars, themeGlyph: dark ? '☀' : '☾',
       toastMsg:this.state.toast||'', hasToast:!!this.state.toast,
       topSearch:this.state.topSearch||'', onTopSearch:(e)=>this.setState({topSearch:e.target.value}),
+      hasSearch: !!q,
+      searchResults: (()=>{ if(!q) return []; const out=[]; const rowS="display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-radius:10px;cursor:pointer;"; const subS="font:400 10px 'Inter',sans-serif;color:var(--faint)"; const labS="font:600 12px 'Inter',sans-serif;color:var(--text)";
+        this.rosterRaw.forEach((c,i)=>{ if(_match(c.name,c.handle,c.niche)) out.push({rowStyle:rowS,labStyle:labS,subStyle:subS,label:c.name,sub:'Créateur · '+c.niche,go:(()=>{const ii=i;return ()=>this.setState({view:'roster',rosterDetail:ii,space:'agency',topSearch:'',mobileNav:false});})()}); });
+        (this.state.contactsData||this.contactRaw).forEach((k)=>{ if(_match(k.brand,k.person,k.role)) out.push({rowStyle:rowS,labStyle:labS,subStyle:subS,label:k.brand,sub:'Contact · '+(k.person||''),go:()=>this.setState({view:'contacts',space:'agency',topSearch:'',mobileNav:false})}); });
+        (this.state.invoiceData||this.invoiceRaw).forEach((v)=>{ if(_match(v.ref,v.party,v.amount)) out.push({rowStyle:rowS,labStyle:labS,subStyle:subS,label:'#'+v.ref+' — '+v.party,sub:'Facture · '+v.amount,go:()=>this.setState({view:'facturation',space:'agency',topSearch:'',mobileNav:false})}); });
+        return out.slice(0,8); })(),
+      searchEmpty: !!q && ((()=>{ let n=0; this.rosterRaw.forEach(c=>{if(_match(c.name,c.handle,c.niche))n++;}); (this.state.contactsData||this.contactRaw).forEach(k=>{if(_match(k.brand,k.person,k.role))n++;}); (this.state.invoiceData||this.invoiceRaw).forEach(v=>{if(_match(v.ref,v.party,v.amount))n++;}); return n; })()===0),
       activitySearch:this.state.activitySearch||'', onActivitySearch:(e)=>this.setState({activitySearch:e.target.value}),
       calLabel, prevMonth, nextMonth,
       addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,

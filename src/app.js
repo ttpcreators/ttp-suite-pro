@@ -530,6 +530,13 @@ class Component extends DCLogic {
       themeVars, themeGlyph: dark ? '☀' : '☾',
       toastMsg:this.state.toast||'', hasToast:!!this.state.toast,
       topSearch:this.state.topSearch||'', onTopSearch:(e)=>this.setState({topSearch:e.target.value}),
+      hasSearch: !!q,
+      searchResults: (()=>{ if(!q) return []; const out=[]; const rowS="display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-radius:10px;cursor:pointer;"; const subS="font:400 10px 'Inter',sans-serif;color:var(--faint)"; const labS="font:600 12px 'Inter',sans-serif;color:var(--text)";
+        this.rosterRaw.forEach((c,i)=>{ if(_match(c.name,c.handle,c.niche)) out.push({rowStyle:rowS,labStyle:labS,subStyle:subS,label:c.name,sub:'Créateur · '+c.niche,go:(()=>{const ii=i;return ()=>this.setState({view:'roster',rosterDetail:ii,space:'agency',topSearch:'',mobileNav:false});})()}); });
+        (this.state.contactsData||this.contactRaw).forEach((k)=>{ if(_match(k.brand,k.person,k.role)) out.push({rowStyle:rowS,labStyle:labS,subStyle:subS,label:k.brand,sub:'Contact · '+(k.person||''),go:()=>this.setState({view:'contacts',space:'agency',topSearch:'',mobileNav:false})}); });
+        (this.state.invoiceData||this.invoiceRaw).forEach((v)=>{ if(_match(v.ref,v.party,v.amount)) out.push({rowStyle:rowS,labStyle:labS,subStyle:subS,label:'#'+v.ref+' — '+v.party,sub:'Facture · '+v.amount,go:()=>this.setState({view:'facturation',space:'agency',topSearch:'',mobileNav:false})}); });
+        return out.slice(0,8); })(),
+      searchEmpty: !!q && ((()=>{ let n=0; this.rosterRaw.forEach(c=>{if(_match(c.name,c.handle,c.niche))n++;}); (this.state.contactsData||this.contactRaw).forEach(k=>{if(_match(k.brand,k.person,k.role))n++;}); (this.state.invoiceData||this.invoiceRaw).forEach(v=>{if(_match(v.ref,v.party,v.amount))n++;}); return n; })()===0),
       activitySearch:this.state.activitySearch||'', onActivitySearch:(e)=>this.setState({activitySearch:e.target.value}),
       calLabel, prevMonth, nextMonth,
       addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,
