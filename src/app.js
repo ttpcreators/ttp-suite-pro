@@ -1327,6 +1327,7 @@ class Component extends DCLogic {
               this._authReal=true;
               this.setState({ authed:true, authRole:role, space:(role==='creator'?'creator':'agency'), creatorId, view:'apercu', portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false });
               try{ this._cloudReady=false; this._cloudRowId=null; this._loadAllData(); this._loadCloudState(); }catch(_){}
+              toast('Base de données connectée ✓');
               return;
             }
             // if Supabase returned a hard error other than bad creds, fall through to built-in
@@ -1343,7 +1344,7 @@ class Component extends DCLogic {
         // 3) Built-in demo credentials (transition before Supabase Auth is set up).
         if(tab==='agency'){
           const accounts=[ {email:'agence@ttp.com', pwd:'ttp2026'}, {email:'marcbouraoui@gmail.com', pwd:'Louigi2OO1'} ];
-          if(accounts.some(a=> a.email===email && a.pwd===pwd)){ this.setState({ authed:true, authRole:'agency', space:'agency', view:'apercu', creatorId:null, loginEmail:'', loginPwd:'', loginError:'', mobileNav:false }); }
+          if(accounts.some(a=> a.email===email && a.pwd===pwd)){ this.setState({ authed:true, authRole:'agency', space:'agency', view:'apercu', creatorId:null, loginEmail:'', loginPwd:'', loginError:'', mobileNav:false }); toast('Mode local — connexion base inactive'); }
           else { this.setState({ loginError:'Identifiants agence incorrects.' }); }
         } else {
           let found=-1; this.rosterRaw.forEach((c,i)=>{ const cr=this._creatorCreds(c.name); if(email===cr.email && pwd===cr.pwd) found=i; });
@@ -1389,7 +1390,10 @@ class Component extends DCLogic {
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
-      agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
+      agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
+      cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
+      cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',
+      cloudTextStyle: "font:600 9px 'Inter',sans-serif;letter-spacing:.3px;color:"+(this._authReal?'var(--signaltext)':'var(--faint)'),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
       calendarCells: cells, eventTypes,
       planDayOpen, planDayLabel, planDayEvents, planDayHasEvents, planDayEmpty:planDayOpen&&!planDayHasEvents, closePlanDay, addEventForDay,
