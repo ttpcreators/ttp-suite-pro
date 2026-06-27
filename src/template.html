@@ -112,7 +112,7 @@
 
     <div style="background:var(--text); border-radius:16px; padding:16px; margin-top:10px">
       <div style="font:600 13px 'Inter',sans-serif; color:var(--bg); line-height:1.3">Prospection active</div>
-      <div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:6px; line-height:1.5">12 marques à relancer</div>
+      <div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:6px; line-height:1.5">{{ prospLabel }}</div>
       <div onclick="{{ goProspection }}" style="margin-top:12px; padding:9px 0; text-align:center; border-radius:10px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">OUVRIR</div>
     </div>
     <div onclick="{{ logout }}" style="display:flex; align-items:center; gap:10px; padding:11px 14px; margin-top:8px; border-radius:13px; cursor:pointer; color:var(--muted)" style-hover="background:var(--rowhover)"><span style="font:600 13px 'Inter',sans-serif">⎋</span><span style="font:500 12px 'Inter',sans-serif">Se déconnecter</span></div>
@@ -228,8 +228,8 @@
           </sc-if>
           <div style="display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:14px">
             <div onclick="{{ goFacturation }}" style="background:var(--panel); border-radius:16px; padding:18px; display:flex; flex-direction:column; cursor:pointer">
-              <div style="font:700 26px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px">32 000 €<span style="font-size:11px; color:var(--faint); margin-left:4px">DEAL</span></div>
-              <div style="font:400 11px 'Inter',sans-serif; color:var(--muted); margin-top:4px">Sephora × CAMILLE</div>
+              <div style="font:700 26px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px">{{ dealHeroValue }}<span style="font-size:11px; color:var(--faint); margin-left:4px">DEAL</span></div>
+              <div style="font:400 11px 'Inter',sans-serif; color:var(--muted); margin-top:4px">{{ dealHeroParty }}</div>
               <div style="display:flex; align-items:flex-end; gap:4px; height:46px; margin-top:auto; padding-top:16px"><sc-for list="{{ candleBars }}" as="c" hint-placeholder-count="9"><span style="{{ c.style }}"></span></sc-for></div>
             </div>
             <div style="background:var(--panel); border-radius:16px; padding:18px">
@@ -238,8 +238,8 @@
             </div>
             <div style="background:var(--panel); border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; text-align:center; justify-content:center">
               <div style="width:42px; height:42px; border-radius:12px; background:var(--surface); display:flex; align-items:center; justify-content:center; font:600 18px 'Inter',sans-serif; color:var(--amber)">✲</div>
-              <div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:12px">Relancer L'Oréal</div>
-              <div style="font:400 10px 'Inter',sans-serif; color:var(--muted); margin-top:4px; line-height:1.4">Facture en retard · 30/05</div>
+              <div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:12px">{{ relanceTitle }}</div>
+              <div style="font:400 10px 'Inter',sans-serif; color:var(--muted); margin-top:4px; line-height:1.4">{{ relanceSub }}</div>
               <div onclick="{{ goFacturation }}" style="width:100%; padding:10px 0; text-align:center; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; margin-top:14px; cursor:pointer">RELANCER</div>
             </div>
           </div>
@@ -279,7 +279,7 @@
         <!-- growth rate -->
         <div onclick="{{ goObjectifs }}" style="grid-column:span 6; background:var(--text); border-radius:20px; padding:22px; display:flex; flex-direction:column; color:var(--bg); cursor:pointer">
           <div style="display:flex; justify-content:space-between; align-items:flex-start">
-            <div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">Croissance vs 2025</div><div style="font:700 40px 'Inter',sans-serif; letter-spacing:-2px; margin-top:6px">36%</div><div style="font:600 9px 'Inter',sans-serif; color:var(--signal); margin-top:6px; letter-spacing:.5px">VOIR LES OBJECTIFS →</div></div>
+            <div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">Croissance vs 2025</div><div style="font:700 40px 'Inter',sans-serif; letter-spacing:-2px; margin-top:6px">{{ growthValue }}</div><div style="font:600 9px 'Inter',sans-serif; color:var(--signal); margin-top:6px; letter-spacing:.5px">VOIR LES OBJECTIFS →</div></div>
             <div style="display:flex; align-items:center; gap:5px; padding:6px 11px; border-radius:20px; background:rgba(255,255,255,.12); font:600 9px 'Inter',sans-serif; color:var(--signal)"><span style="width:6px; height:6px; border-radius:50%; background:var(--signal)"></span>EN HAUSSE</div>
           </div>
           <div style="display:flex; align-items:flex-end; gap:5px; height:54px; margin-top:auto; padding-top:18px"><sc-for list="{{ growthBars }}" as="b" hint-placeholder-count="14"><span style="{{ b.style }}"></span></sc-for></div>
@@ -422,6 +422,24 @@
           <div onclick="{{ genDevis }}" style="margin-top:14px; padding:11px 0; text-align:center; border-radius:12px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">↓ GÉNÉRER LE DEVIS</div>
         </div>
       </div>
+      <!-- historique des calculs -->
+      <div style="margin-top:16px; background:var(--surface); border-radius:20px; padding:20px">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px"><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">Historique des calculs</div><span onclick="{{ clearPriceHistory }}" style="font:600 9px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint); cursor:pointer" style-hover="color:#E5484D">TOUT VIDER</span></div>
+        <sc-if value="{{ priceHistEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:18px 0; text-align:center; font:400 12px 'Inter',sans-serif; color:var(--faint)">Aucun calcul enregistré. Génère un devis pour le retrouver ici.</div>
+        </sc-if>
+        <sc-for list="{{ priceHistory }}" as="h" hint-placeholder-count="3">
+          <div style="display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--hair)">
+            <div style="flex:1; min-width:0">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap"><span style="font:600 13px 'Inter',sans-serif; color:var(--text)">{{ h.name }}</span><span style="font:500 10px 'Inter',sans-serif; color:var(--faint)">{{ h.date }}</span><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext)">{{ h.exclLabel }}</span></div>
+              <div style="font:400 10px 'Inter',sans-serif; color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ h.items }}</div>
+              <div style="font:400 9px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ h.meta }}</div>
+            </div>
+            <div style="text-align:right; flex-shrink:0"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint)">MIN</div><div style="font:700 15px 'Inter',sans-serif; color:var(--text); letter-spacing:-.5px">{{ h.min }}</div><div style="font:400 9px 'Inter',sans-serif; color:var(--faint)">conseillé {{ h.total }}</div></div>
+            <span onclick="{{ h.del }}" title="Supprimer" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; color:var(--faint); font:600 13px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
+          </div>
+        </sc-for>
+      </div>
       </sc-if>
 
       <!-- ============ BRIEFS ============ -->
@@ -486,7 +504,7 @@
         <div style="display:flex; gap:8px"><div onclick="{{ sendCanva }}" style="padding:11px 16px; border-radius:13px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover)">↗ ENVOYER VERS CANVA</div><div onclick="{{ genMediaPdf }}" style="padding:11px 16px; border-radius:13px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">↓ GÉNÉRER LE PDF</div></div>
       </div>
       <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px"><sc-for list="{{ mkCreatorChips }}" as="c" hint-placeholder-count="8"><div onclick="{{ c.pick }}" style="{{ c.chipStyle }}"><div style="{{ c.avatarStyle }}">{{ c.initials }}</div>{{ c.name }}</div></sc-for></div>
-      <div style="background:var(--surface); border:1px solid var(--hair); border-radius:22px; padding:34px; overflow:hidden">
+      <div data-print="mediakit" style="background:var(--surface); border:1px solid var(--hair); border-radius:22px; padding:34px; overflow:hidden">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap">
           <div style="display:flex; align-items:center; gap:18px"><div style="{{ mk.avatarStyle }}">{{ mk.initials }}</div><div><div style="font:500 34px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text)">{{ mk.name }}</div><div style="display:flex; align-items:center; gap:10px; margin-top:6px"><span style="font:500 13px 'Inter',sans-serif; color:var(--muted)">{{ mk.handle }}</span><span style="font:600 9px 'Inter',sans-serif; letter-spacing:.6px; color:var(--signaltext); background:var(--signalsoft); padding:4px 10px; border-radius:20px">{{ mk.niche }}</span></div></div></div>
           <div style="text-align:right"><div style="display:flex; align-items:center; gap:8px; justify-content:flex-end"><div style="width:30px; height:30px; border-radius:8px; background:#14181E; overflow:hidden; display:flex; align-items:center; justify-content:center"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div><span style="font:700 12px 'Inter',sans-serif; color:var(--text)">TTP AGENCY</span></div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1.4px; color:var(--faint); margin-top:8px">MEDIA KIT · 2026</div></div>
@@ -697,7 +715,10 @@
       </div>
       </div>
       </sc-if>
-      <div style="display:flex; gap:4px; background:var(--surface); border-radius:12px; padding:4px; margin-bottom:16px; width:fit-content"><sc-for list="{{ contactsViewTabs }}" as="v" hint-placeholder-count="2"><span onclick="{{ v.pick }}" style="{{ v.style }}">{{ v.label }}</span></sc-for></div>
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:16px">
+        <div style="display:flex; gap:4px; background:var(--surface); border-radius:12px; padding:4px; width:fit-content"><sc-for list="{{ contactsViewTabs }}" as="v" hint-placeholder-count="2"><span onclick="{{ v.pick }}" style="{{ v.style }}">{{ v.label }}</span></sc-for></div>
+        <div style="display:flex; gap:7px; flex-wrap:wrap; align-items:center"><sc-for list="{{ contactTagTabs }}" as="t" hint-placeholder-count="4"><span onclick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}<span style="{{ t.countStyle }}">{{ t.count }}</span></span></sc-for></div>
+      </div>
       <sc-if value="{{ contactsGrid }}" hint-placeholder-val="{{ true }}">
       <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px">
         <sc-for list="{{ contacts }}" as="k" hint-placeholder-count="6">
@@ -853,7 +874,7 @@
           </div>
           </sc-if>
         </div>
-        <div style="background:var(--surface); border-radius:20px; padding:30px; border:1px solid var(--hair); display:flex; flex-direction:column">
+        <div data-print="contract" style="background:var(--surface); border-radius:20px; padding:30px; border:1px solid var(--hair); display:flex; flex-direction:column">
           <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:18px; border-bottom:1px solid var(--hair)">
             <div style="display:flex; align-items:center; gap:10px"><div style="width:34px; height:34px; border-radius:9px; background:#14181E; overflow:hidden; display:flex; align-items:center; justify-content:center"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div><div><div style="font:700 12px 'Inter',sans-serif; color:var(--text)">TTP AGENCY</div><div style="font:400 9px 'Inter',sans-serif; color:var(--faint)">Lyon · France</div></div></div>
             <div style="font:600 9px 'Inter',sans-serif; color:var(--faint)">RÉF. TTP-2026-091</div>
@@ -866,7 +887,7 @@
           <div style="display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:20px; background:var(--signalsoft); margin-top:18px; margin-bottom:10px; align-self:flex-start"><span style="width:6px; height:6px; border-radius:50%; background:var(--signal)"></span><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext)">CONFORME RGPD · DIR. 2011/83/UE · DROIT FR</span></div>
           <sc-for list="{{ ctClauses }}" as="c" hint-placeholder-count="8"><div style="margin-bottom:11px"><div style="font:600 10px 'Inter',sans-serif; color:var(--text)">{{ c.title }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--muted); margin-top:3px; line-height:1.55">{{ c.body }}</div></div></sc-for>
           <div style="display:flex; gap:18px; margin-top:18px"><div style="flex:1"><div style="height:34px; border-bottom:1px solid var(--hair)"></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); margin-top:6px">Pour TTP Agency</div></div><div style="flex:1"><div style="height:34px; border-bottom:1px solid var(--hair)"></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); margin-top:6px">Pour {{ ctCreatorName }}</div></div></div>
-          <div style="display:flex; gap:8px; margin-top:24px"><div onclick="{{ genContractPdf }}" style="flex:1; padding:12px 0; text-align:center; border-radius:12px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">GÉNÉRER LE PDF</div><div onclick="{{ sendSignature }}" style="flex:1; padding:12px 0; text-align:center; border-radius:12px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer">ENVOYER POUR SIGNATURE</div></div>
+          <div data-noprint style="display:flex; gap:8px; margin-top:24px"><div onclick="{{ genContractPdf }}" style="flex:1; padding:12px 0; text-align:center; border-radius:12px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">GÉNÉRER LE PDF</div><div onclick="{{ sendSignature }}" style="flex:1; padding:12px 0; text-align:center; border-radius:12px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer">ENVOYER POUR SIGNATURE</div></div>
         </div>
       </div>
       </sc-if>

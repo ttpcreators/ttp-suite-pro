@@ -228,7 +228,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','rosterData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -269,7 +269,7 @@ class Component extends DCLogic {
     try {
       const { data, error } = await this._sb.from('module_rows').select('id,a').eq('module','__app_state__').order('created_at',{ascending:false}).limit(1);
       if (error){ console.warn('[cloud] load:', error.message); this._cloudReady=true; return; }
-      if (data && data[0]){ this._cloudRowId = data[0].id; let o=null; try{ o=JSON.parse(data[0].a); }catch(_){} if (o && typeof o==='object') this.setState(o); }
+      if (data && data[0]){ this._cloudRowId = data[0].id; let o=null; try{ o=JSON.parse(data[0].a); }catch(_){} if (o && typeof o==='object'){ this.setState(o); this._hydrateRoster(o); } }
     } catch(e){ console.warn('[cloud] load failed', e); }
     finally { this._cloudReady = true; try{ this._applySeeds(); }catch(e){} this._persistNow(); } // apply forced seeds, then flush to cloud
   }
@@ -281,6 +281,10 @@ class Component extends DCLogic {
     if (this.state.contactsSeedV !== V){
       this.setState({ contactsData: this.contactRaw.slice(), contactsSeedV: V });
     }
+    // self-heal: a stale index-based deletedRoster (from before the roster was
+    // persisted) could hide EVERY creator and leave the roster permanently empty
+    // ("0 représentés"). If everything is hidden, clear it so the roster reappears.
+    try{ const dr=this.state.deletedRoster||{}; const total=this.rosterRaw.length; if(total>0){ const hidden=this.rosterRaw.filter((_,i)=>dr[i]).length; if(hidden>=total) this.setState({ deletedRoster:{} }); } }catch(e){}
   }
   // effective contact list — fall back to the bundled seed when the stored list
   // is missing OR empty (an empty [] must never hide the seeded contacts)
@@ -301,6 +305,34 @@ class Component extends DCLogic {
       setTimeout(()=>{ try{ ifr.contentWindow.print(); }catch(e){} setTimeout(()=>{ try{ ifr.remove(); }catch(_){} }, 1500); }, 350);
     }catch(e){ try{ alert('Impossible de générer le PDF.'); }catch(_){} }
   }
+  // PDF rendu IDENTIQUE à l'aperçu : on clone le bloc visible ([data-print]) tel quel
+  // dans une iframe d'impression, en thème clair fixe, pour que le PDF ressemble
+  // exactement à ce qui est affiché à l'écran.
+  _printPreview(title, sel){
+    try{
+      const src=document.querySelector('[data-print="'+sel+'"]');
+      if(!src){ this._openPrint(title, '<p>Aperçu indisponible.</p>'); return; }
+      const clone=src.cloneNode(true);
+      // 1) fige la valeur courante des champs (textarea/input) en texte statique,
+      //    sinon ils s'impriment vides (outerHTML ne sérialise pas la saisie).
+      const sf=src.querySelectorAll('textarea,input'), cf=clone.querySelectorAll('textarea,input');
+      sf.forEach((f,i)=>{ const c=cf[i]; if(!c)return; const val=(f.value||f.getAttribute('placeholder')||'').trim(); const d=document.createElement('div'); d.textContent=val; d.setAttribute('style',(f.getAttribute('style')||'')+';border:none;background:transparent;'); if(c.parentNode) c.parentNode.replaceChild(d,c); });
+      // 2) retire les éléments interactifs marqués [data-noprint] (boutons d'action).
+      clone.querySelectorAll('[data-noprint]').forEach(n=>{ if(n.parentNode) n.parentNode.removeChild(n); });
+      const ifr=document.createElement('iframe');
+      ifr.setAttribute('aria-hidden','true');
+      ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      document.body.appendChild(ifr);
+      const doc=ifr.contentWindow.document;
+      const vars=':root{--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25;}';
+      const css='*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;background:#fff;font-family:Inter,Helvetica,Arial,sans-serif}.print-wrap{max-width:820px;margin:22px auto;padding:0 16px}@media print{.print-wrap{margin:0;padding:0;max-width:none}}';
+      doc.open();
+      doc.write('<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title><base href="'+location.href+'"><style>'+vars+css+'</style></head><body><div class="print-wrap">'+clone.outerHTML+'</div></body></html>');
+      doc.close();
+      ifr.contentWindow.focus();
+      setTimeout(()=>{ try{ ifr.contentWindow.print(); }catch(e){} setTimeout(()=>{ try{ ifr.remove(); }catch(_){} }, 1800); }, 450);
+    }catch(e){ try{ alert('Impossible de générer le PDF.'); }catch(_){} }
+  }
   _contactsFrom(s){ const d=s.contactsData; return (Array.isArray(d)&&d.length)?d:this.contactRaw; }
   _restore(){
     if (typeof localStorage === 'undefined') return;
@@ -308,7 +340,7 @@ class Component extends DCLogic {
       const raw = localStorage.getItem('ttp_state_v1');
       if (!raw) return;
       const o = JSON.parse(raw);
-      if (o && typeof o === 'object') { this._restoring = true; this.setState(o); this._restoring = false; }
+      if (o && typeof o === 'object') { this._restoring = true; this.setState(o); this._restoring = false; this._hydrateRoster(o); }
     } catch(e){ console.warn('[persist] restore failed', e); }
   }
   componentDidMount(){
@@ -333,7 +365,14 @@ class Component extends DCLogic {
     try{ this._applySeeds(); }catch(e){}
   }
   _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend }; }
+  // re-hydrate the in-memory roster from the persisted state (localStorage / cloud
+  // blob). Without this, a refresh resets rosterRaw to the bundled seed and any
+  // creator the user added is lost. rosterData is the durable source of truth.
+  _hydrateRoster(o){ try{ if (o && Array.isArray(o.rosterData) && o.rosterData.length){ this.rosterRaw = o.rosterData.slice(); } }catch(e){} }
   async _loadCreators(){
+    // local-first: if the user already has a persisted roster, never let the cloud
+    // `creators` table (which may be empty or locked by RLS) clobber it.
+    if (Array.isArray(this.state.rosterData) && this.state.rosterData.length) return;
     try {
       const { data, error } = await this._sb.from('creators').select('*').order('sort_order');
       if (error) { console.warn('[supabase] load creators:', error.message); return; }
@@ -341,7 +380,7 @@ class Component extends DCLogic {
         this.rosterRaw = data.map(r=>this._mapCreator(r));
         this.rosterInfoRaw = {};
         data.forEach((r,i)=>{ this.rosterInfoRaw[i] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
-        this.setState({ deletedRoster:{}, creatorsLoaded:true });
+        this.setState({ deletedRoster:{}, creatorsLoaded:true, rosterData:this.rosterRaw.slice() });
       }
     } catch(e){ console.warn('[supabase] load creators failed', e); }
   }
@@ -578,7 +617,12 @@ class Component extends DCLogic {
     const contactsView = this.state.contactsView || 'list';
     const contactsGrid = contactsView === 'grid', contactsList = contactsView === 'list';
     const contactsViewTabs = [['list','Liste'],['grid','Cartes']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(contactsView===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({contactsView:k});})() }));
-    const contacts = cbase.map((k,i)=>({ brand:k.brand, person:k.person, role:k.role, tag:k.tag, email:k.email||'—', phone:k.phone||'—', initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,44), avatarStyleSm:this.avatarStyle(k.tone,dark,38), tagStyle:"padding:5px 10px;border-radius:20px;background:var(--rowhover);font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);white-space:nowrap;", open:()=>this.setState({openContact:i}), del:(()=>{const ii=i,nm=k.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le contact '+nm+' ?'))return; this.setState(s=>{ const base=(this._contactsFrom(s)).slice(); base.splice(ii,1); return { contactsData:base, openContact:(s.openContact===ii?null:s.openContact) }; }); };})() })).filter(k=> _match(k.brand,k.person,k.role,k.tag));
+    // filtre par type (Marque, Agence RP, Presse…) pour retrouver vite un contact
+    const cTag = this.state.contactTag || 'all';
+    const _cTags=[]; cbase.forEach(k=>{ const t=(k.tag||'Autre').trim()||'Autre'; if(_cTags.indexOf(t)<0)_cTags.push(t); }); _cTags.sort();
+    const _cTagCount=(t)=>cbase.filter(k=>((k.tag||'Autre').trim()||'Autre')===t).length;
+    const contactTagTabs = [['all','Tous',cbase.length]].concat(_cTags.map(t=>[t,t,_cTagCount(t)])).map(p=>({ label:p[1], count:String(p[2]), style:"display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(cTag===p[0]?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), countStyle:"font:600 9px 'Inter',sans-serif;opacity:.6", pick:(()=>{const k=p[0];return ()=>this.setState({contactTag:k});})() }));
+    const contacts = cbase.map((k,i)=>({ brand:k.brand, person:k.person, role:k.role, tag:k.tag, email:k.email||'—', phone:k.phone||'—', initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,44), avatarStyleSm:this.avatarStyle(k.tone,dark,38), tagStyle:"padding:5px 10px;border-radius:20px;background:var(--rowhover);font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);white-space:nowrap;", open:()=>this.setState({openContact:i}), del:(()=>{const ii=i,nm=k.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le contact '+nm+' ?'))return; this.setState(s=>{ const base=(this._contactsFrom(s)).slice(); base.splice(ii,1); return { contactsData:base, openContact:(s.openContact===ii?null:s.openContact) }; }); };})() })).filter(k=> (cTag==='all'||((k.tag||'Autre').trim()||'Autre')===cTag) && _match(k.brand,k.person,k.role,k.tag));
     // ---- Objectifs par mois (édition / suppression / navigation) ----
     const _objMo=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const objOffset = this.state.objOffset||0;
@@ -947,6 +991,18 @@ class Component extends DCLogic {
     const fUrssaf = Math.round(finEncaisse*0.10);
     const fIS = Math.round(finMarge*0.25);
     const fProvTotal = fTvaNet + fUrssaf + fIS;
+    // ===== DASHBOARD ACTIVITY — biggest live deal + first overdue invoice + growth =====
+    const _activeInv = _invAll.filter(v=>v.status==='attente'||v.status==='payee');
+    const _bigDeal = _activeInv.slice().sort((a,b)=>_eur(b.amount)-_eur(a.amount))[0] || _invAll[0] || {amount:'—',party:'—'};
+    const _retardList = _invAll.filter(v=>v.status==='retard');
+    const _firstRetard = _retardList[0] || null;
+    // croissance vs an dernier = moyenne des tendances mensuelles du roster, annualisée
+    const _liveRoster = this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]);
+    const _avgTrend = _liveRoster.length ? _liveRoster.reduce((a,c)=>a+(Number(c.trend)||0),0)/_liveRoster.length : 0;
+    const growthPctN = Math.round(_avgTrend*12);
+    // nombre de marques en prospection (pour la carte "Prospection active")
+    const _prospAll = this.state.prospectData||this.prospectRaw||[];
+    const _prospCount = Array.isArray(_prospAll) ? _prospAll.filter(p=>p && p.stage!=='Signé').length : 0;
 
     // ---- action handlers (add / contact / export) ----
     const _fmtAmt=(s)=>{ const n=Number(String(s||'').replace(/[^0-9]/g,'')); return n ? (String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €') : (String(s||'').trim()||'—'); };
@@ -1007,7 +1063,13 @@ class Component extends DCLogic {
       acRoleCreator:(this.state.acRole||'creator')==='creator', acRoleAgency:(this.state.acRole||'creator')==='agency',
       acRoleChips:[['creator','Créateur'],['agency','Agence / Employé']].map(p=>({ label:p[1], style:'padding:9px 15px;border-radius:11px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+((this.state.acRole||'creator')===p[0]?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({acRole:k});})() })),
       acCreatorChips: this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>({ name:c.name.split(' ')[0], full:c.name, style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.acCreator||(this.rosterRaw[0]||{}).name))===c.name?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const nm=c.name;return ()=>this.setState({acCreator:nm});})() })),
-      addAccess:()=>{ const email=(this.state.acEmail||'').trim().toLowerCase(); const pwd=(this.state.acPwd||'').trim(); if(!email||!pwd){ toast('Email et mot de passe requis'); return; } const role=this.state.acRole||'creator'; const creator= role==='creator' ? (this.state.acCreator||(this.rosterRaw[0]||{}).name||null) : null; if((this.state.accessAccounts||[]).some(a=>String(a.email||'').toLowerCase()===email)){ toast('Cet email a déjà un accès'); return; } this.setState(s=>({ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator}], acEmail:'', acPwd:'' })); toast('Accès créé ✓'); },
+      addAccess:()=>{ const email=(this.state.acEmail||'').trim().toLowerCase(); const pwd=(this.state.acPwd||'').trim(); if(!email||!pwd){ toast('Email et mot de passe requis'); return; } const role=this.state.acRole||'creator'; const creator= role==='creator' ? (this.state.acCreator||(this.rosterRaw[0]||{}).name||null) : null; if((this.state.accessAccounts||[]).some(a=>String(a.email||'').toLowerCase()===email)){ toast('Cet email a déjà un accès'); return; }
+        // 1) enregistre l'accès localement (actif immédiatement) + relie le portail du créateur
+        this.setState(s=>{ const upd={ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator}], acEmail:'', acPwd:'' }; if(role==='creator' && creator){ const idx=this.rosterRaw.findIndex(c=>c.name===creator); if(idx>=0){ const ri=Object.assign({},s.rosterInfo); ri[idx]=Object.assign({}, this.rosterInfoRaw[idx]||{}, ri[idx]||{}, {email}); upd.rosterInfo=ri; } } return upd; });
+        toast('Accès créé ✓ — le portail est prêt');
+        // 2) crée le vrai compte Supabase pour que la connexion marche au niveau base de données
+        if(this._sb && this._sb.auth && this._sb.auth.signUp){ this._sb.auth.signUp({ email, password:pwd }).then(({data,error})=>{ if(error){ console.warn('[supabase] signup:', error.message); toast('Accès local OK · Supabase : '+error.message); return; } toast('Compte Supabase créé ✓'); try{ const uid=data&&data.user&&data.user.id; if(uid){ this._sb.from('profiles').upsert({ user_id:uid, role, creator_name:creator }).then(({error:e2})=>{ if(e2) console.warn('[supabase] profile:', e2.message); }); } }catch(_){ } }).catch(e=>console.warn('[supabase] signup failed', e)); }
+      },
       calLabel, prevMonth, nextMonth,
       addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,
       showInvoiceForm:!!this.state.showInvoiceForm, openInvoiceForm:()=>this.setState({showInvoiceForm:true}), closeInvoiceForm:()=>this.setState({showInvoiceForm:false}),
@@ -1016,10 +1078,16 @@ class Component extends DCLogic {
       niFacDueV:this.state.niFacDue||'', onNiFacDue:(e)=>{const v=e.target.value;this.setState({niFacDue:v});},
       invFacCreatorChips: this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name.split(' ')[0], style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+((this.state.niFacCreator)===i?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const k=i;return ()=>this.setState({niFacCreator:k});})() })),
       invFacStatusChips: [['brouillon','Brouillon','cyan'],['attente','En attente','indigo'],['payee','Payée','signal'],['retard','En retard','indigo']].map(p=>({ label:p[1], style:'padding:8px 14px;border-radius:11px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.niFacStatus)||'brouillon')===p[0]?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({niFacStatus:k});})() })),
-      genDevis:()=>{ const lines=(priceLines||[]).map(l=>'<div class="row"><span>'+l.label+' ('+l.qtyLabel+')</span><b>'+l.line+'</b></div>').join('') || '<p class="muted">Aucun contenu sélectionné.</p>'; const body='<h1>Devis</h1><p class="muted">'+priceCreatorName+' · '+priceMeta+'</p><hr>'+lines+'<hr>'+(pExcl?'<div class="row"><span>Exclusivité</span><b>+30%</b></div>':'')+'<div class="row"><span>Tarif conseillé</span><b>'+fmtEur(pTotal)+'</b></div><div class="row"><span><b>Minimum à proposer</b></span><b>'+fmtEur(pMin)+'</b></div><p class="muted" style="margin-top:18px">Devis indicatif établi par TTP Agency. Validité 30 jours.</p>'; this._openPrint('Devis — '+priceCreatorName, body); },
-      genMediaPdf:()=>{ const stats=(mkStats||[]).map(s=>'<div class="row"><span>'+s.label+'</span><b>'+s.value+'</b></div>').join(''); const body='<h1>'+mk.name+'</h1><p class="muted">'+mk.handle+' · '+mk.niche+' · '+mk.plat+'</p><p>'+mk.bio+'</p><hr><h2>STATISTIQUES</h2>'+stats+'<h2>AUDIENCE</h2><div class="row"><span>Tranche d\'âge</span><b>'+mk.age+' ('+mk.agePct+')</b></div><div class="row"><span>Genre</span><b>'+mk.gender+'</b></div>'; this._openPrint('Media kit — '+mk.name, body); },
+      genDevis:()=>{ const lines=(priceLines||[]).map(l=>'<div class="row"><span>'+l.label+' ('+l.qtyLabel+')</span><b>'+l.line+'</b></div>').join('') || '<p class="muted">Aucun contenu sélectionné.</p>'; const body='<h1>Devis</h1><p class="muted">'+priceCreatorName+' · '+priceMeta+'</p><hr>'+lines+'<hr>'+(pExcl?'<div class="row"><span>Exclusivité</span><b>+30%</b></div>':'')+'<div class="row"><span>Tarif conseillé</span><b>'+fmtEur(pTotal)+'</b></div><div class="row"><span><b>Minimum à proposer</b></span><b>'+fmtEur(pMin)+'</b></div><p class="muted" style="margin-top:18px">Devis indicatif établi par TTP Agency. Validité 30 jours.</p>'; this._openPrint('Devis — '+priceCreatorName, body);
+        // enregistre le calcul dans l'historique
+        if(priceLines && priceLines.length){ let id; try{ id='ph'+Date.now(); }catch(_){ id='ph'+(this.state.priceHistory||[]).length; } let dt; try{ dt=new Date().toLocaleDateString('fr-FR'); }catch(_){ dt=''; } const hist={ id, name:priceCreatorName, meta:priceMeta, total:fmtEur(pTotal), min:fmtEur(pMin), excl:!!pExcl, items:(priceLines||[]).map(l=>l.label+' · '+l.qtyLabel), date:dt }; this.setState(s=>({ priceHistory:[hist].concat(s.priceHistory||[]).slice(0,30) })); }
+      },
+      priceHistory: (this.state.priceHistory||[]).map(h=>({ name:h.name, meta:h.meta, total:h.total, min:h.min, date:h.date, exclLabel:(h.excl?'Exclusivité +30%':''), items:(h.items||[]).join('  ·  '), del:(()=>{const id=h.id;return ()=>this.setState(s=>({ priceHistory:(s.priceHistory||[]).filter(x=>x.id!==id) }));})() })),
+      priceHistEmpty: (this.state.priceHistory||[]).length===0,
+      clearPriceHistory:()=>{ if(!window.confirm('Vider tout l\'historique des calculs ?'))return; this.setState({priceHistory:[]}); },
+      genMediaPdf:()=>{ this._printPreview('Media kit — '+mk.name, 'mediakit'); },
       sendCanva:()=>toast('Envoyé vers Canva ✓'),
-      genContractPdf:()=>{ const terms=(ctTerms||[]).map(t=>'<div class="row"><span>'+t.l+'</span><b>'+t.v+'</b></div>').join(''); const clauses=(ctClauses||[]).map(c=>'<h2>'+c.title+'</h2><p>'+c.body+'</p>').join(''); const body='<h1>'+ctTitle+'</h1><p class="muted">'+ctParties+'</p><hr>'+terms+'<hr>'+clauses+'<div class="sign"><div>Pour TTP Agency</div><div>Pour '+ctName+'</div></div>'; this._openPrint(ctTitle, body); },
+      genContractPdf:()=>{ this._printPreview(ctTitle, 'contract'); },
       sendSignature:()=>toast('Envoyé pour signature ✓'),
       editProfil:()=>toast('Édition du profil bientôt disponible'), contactAgent:()=>{ try{ window.location.href='mailto:marc@ttpcreators.pro?subject='+encodeURIComponent('Contact — '+(cr?cr.name:'créateur')); }catch(_){ toast('marc@ttpcreators.pro'); } },
       dashMore:()=>toast('Activité à jour ✓'), actFiltersOpen: this.state.actFiltersOpen!==false, toggleActFilters:()=>this.setState(s=>({actFiltersOpen: s.actFiltersOpen===false})),
@@ -1077,7 +1145,7 @@ class Component extends DCLogic {
       briefRows, briefOpenObj, briefDetailOpen, briefListMode:!briefDetailOpen, closeBriefDetail,
       showCreatorForm:!!this.state.showCreatorForm, openCreatorForm:()=>this.setState({showCreatorForm:true}), closeCreatorForm:()=>this.setState({showCreatorForm:false}),
       ncName:this.state.ncName||'', ncHandle:this.state.ncHandle||'', ncNiche:this.state.ncNiche||'', onNcName:(e)=>{const v=e.target.value;this.setState({ncName:v});}, onNcHandle:(e)=>{const v=e.target.value;this.setState({ncHandle:v});}, onNcNiche:(e)=>{const v=e.target.value;this.setState({ncNiche:v});},
-      addCreator:()=>{ const nm=(this.state.ncName||'').trim(); if(!nm)return; const tones=['signal','indigo','cyan']; const nc={name:nm.toUpperCase(), handle:this.state.ncHandle||'@nouveau', niche:this.state.ncNiche||'Lifestyle', plat:'Instagram', followers:'0', reach:'0', er:'0%', ca:'0 \u20ac', status:'actif', tone:tones[this.rosterRaw.length%3], trend:0}; this.rosterRaw.push(nc); this.setState({showCreatorForm:false, ncName:'', ncHandle:'', ncNiche:''}); if(this._sb){ this._sb.from('creators').insert({sort_order:this.rosterRaw.length-1, name:nc.name, handle:nc.handle, niche:nc.niche, platform:nc.plat, followers:nc.followers, reach:nc.reach, er:nc.er, ca:nc.ca, status:nc.status, tone:nc.tone, trend:nc.trend}).select().then(({data,error})=>{ if(error){ console.warn('[supabase] insert:', error.message); return; } if(data&&data[0]){ nc.id=data[0].id; } }); } },
+      addCreator:()=>{ const nm=(this.state.ncName||'').trim(); if(!nm)return; const tones=['signal','indigo','cyan']; const nc={name:nm.toUpperCase(), handle:this.state.ncHandle||'@nouveau', niche:this.state.ncNiche||'Lifestyle', plat:'Instagram', followers:'0', reach:'0', er:'0%', ca:'0 \u20ac', status:'actif', tone:tones[this.rosterRaw.length%3], trend:0}; this.rosterRaw.push(nc); this.setState({rosterData:this.rosterRaw.slice(), showCreatorForm:false, ncName:'', ncHandle:'', ncNiche:''}); toast('Cr\u00e9ateur ajout\u00e9 \u2713'); if(this._sb){ this._sb.from('creators').insert({sort_order:this.rosterRaw.length-1, name:nc.name, handle:nc.handle, niche:nc.niche, platform:nc.plat, followers:nc.followers, reach:nc.reach, er:nc.er, ca:nc.ca, status:nc.status, tone:nc.tone, trend:nc.trend}).select().then(({data,error})=>{ if(error){ console.warn('[supabase] insert:', error.message); return; } if(data&&data[0]){ nc.id=data[0].id; this.setState({rosterData:this.rosterRaw.slice()}); } }); } },
       onAddDocMe:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const ci2=this.state.creatorId!=null?this.state.creatorId:0; const fm=(b)=>b<1024?b+' o':(b<1048576?(b/1024).toFixed(0)+' Ko':(b/1048576).toFixed(1).replace('.',',')+' Mo'); const url=URL.createObjectURL(f); const b0=this.state.docs||this.docsRaw; const cur=Object.assign({},b0); const list=(cur[ci2]||[]).slice(); list.unshift({name:f.name,type:'autre',date:'ajouté auj.',size:fm(f.size),url,external:true}); cur[ci2]=list; this.setState({docs:cur}); e.target.value=''; },
       previewOpen:!!this.state.previewDoc, previewName:this.state.previewDoc?this.state.previewDoc.name:'', previewUrl:this.state.previewDoc?this.state.previewDoc.url:'', previewIsImage:!!(this.state.previewDoc&&this.state.previewDoc.isImage), previewIsDoc:!(this.state.previewDoc&&this.state.previewDoc.isImage), closePreview:()=>this.setState({previewDoc:null}), stopProp:(e)=>{e.stopPropagation();}, previewMedia: this.state.previewDoc ? (this.state.previewDoc.isImage ? React.createElement('div',{style:{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}, React.createElement('img',{src:this.state.previewDoc.url,style:{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',borderRadius:'8px'}})) : React.createElement('iframe',{src:this.state.previewDoc.url,style:{width:'100%',height:'100%',border:'none',background:'#fff'}})) : null,
       bankFormOpen:!!this.state.showBankForm, toggleBankForm:()=>this.setState(s=>({showBankForm:!s.showBankForm})),
@@ -1215,7 +1283,13 @@ class Component extends DCLogic {
       goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}), goPDocuments:()=>this.setState({portalTab:'documents'}),
       portalBottomNav,
       goRoster, goFacturation, goObjectifs, goContacts, goPlanning, goBriefs, goTodo, goProspection, goEngagement, goRosterUgc,
-      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, contactsCount:String(this._contacts().length), objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
+      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactTagTabs, contactsGrid, contactsList, contactsCount:String(this._contacts().length),
+      dealHeroValue: _fmtE(_eur(_bigDeal.amount)), dealHeroParty: _bigDeal.party||'—',
+      hasRelance: !!_firstRetard,
+      relanceTitle: _firstRetard ? ('Relancer '+String(_firstRetard.party||'').split(' × ')[0]) : 'Aucune relance',
+      relanceSub: _firstRetard ? ('Facture en retard · '+_firstRetard.date) : 'Tout est à jour',
+      growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
+      prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, briefFilterTabs, pTodoFilterTabs,
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
