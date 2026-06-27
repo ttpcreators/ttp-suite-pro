@@ -122,6 +122,14 @@
     #dc-root .cal-ev { padding:0 !important; background:transparent !important; border-radius:0 !important; }
     #dc-root .cal-ev-lbl { display:none !important; }
     #dc-root .cal-ev span:first-child { width:7px !important; height:7px !important; }
+    /* ---- creator home: paired square stat blocks (2 per line) + quick access on one line ---- */
+    #dc-root .m-home-stats { grid-template-columns:1fr 1fr !important; gap:12px !important; }
+    #dc-root .m-home-stats > * { aspect-ratio:1 / 1; display:flex !important; flex-direction:column; justify-content:center; min-width:0 !important; grid-column:auto !important; }
+    #dc-root .m-home-quick { grid-template-columns:repeat(5,1fr) !important; gap:7px !important; }
+    #dc-root .m-home-quick > * { padding:13px 4px !important; min-width:0 !important; grid-column:auto !important; }
+    #dc-root .m-home-quick > * span:last-child { font-size:8px !important; letter-spacing:0 !important; }
+    /* creator profil coordinates: single column on phone */
+    #dc-root .m-prof-grid { grid-template-columns:1fr !important; }
   }
   /* ===================== DESKTOP ===================== */
   @media (min-width: 861px) {

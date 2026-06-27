@@ -335,7 +335,7 @@
         <div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:8px">CRÉATEUR</div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px"><sc-for list="{{ engChips }}" as="c" hint-placeholder-count="8"><div onclick="{{ c.pick }}" style="{{ c.style }}"><span style="{{ c.dotStyle }}"></span>{{ c.name }}</div></sc-for></div>
         <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px"><sc-for list="{{ engInputs }}" as="f" hint-placeholder-count="3"><div style="flex:1; min-width:130px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">{{ f.label }}</div><input value="{{ f.value }}" oninput="{{ f.onInput }}" placeholder="{{ f.placeholder }}" type="number" style="width:100%; padding:12px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:600 14px 'Inter',sans-serif; outline:none"></div></sc-for></div>
-        <div style="background:var(--text); border-radius:14px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; color:var(--bg); flex-wrap:wrap; gap:12px"><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">TAUX D'ENGAGEMENT · {{ engPlatformLabel }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:4px">{{ engFormula }}</div></div><div style="display:flex; align-items:baseline; gap:12px"><div style="font:700 34px 'Inter',sans-serif; letter-spacing:-1.5px">{{ engEr }}</div><span style="{{ engVerdictStyle }}">{{ engVerdict }}</span></div></div>
+        <div style="background:var(--text); border-radius:14px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; color:var(--bg); flex-wrap:wrap; gap:12px"><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">TAUX D'ENGAGEMENT · {{ engPlatformLabel }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:4px">{{ engFormula }}</div><div style="font:500 11px 'Inter',sans-serif; color:var(--bg); margin-top:6px; opacity:.85">{{ engCalcDetail }}</div></div><div style="display:flex; align-items:baseline; gap:12px"><div style="font:700 34px 'Inter',sans-serif; letter-spacing:-1.5px">{{ engEr }}</div><span style="{{ engVerdictStyle }}">{{ engVerdict }}</span></div></div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:16px">
         <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ER MOYEN</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">5,9%</div><div style="font:600 10px 'Inter',sans-serif; color:var(--signaltext); margin-top:5px">▲ +0,4 pt</div></div>
@@ -386,22 +386,51 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px"><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">Nouveau brief</div><div onclick="{{ closeBriefForm }}" style="font:600 14px 'Inter',sans-serif; color:var(--faint); cursor:pointer">✕</div></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">MARQUE</div><input value="{{ nbBrandV }}" oninput="{{ onNbBrand }}" placeholder="Ex : Sephora — Collection été" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">ÉCHÉANCE</div><input value="{{ nbDueV }}" oninput="{{ onNbDue }}" placeholder="08/07" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div></div>
         <div style="margin-top:12px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">LIVRABLES</div><input value="{{ nbDelivV }}" oninput="{{ onNbDeliv }}" placeholder="3 posts · 1 reel" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px"><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">BUDGET</div><input value="{{ nbBudgetV }}" oninput="{{ onNbBudget }}" placeholder="2 000 €" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">OBJECTIF</div><input value="{{ nbObjectifV }}" oninput="{{ onNbObjectif }}" placeholder="Notoriété · ventes…" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div></div>
+        <div style="margin-top:12px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">CONSIGNES</div><textarea value="{{ nbConsignesV }}" oninput="{{ onNbConsignes }}" placeholder="Décris précisément ce que la marque attend : ton, mentions, hashtags, do &amp; don't, deadlines de validation…" style="width:100%; min-height:90px; resize:vertical; padding:12px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:400 12px 'Inter',sans-serif; line-height:1.6; outline:none"></textarea></div>
         <div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin:16px 0 8px">CRÉATEUR</div>
         <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center"><sc-for list="{{ briefCreatorChips }}" as="c" hint-placeholder-count="8"><div onclick="{{ c.pick }}" style="{{ c.style }}">{{ c.name }}</div></sc-for><div onclick="{{ addBrief }}" style="margin-left:auto; padding:11px 22px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">CRÉER LE BRIEF</div></div>
       </div>
       </sc-if>
-      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px">
-        <sc-for list="{{ briefs }}" as="b" hint-placeholder-count="4">
-          <div style="background:var(--surface); border-radius:20px; padding:20px">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start"><div><div style="font:600 15px 'Inter',sans-serif; color:var(--text)">{{ b.brand }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:3px">{{ b.creator }} · échéance {{ b.due }}</div></div><div style="display:flex; align-items:center; gap:8px"><span style="{{ b.chipStyle }}"><span style="{{ b.dotStyle }}"></span>{{ b.statusLabel }}</span><span onclick="{{ b.edit }}" title="Modifier les consignes" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 11px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:var(--text)">✎</span><span onclick="{{ b.del }}" title="Supprimer le brief" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div></div>
-            <div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin:14px 0 6px">CONSIGNES</div>
-            <div style="font:400 12px 'Inter',sans-serif; color:var(--muted); line-height:1.6">{{ b.consignes }}</div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px"><div style="background:var(--panel); border-radius:12px; padding:11px 13px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">LIVRABLES</div><div style="font:600 11px 'Inter',sans-serif; color:var(--text); margin-top:4px">{{ b.deliverables }}</div></div><div style="background:var(--panel); border-radius:12px; padding:11px 13px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">BUDGET</div><div style="font:600 11px 'Inter',sans-serif; color:var(--text); margin-top:4px">{{ b.budget }}</div></div></div>
-            <sc-if value="{{ b.hasNote }}" hint-placeholder-val="{{ false }}"><div style="margin-top:14px; padding:12px 14px; border-radius:12px; background:var(--signalsoft)"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--signaltext); margin-bottom:5px">⚑ NOTE DE {{ b.creatorFirst }}</div><div style="font:400 12px 'Inter',sans-serif; color:var(--text); line-height:1.5">{{ b.noteValue }}</div></div></sc-if>
-            <div onclick="{{ b.complete }}" style="margin-top:14px; padding:10px 0; text-align:center; border-radius:11px; font:600 10px 'Inter',sans-serif; cursor:pointer; border:1px solid var(--hair); color:var(--text)" style-hover="background:var(--rowhover)">{{ b.completeLabel }}</div>
+      <!-- LIST VIEW -->
+      <sc-if value="{{ briefListMode }}" hint-placeholder-val="{{ true }}">
+      <div style="background:var(--surface); border-radius:20px; padding:8px">
+        <sc-for list="{{ briefRows }}" as="b" hint-placeholder-count="4">
+          <div onclick="{{ b.open }}" class="m-row" style="display:flex; align-items:center; gap:14px; padding:15px 16px; border-radius:14px; cursor:pointer" style-hover="background:var(--rowhover)">
+            <span style="{{ b.dotStyle }}"></span>
+            <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ b.brand }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ b.creator }} · échéance {{ b.due }}</div></div>
+            <span data-l="STATUT" style="font:600 9px 'Inter',sans-serif; letter-spacing:.5px; color:var(--muted); padding:5px 10px; border-radius:20px; background:var(--rowhover); white-space:nowrap">{{ b.statusLabel }}</span>
+            <span onclick="{{ b.del }}" title="Supprimer" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
+            <span style="flex-shrink:0; color:var(--faint); font:600 14px 'Inter',sans-serif">›</span>
           </div>
         </sc-for>
       </div>
+      </sc-if>
+
+      <!-- DETAIL VIEW -->
+      <sc-if value="{{ briefDetailOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:22px; padding:26px; max-width:760px">
+        <div onclick="{{ closeBriefDetail }}" style="display:inline-flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint); cursor:pointer; margin-bottom:18px" style-hover="color:var(--text)">← TOUS LES BRIEFS</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap">
+          <div><div style="font:500 30px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text)">{{ briefOpenObj.brand }}</div><div style="font:400 12px 'Inter',sans-serif; color:var(--faint); margin-top:6px">{{ briefOpenObj.creator }} · échéance {{ briefOpenObj.due }}</div></div>
+          <span style="{{ briefOpenObj.chipStyle }}"><span style="{{ briefOpenObj.dotStyle }}"></span>{{ briefOpenObj.statusLabel }}</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap">
+          <div onclick="{{ briefOpenObj.share }}" style="padding:11px 18px; border-radius:12px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">↗ PARTAGER LE BRIEF</div>
+          <div onclick="{{ briefOpenObj.shareEmail }}" style="padding:11px 18px; border-radius:12px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover)">✉ ENVOYER PAR EMAIL</div>
+          <div onclick="{{ briefOpenObj.edit }}" style="padding:11px 18px; border-radius:12px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover)">✎ MODIFIER</div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:22px">
+          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">LIVRABLES</div><div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ briefOpenObj.deliverables }}</div></div>
+          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">BUDGET</div><div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ briefOpenObj.budget }}</div></div>
+          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">OBJECTIF</div><div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ briefOpenObj.objectif }}</div></div>
+        </div>
+        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin:24px 0 8px">CONSIGNES</div>
+        <div style="font:400 13px 'Inter',sans-serif; color:var(--muted); line-height:1.7; white-space:pre-wrap">{{ briefOpenObj.consignes }}</div>
+        <sc-if value="{{ briefOpenObj.hasNote }}" hint-placeholder-val="{{ false }}"><div style="margin-top:20px; padding:14px 16px; border-radius:12px; background:var(--signalsoft)"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--signaltext); margin-bottom:5px">⚑ NOTE DE {{ briefOpenObj.creatorFirst }}</div><div style="font:400 12px 'Inter',sans-serif; color:var(--text); line-height:1.5">{{ briefOpenObj.noteValue }}</div></div></sc-if>
+        <div style="display:flex; gap:10px; margin-top:22px"><div onclick="{{ briefOpenObj.validate }}" style="{{ briefOpenObj.validateStyle }}">{{ briefOpenObj.validateLabel }}</div><div onclick="{{ briefOpenObj.complete }}" style="flex:1; padding:10px 0; text-align:center; border-radius:11px; font:600 10px 'Inter',sans-serif; cursor:pointer; border:1px solid var(--hair); color:var(--text)" style-hover="background:var(--rowhover)">{{ briefOpenObj.completeLabel }}</div></div>
+      </div>
+      </sc-if>
       </sc-if>
 
       <!-- ============ MEDIA KIT ============ -->
@@ -454,7 +483,34 @@
         <div style="display:flex; gap:18px; align-items:flex-end; flex-wrap:wrap; margin-top:16px"><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:8px">STATUT</div><div style="display:flex; gap:6px"><sc-for list="{{ niStatusChips }}" as="s" hint-placeholder-count="3"><div onclick="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</div></sc-for></div></div><div onclick="{{ addIdea }}" style="margin-left:auto; padding:11px 22px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">AJOUTER</div></div>
       </div>
       </sc-if>
-      <div style="background:var(--surface); border-radius:20px; padding:8px 20px"><sc-for list="{{ ideas }}" as="i" hint-placeholder-count="5"><div style="display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--hair)"><span style="{{ i.dotStyle }}"></span><span style="flex:1; min-width:0; font:500 13px 'Inter',sans-serif; color:var(--text)">{{ i.text }}</span><sc-if value="{{ i.fromCreator }}" hint-placeholder-val="{{ false }}"><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); background:var(--signalsoft); padding:3px 8px; border-radius:6px; white-space:nowrap">DU CRÉATEUR</span></sc-if><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--muted); padding:3px 9px; border-radius:6px; background:var(--rowhover); white-space:nowrap">{{ i.creatorLabel }}</span><span style="{{ i.statusStyle }}">{{ i.status }}</span><span onclick="{{ i.edit }}" title="Modifier l'idée" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 11px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:var(--text)">✎</span><span onclick="{{ i.del }}" title="Supprimer l'idée" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div></sc-for></div>
+      <!-- LIST -->
+      <sc-if value="{{ ideaListMode }}" hint-placeholder-val="{{ true }}">
+      <div style="background:var(--surface); border-radius:20px; padding:8px">
+        <sc-for list="{{ ideas }}" as="i" hint-placeholder-count="5">
+          <div onclick="{{ i.open }}" style="display:flex; align-items:center; gap:12px; padding:14px 14px; border-radius:14px; cursor:pointer" style-hover="background:var(--rowhover)">
+            <span style="{{ i.dotStyle }}"></span>
+            <div style="flex:1; min-width:0"><div style="font:500 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ i.text }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:3px">{{ i.creatorLabel }}</div></div>
+            <sc-if value="{{ i.fromCreator }}" hint-placeholder-val="{{ false }}"><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); background:var(--signalsoft); padding:3px 8px; border-radius:6px; white-space:nowrap">CRÉATEUR</span></sc-if>
+            <span style="{{ i.statusStyle }}">{{ i.status }}</span>
+            <span style="flex-shrink:0; color:var(--faint); font:600 14px 'Inter',sans-serif">›</span>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- DETAIL -->
+      <sc-if value="{{ ideaDetailOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:22px; padding:26px; max-width:680px">
+        <div onclick="{{ closeIdea }}" style="display:inline-flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint); cursor:pointer; margin-bottom:18px" style-hover="color:var(--text)">← TOUTES LES IDÉES</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px"><span style="{{ ideaOpenObj.dotStyle }}"></span><span style="{{ ideaOpenObj.statusStyle }}">{{ ideaOpenObj.status }}</span></div>
+        <div style="font:500 22px 'Inter',sans-serif; letter-spacing:-.5px; color:var(--text); line-height:1.4">{{ ideaOpenObj.text }}</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:22px">
+          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">CRÉATEUR</div><div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ ideaOpenObj.creator }}</div></div>
+          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">ORIGINE</div><div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ ideaOpenObj.source }}</div></div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:22px"><div onclick="{{ ideaOpenObj.edit }}" style="flex:1; padding:11px 0; text-align:center; border-radius:11px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover)">✎ MODIFIER</div><div onclick="{{ ideaOpenObj.del }}" style="flex:1; padding:11px 0; text-align:center; border-radius:11px; border:1px solid var(--hair); color:#E5484D; font:600 10px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover)">✕ SUPPRIMER</div></div>
+      </div>
+      </sc-if>
       </sc-if>
 
       <!-- ============ TO-DO ============ -->
@@ -645,6 +701,18 @@
           </div>
         </sc-for></div>
       </div>
+      <sc-if value="{{ planDayOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:20px; padding:18px 22px; margin-top:16px">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+          <div style="font:600 15px 'Inter',sans-serif; color:var(--text); text-transform:capitalize">{{ planDayLabel }}</div>
+          <div style="display:flex; gap:8px; align-items:center"><div onclick="{{ addEventForDay }}" style="padding:8px 14px; border-radius:10px; background:var(--signal); color:var(--onsignal); font:600 9px 'Inter',sans-serif; cursor:pointer">+ ÉVÉNEMENT CE JOUR</div><span onclick="{{ closePlanDay }}" style="font:600 9px 'Inter',sans-serif; color:var(--faint); cursor:pointer; padding:6px 8px">FERMER</span></div>
+        </div>
+        <sc-if value="{{ planDayHasEvents }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:8px"><sc-for list="{{ planDayEvents }}" as="a" hint-placeholder-count="3"><div style="display:flex; gap:14px; align-items:center; padding:13px 0; border-top:1px solid var(--hair)"><div style="font:600 12px 'Inter',sans-serif; color:var(--muted); width:46px">{{ a.time }}</div><span style="{{ a.dotStyle }}"></span><div style="flex:1; min-width:0"><div style="font:500 13px 'Inter',sans-serif; color:var(--text)">{{ a.title }}</div><sc-if value="{{ a.who }}" hint-placeholder-val="{{ false }}"><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ a.who }}</div></sc-if></div><span style="{{ a.tagStyle }}">{{ a.typeLabel }}</span><span onclick="{{ a.del }}" title="Supprimer l'événement" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div></sc-for></div>
+        </sc-if>
+        <sc-if value="{{ planDayEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:18px 0 6px; font:400 12px 'Inter',sans-serif; color:var(--faint)">Aucun événement prévu ce jour.</div></sc-if>
+      </div>
+      </sc-if>
       <div style="background:var(--surface); border-radius:20px; padding:6px 22px 14px; margin-top:16px">
         <div style="font:600 14px 'Inter',sans-serif; color:var(--text); padding:14px 0 4px">Prochains jours</div>
         <sc-for list="{{ upcoming }}" as="a" hint-placeholder-count="5"><div style="display:flex; gap:16px; align-items:center; padding:13px 0; border-top:1px solid var(--hair)"><div style="{{ a.dayBoxStyle }}"><div style="font:700 15px 'Inter',sans-serif; line-height:1">{{ a.day }}</div><div style="font:600 8px 'Inter',sans-serif; margin-top:2px; opacity:.7">{{ a.dow }}</div></div><div style="font:600 12px 'Inter',sans-serif; color:var(--muted); width:46px">{{ a.time }}</div><span style="{{ a.dotStyle }}"></span><div style="flex:1; font:500 13px 'Inter',sans-serif; color:var(--text)">{{ a.title }}</div><span style="{{ a.tagStyle }}">{{ a.typeLabel }}</span><span onclick="{{ a.del }}" title="Supprimer l'événement" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div></sc-for>
@@ -790,6 +858,49 @@
       </sc-if>
       </sc-if>
 
+      <!-- ============ DEBRIEF ============ -->
+      <sc-if value="{{ vDebrief }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-bottom:22px"><div style="font:500 46px 'Inter',sans-serif; letter-spacing:-2px; color:var(--text)">Debrief</div><div style="display:flex; align-items:center; gap:9px; margin-top:10px; font:500 12px 'Inter',sans-serif; color:var(--faint)"><span>Outils</span><span>›</span><span style="color:var(--text)">Bilans de campagne</span></div></div>
+      <!-- LIST -->
+      <sc-if value="{{ debriefListMode }}" hint-placeholder-val="{{ true }}">
+      <div style="background:var(--surface); border-radius:20px; padding:8px">
+        <sc-for list="{{ debriefList }}" as="d" hint-placeholder-count="3">
+          <div onclick="{{ d.open }}" style="display:flex; align-items:center; gap:14px; padding:16px 16px; border-radius:14px; cursor:pointer" style-hover="background:var(--rowhover)">
+            <span style="{{ d.dotStyle }}"></span>
+            <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ d.brand }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ d.creator }} · {{ d.period }}</div></div>
+            <span style="{{ d.roiChipStyle }}">ROI {{ d.roi }}</span>
+            <span style="flex-shrink:0; color:var(--faint); font:600 14px 'Inter',sans-serif">›</span>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <!-- REPORT DETAIL -->
+      <sc-if value="{{ debriefDetailOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:22px; padding:28px; max-width:820px">
+        <div onclick="{{ closeDebrief }}" style="display:inline-flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint); cursor:pointer; margin-bottom:20px" style-hover="color:var(--text)">← TOUS LES DEBRIEFS</div>
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap">
+          <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1.4px; color:var(--faint)">DEBRIEF DE CAMPAGNE</div><div style="font:500 30px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text); margin-top:6px">{{ debriefOpenObj.brand }}</div><div style="font:400 12px 'Inter',sans-serif; color:var(--muted); margin-top:6px">{{ debriefOpenObj.creator }} · {{ debriefOpenObj.period }}</div></div>
+          <div style="display:flex; align-items:center; gap:8px"><div style="width:34px; height:34px; border-radius:9px; background:#14181E; overflow:hidden; display:flex; align-items:center; justify-content:center"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div><span style="font:700 12px 'Inter',sans-serif; color:var(--text)">TTP AGENCY</span></div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap">
+          <div onclick="{{ debriefOpenObj.share }}" style="padding:11px 18px; border-radius:12px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">↗ PARTAGER</div>
+          <div onclick="{{ debriefOpenObj.shareEmail }}" style="padding:11px 18px; border-radius:12px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover)">✉ ENVOYER À LA MARQUE</div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:24px"><sc-for list="{{ debriefOpenObj.kpis }}" as="k" hint-placeholder-count="6"><div style="background:var(--panel); border-radius:16px; padding:18px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">{{ k.l }}</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:8px; letter-spacing:-1px">{{ k.v }}</div></div></sc-for></div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px">
+          <div style="background:var(--text); border-radius:16px; padding:18px; color:var(--bg)"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">INVESTISSEMENT</div><div style="font:700 20px 'Inter',sans-serif; margin-top:8px; letter-spacing:-1px">{{ debriefOpenObj.budget }}</div></div>
+          <div style="background:var(--text); border-radius:16px; padding:18px; color:var(--bg)"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">CA GÉNÉRÉ</div><div style="font:700 20px 'Inter',sans-serif; margin-top:8px; letter-spacing:-1px">{{ debriefOpenObj.revenue }}</div></div>
+          <div style="background:var(--signal); border-radius:16px; padding:18px; color:var(--onsignal)"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; opacity:.7">ROI</div><div style="font:700 20px 'Inter',sans-serif; margin-top:8px; letter-spacing:-1px">{{ debriefOpenObj.roi }}</div></div>
+        </div>
+        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin:26px 0 8px">SYNTHÈSE</div>
+        <div style="font:400 13px 'Inter',sans-serif; color:var(--muted); line-height:1.7">{{ debriefOpenObj.summary }}</div>
+        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin:24px 0 10px">LIVRABLES · {{ debriefOpenObj.deliverables }}</div>
+        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin:8px 0 10px">POINTS FORTS</div>
+        <sc-for list="{{ debriefOpenObj.highlights }}" as="h" hint-placeholder-count="3"><div style="display:flex; gap:10px; align-items:flex-start; padding:9px 0"><span style="color:var(--signaltext); font:700 13px 'Inter',sans-serif; line-height:1.3">✓</span><div style="flex:1; font:500 13px 'Inter',sans-serif; color:var(--text); line-height:1.4">{{ h }}</div></div></sc-for>
+      </div>
+      </sc-if>
+      </sc-if>
+
       <sc-if value="{{ vModule }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px"><div><div style="font:500 46px 'Inter',sans-serif; letter-spacing:-2px; color:var(--text)">{{ mod.title }}</div><div style="display:flex; align-items:center; gap:9px; margin-top:10px; font:500 12px 'Inter',sans-serif; color:var(--faint)"><span>{{ mod.section }}</span><span>›</span><span style="color:var(--text)">{{ mod.sub }}</span></div></div><div onclick="{{ addModuleRow }}" style="padding:11px 16px; border-radius:13px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">{{ mod.action }}</div></div>
       <div style="background:var(--surface); border-radius:20px; padding:8px 8px 6px">
@@ -871,7 +982,7 @@
       <!-- portal: ACCUEIL -->
       <sc-if value="{{ pAccueil }}" hint-placeholder-val="{{ true }}">
       <div style="margin-bottom:22px"><div style="font:400 12px 'Inter',sans-serif; color:var(--faint)">Jeudi 26 juin</div><div style="font:500 40px 'Inter',sans-serif; letter-spacing:-1.5px; color:var(--text); margin-top:6px">Hello {{ me.first }} ✌️</div></div>
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
+      <div class="m-home-stats" style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
         <div onclick="{{ goPStats }}" style="background:var(--surface); border-radius:18px; padding:18px; cursor:pointer" style-hover="background:var(--rowhover)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ABONNÉS</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">{{ me.followers }}</div></div>
         <div onclick="{{ goPStats }}" style="background:var(--surface); border-radius:18px; padding:18px; cursor:pointer" style-hover="background:var(--rowhover)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ENGAGEMENT</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">{{ me.er }}</div><div style="font:600 9px 'Inter',sans-serif; color:var(--signaltext); margin-top:4px">▲ en hausse</div></div>
         <div onclick="{{ goPBriefs }}" style="background:var(--surface); border-radius:18px; padding:18px; cursor:pointer" style-hover="background:var(--rowhover)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">BRIEFS</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">{{ me.briefsCount }}</div><div style="font:600 9px 'Inter',sans-serif; color:var(--muted); margin-top:4px">en cours</div></div>
@@ -890,7 +1001,7 @@
       </div>
       <div style="background:var(--surface); border-radius:20px; padding:22px; margin-top:16px">
         <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:14px">Accès rapide</div>
-        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px">
+        <div class="m-home-quick" style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px">
           <div onclick="{{ goPBriefs }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">✎</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Briefs</span></div>
           <div onclick="{{ goPPlanning }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">◷</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Planning</span></div>
           <div onclick="{{ goPStats }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">✦</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Stats</span></div>
@@ -1006,6 +1117,11 @@
           <div style="background:var(--panel); border-radius:12px; padding:12px 14px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">VALEURS</div><div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ me.valeurs }}</div></div>
           <div style="background:var(--panel); border-radius:12px; padding:12px 14px"><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">AUDIENCE</div><div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ me.audience }}</div></div>
         </div>
+      </div>
+      <div style="background:var(--surface); border-radius:20px; padding:22px; margin-bottom:16px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px"><div style="font:600 13px 'Inter',sans-serif; color:var(--text)">Mes coordonnées</div><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint)">VISIBLE PAR TON AGENCE</span></div>
+        <div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-bottom:14px">Tiens tes infos à jour : ton agence les utilise pour les contrats et la facturation.</div>
+        <div class="m-prof-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px"><sc-for list="{{ meInfoFields }}" as="f" hint-placeholder-count="6"><div><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint); margin-bottom:6px">{{ f.label }}</div><input value="{{ f.value }}" oninput="{{ f.onInput }}" placeholder="{{ f.placeholder }}" style="width:100%; padding:11px 13px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div></sc-for></div>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
         <div style="background:var(--surface); border-radius:20px; padding:22px">
