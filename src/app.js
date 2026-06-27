@@ -1056,8 +1056,17 @@ class Component extends DCLogic {
           try {
             const { data, error } = await this._sb.auth.signInWithPassword({ email, password:pwd });
             if(!error && data && data.user){
-              let role='agency', creatorId=null;
-              try { const r=await this._sb.from('profiles').select('role,creator_name').eq('user_id',data.user.id).maybeSingle(); const prof=r&&r.data; if(prof){ role=prof.role||'agency'; if(role==='creator'){ const idx=this.rosterRaw.findIndex(c=>c.name===prof.creator_name); creatorId=idx>=0?idx:0; } } } catch(_){}
+              const uemail=(data.user.email||email||'').toLowerCase();
+              const agencyEmails=['marcbouraoui@gmail.com','agence@ttp.com'];
+              let role=null, creatorId=null;
+              if(agencyEmails.indexOf(uemail)>=0){ role='agency'; }
+              else {
+                // match the login email against the roster's creator emails (gérés dans le Roster)
+                this.rosterRaw.forEach((c,i)=>{ const seed=((this.rosterInfoRaw[i]||{}).email||''); const ov=((this.state.rosterInfo&&this.state.rosterInfo[i])||{}).email; const em=String(ov||seed||'').toLowerCase().trim(); if(em && em===uemail){ role='creator'; creatorId=i; } });
+                // optional fallback: a profiles table if it exists
+                if(!role){ try{ const r=await this._sb.from('profiles').select('role,creator_name').eq('user_id',data.user.id).maybeSingle(); const prof=r&&r.data; if(prof){ role=prof.role; if(role==='creator'){ const j=this.rosterRaw.findIndex(c=>c.name===prof.creator_name); creatorId=j>=0?j:0; } } }catch(_){} }
+              }
+              if(!role){ try{ await this._sb.auth.signOut(); }catch(_){} this.setState({ loginError:'Compte non rattaché. Ajoute cet email à un créateur du Roster (ou connecte-toi en agence).' }); return; }
               this._authReal=true;
               this.setState({ authed:true, authRole:role, space:(role==='creator'?'creator':'agency'), creatorId, view:'apercu', portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false });
               try{ this._cloudReady=false; this._cloudRowId=null; this._loadCloudState(); }catch(_){}
