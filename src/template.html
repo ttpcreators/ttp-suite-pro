@@ -726,6 +726,25 @@
       </sc-if>
 
       <!-- ============ GENERIC MODULE ============ -->
+      <!-- ============ CHECKLIST COLLABORATION ============ -->
+      <sc-if value="{{ vChecklist }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; flex-wrap:wrap; gap:12px"><div><div style="font:500 46px 'Inter',sans-serif; letter-spacing:-2px; color:var(--text)">Checklist</div><div style="display:flex; align-items:center; gap:9px; margin-top:10px; font:500 12px 'Inter',sans-serif; color:var(--faint)"><span>Agence</span><span>›</span><span style="color:var(--text)">Cadrage collaboration marque × créateur</span></div></div><div onclick="{{ resetChecklist }}" style="padding:11px 16px; border-radius:13px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover)">RÉINITIALISER</div></div>
+      <div style="background:var(--text); border-radius:20px; padding:22px; margin-bottom:16px; color:var(--bg)">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px"><div><div style="font:600 14px 'Inter',sans-serif">Avancement de la collaboration</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:3px">Cadre chaque étape pour une collab carrée, côté agence et côté créateur.</div></div><div style="font:700 30px 'Inter',sans-serif; letter-spacing:-1px">{{ checklistPct }}</div></div>
+        <div style="height:10px; background:rgba(255,255,255,.14); border-radius:6px; overflow:hidden"><span style="{{ checklistBar }}; display:block"></span></div>
+        <div style="font:500 11px 'Inter',sans-serif; color:var(--faint); margin-top:10px">{{ checklistProgress }}</div>
+      </div>
+      <sc-for list="{{ checklistPhases }}" as="ph" hint-placeholder-count="6">
+        <div style="background:var(--surface); border-radius:20px; padding:18px 20px; margin-bottom:14px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px"><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">{{ ph.phase }}</div><div style="display:flex; align-items:center; gap:12px"><span style="font:600 10px 'Inter',sans-serif; color:var(--faint)">{{ ph.progress }}</span><span onclick="{{ ph.add }}" style="font:600 10px 'Inter',sans-serif; color:var(--signaltext); cursor:pointer">+ étape</span></div></div>
+          <div style="height:6px; background:var(--rowhover); border-radius:5px; overflow:hidden; margin-bottom:8px"><span style="{{ ph.barStyle }}; display:block"></span></div>
+          <sc-for list="{{ ph.items }}" as="it" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--hair)"><span onclick="{{ it.toggle }}" style="{{ it.boxStyle }}; cursor:pointer">{{ it.check }}</span><span onclick="{{ it.toggle }}" style="{{ it.textStyle }}; cursor:pointer">{{ it.text }}</span><span style="{{ it.whoStyle }}">{{ it.who }}</span><span onclick="{{ it.del }}" title="Supprimer" style="flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span></div>
+          </sc-for>
+        </div>
+      </sc-for>
+      </sc-if>
+
       <sc-if value="{{ vModule }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px"><div><div style="font:500 46px 'Inter',sans-serif; letter-spacing:-2px; color:var(--text)">{{ mod.title }}</div><div style="display:flex; align-items:center; gap:9px; margin-top:10px; font:500 12px 'Inter',sans-serif; color:var(--faint)"><span>{{ mod.section }}</span><span>›</span><span style="color:var(--text)">{{ mod.sub }}</span></div></div><div onclick="{{ addModuleRow }}" style="padding:11px 16px; border-radius:13px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">{{ mod.action }}</div></div>
       <div style="background:var(--surface); border-radius:20px; padding:8px 8px 6px">
