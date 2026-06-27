@@ -77,6 +77,13 @@ export const pricingRaw = [
   { format: 'Pack mensuel', base: '18 000 €', excl: 'sur devis' },
 ]
 
+export const mediaKitRaw = {
+  0: { bio: 'Camille — voix mode & beauté de référence à Lyon. Contenus éditoriaux léchés, audience féminine ultra-engagée et fort taux de conversion sur le luxe accessible.', age: '25–34 ans', agePct: '61%', gender: 'Femmes 78% · Hommes 22%', geo: ['Paris', 'Lyon', 'Genève'], brands: ['Sephora', 'Dior Beauty', 'Sézane', 'Galeries Lafayette'], formats: [{ label: 'Reel Instagram', price: '2 200 €' }, { label: 'Story (×3)', price: '850 €' }, { label: 'Post feed', price: '1 500 €' }, { label: 'Pack campagne', price: '5 500 €' }] },
+  1: { bio: 'Théo — créateur gaming & tech, communauté Twitch fidèle et hyper réactive. Idéal pour lancements produit, setups et placements longue durée.', age: '18–24 ans', agePct: '54%', gender: 'Hommes 71% · Femmes 29%', geo: ['Paris', 'Lille', 'Montréal'], brands: ['Logitech', 'Nvidia', 'Red Bull'], formats: [{ label: 'Live sponsorisé', price: '3 000 €' }, { label: 'Vidéo YouTube', price: '2 600 €' }, { label: 'Short', price: '900 €' }, { label: 'Pack stream', price: '7 000 €' }] },
+  3: { bio: 'Inès — beauté & skincare sur TikTok, formats courts viraux et démonstrations produit à très fort taux d’engagement.', age: '18–24 ans', agePct: '63%', gender: 'Femmes 84% · Hommes 16%', geo: ['Paris', 'Marseille', 'Abidjan'], brands: ['L’Oréal', 'Garnier', 'The Ordinary'], formats: [{ label: 'Vidéo TikTok', price: '1 400 €' }, { label: 'UGC', price: '700 €' }, { label: 'Story', price: '500 €' }, { label: 'Pack 3 vidéos', price: '3 600 €' }] },
+  5: { bio: 'Jade — food & UGC, contenus authentiques pensés pour la performance paid. Excellente conteuse produit.', age: '25–34 ans', agePct: '58%', gender: 'Femmes 66% · Hommes 34%', geo: ['Lyon', 'Paris', 'Bruxelles'], brands: ['HelloFresh', 'Picard', 'Maille'], formats: [{ label: 'Vidéo UGC', price: '650 €' }, { label: 'Pack 3 UGC', price: '1 700 €' }, { label: 'Reel', price: '1 100 €' }, { label: 'Droits paid 6 mois', price: '+40%' }] },
+}
+
 export const prospectRaw = [
   { brand: 'HelloFresh', contact: 'Marc Petit', value: '~6 500 €', stage: 'Prospection', tone: 'cyan' },
   { brand: 'Asphalte', contact: 'RP — à trouver', value: '~9 000 €', stage: 'Prospection', tone: 'cyan' },

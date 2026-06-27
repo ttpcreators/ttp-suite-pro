@@ -33,7 +33,7 @@
   .backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 250; opacity: 0; pointer-events: none; transition: opacity .26s; }
   .shell.nav-open .backdrop { opacity: 1; pointer-events: auto; }
   .main { border-radius: 0; max-height: none; min-height: 100vh; }
-  .content { padding: 8px 14px 92px; }
+  .content { padding: 8px 14px 92px; overflow-x: auto; }
   .topbar { gap: 8px; padding: 10px 14px 2px; }
   .search { max-width: none; padding: 10px 13px; }
   .usermeta { display: none; }
@@ -41,4 +41,40 @@
   .bottombar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 200; background: var(--surface); border-top: 1px solid var(--hair); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 22px rgba(0,0,0,.07); }
   .bottombar a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 2px; cursor: pointer; color: var(--faint); font: 600 9px 'Inter',sans-serif; text-decoration: none; }
   .bottombar a.active { color: var(--text); }
+
+  /* ---- stack multi-column CARD grids to a single column ----
+     Selectors match React's NORMALIZED inline style serialization
+     (e.g. "repeat(4, minmax(0px, 1fr))"). The "grid-template-columns: "
+     prefix anchors each match so "1fr 1fr" never hits "2fr 1fr 1fr"
+     (pricing data rows stay compact). */
+  #root [style*="grid-template-columns: 1fr 1fr"],
+  #root [style*="grid-template-columns: 1.1fr 1fr"],
+  #root [style*="grid-template-columns: 1.4fr 1fr 1fr"],
+  #root [style*="grid-template-columns: 1fr 1.15fr"],
+  #root [style*="grid-template-columns: repeat(2,"],
+  #root [style*="grid-template-columns: repeat(3,"],
+  #root [style*="grid-template-columns: repeat(4,"] { grid-template-columns: 1fr !important; }
+  /* children of stacked grids: reset spans + allow shrink so wide inner
+     content can't force a column past the viewport */
+  #root [style*="grid-template-columns: 1fr 1fr"] > *,
+  #root [style*="grid-template-columns: 1.1fr 1fr"] > *,
+  #root [style*="grid-template-columns: 1.4fr 1fr 1fr"] > *,
+  #root [style*="grid-template-columns: 1fr 1.15fr"] > *,
+  #root [style*="grid-template-columns: repeat(2,"] > *,
+  #root [style*="grid-template-columns: repeat(3,"] > *,
+  #root [style*="grid-template-columns: repeat(4,"] > * { grid-column: auto !important; min-width: 0 !important; }
+  /* wide data tables keep their columns; the content area scrolls
+     horizontally (.content has overflow-x via the scroll container) */
+  #root [style*="grid-template-columns: 1fr 2.2fr"],
+  #root [style*="grid-template-columns: 2.4fr"],
+  #root [style*="grid-template-columns: 2fr 0.9fr"],
+  #root [style*="grid-template-columns: repeat(7,"] { min-width: 560px; }
+  /* scale down oversized page titles */
+  #root [style*="font: 500 46px"],
+  #root [style*="font: 700 40px"],
+  #root [style*="font: 500 40px"] { font-size: 28px !important; letter-spacing: -1px !important; }
+  #root [style*="font: 500 34px"],
+  #root [style*="font: 700 34px"],
+  #root [style*="font: 500 32px"],
+  #root [style*="font: 500 30px"] { font-size: 22px !important; }
 }
