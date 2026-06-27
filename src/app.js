@@ -228,7 +228,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -653,16 +653,19 @@ class Component extends DCLogic {
     const ideaDetailOpen = ideaOpenObj!=null;
     const closeIdea = ()=>this.setState({ideaOpen:null});
     // ===== DEBRIEF (clickable campaign report to send to the brand) =====
+    // base effective : liste personnalisée si elle existe, sinon le seed moins les supprimés
+    const _dbBase = this.state.debriefData || this.debriefRaw.filter((_,i)=>!(this.state.deletedDebriefs||{})[i]);
+    const _dbCommit = (s)=> (s.debriefData || this.debriefRaw.filter((_,i)=>!(s.deletedDebriefs||{})[i]));
     const _mkDebrief = (o,i)=>({ brand:o.brand, creator:o.creator, period:o.period, deliverables:o.deliverables, budget:o.budget, revenue:o.revenue, roi:o.roi, summary:o.summary,
-      dotStyle:dotS(o.tone,false), roiChipStyle:"font:600 9px 'Inter',sans-serif;letter-spacing:.5px;color:"+this.toneHex(o.tone,dark)+";background:"+this.toneHex(o.tone,dark)+"18;padding:5px 11px;border-radius:20px;white-space:nowrap;",
-      kpis:o.kpis, highlights:o.highlights,
+      dotStyle:dotS(o.tone||'cyan',false), roiChipStyle:"font:600 9px 'Inter',sans-serif;letter-spacing:.5px;color:"+this.toneHex(o.tone||'cyan',dark)+";background:"+this.toneHex(o.tone||'cyan',dark)+"18;padding:5px 11px;border-radius:20px;white-space:nowrap;",
+      kpis:o.kpis||[], highlights:o.highlights||[],
       open:(()=>{const k=i;return ()=>this.setState({debriefOpen:k});})(),
-      del:(()=>{const k=i,nm=o.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le debrief « '+nm+' » ?'))return; this.setState(s=>({ deletedDebriefs:Object.assign({}, s.deletedDebriefs||{}, {[k]:true}), debriefOpen:(s.debriefOpen===k?null:s.debriefOpen) })); };})() });
-    const debriefList = this.debriefRaw.map(_mkDebrief).filter((_,i)=>!(this.state.deletedDebriefs||{})[i]);
+      del:(()=>{const k=i,nm=o.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le debrief « '+nm+' » ?'))return; this.setState(s=>({ debriefData:_dbCommit(s).filter((_,j)=>j!==k), debriefOpen:(s.debriefOpen===k?null:s.debriefOpen) })); };})() });
+    const debriefList = _dbBase.map(_mkDebrief);
     const _dbOpenIdx = this.state.debriefOpen;
     let debriefOpenObj = null;
-    if(_dbOpenIdx!=null && this.debriefRaw[_dbOpenIdx]){ const o=this.debriefRaw[_dbOpenIdx]; const d=_mkDebrief(o,_dbOpenIdx);
-      const shareText='DEBRIEF DE CAMPAGNE — '+o.brand+'\nCréateur : '+o.creator+'\nPériode : '+o.period+'\nLivrables : '+o.deliverables+'\n\nRÉSULTATS :\n'+o.kpis.map(k=>'· '+k.l+' : '+k.v).join('\n')+'\n\nInvestissement : '+o.budget+'  |  CA généré : '+o.revenue+'  |  ROI : '+o.roi+'\n\nSYNTHÈSE :\n'+o.summary+'\n\nPOINTS FORTS :\n'+o.highlights.map(h=>'· '+h).join('\n')+'\n\n— TTP Agency';
+    if(_dbOpenIdx!=null && _dbBase[_dbOpenIdx]){ const o=_dbBase[_dbOpenIdx]; const d=_mkDebrief(o,_dbOpenIdx); const _ok=o.kpis||[], _oh=o.highlights||[];
+      const shareText='DEBRIEF DE CAMPAGNE — '+o.brand+'\nCréateur : '+o.creator+'\nPériode : '+o.period+'\nLivrables : '+(o.deliverables||'')+'\n\nRÉSULTATS :\n'+_ok.map(k=>'· '+k.l+' : '+k.v).join('\n')+'\n\nInvestissement : '+o.budget+'  |  CA généré : '+o.revenue+'  |  ROI : '+o.roi+'\n\nSYNTHÈSE :\n'+(o.summary||'')+'\n\nPOINTS FORTS :\n'+_oh.map(h=>'· '+h).join('\n')+'\n\n— TTP Agency';
       debriefOpenObj=Object.assign({}, d, {
         share:()=>{ try{ if(navigator.share){ navigator.share({title:'Debrief '+o.brand, text:shareText}).catch(()=>{}); return; } }catch(_){} try{ if(navigator.clipboard){ navigator.clipboard.writeText(shareText).catch(()=>{}); } }catch(_){} toast('Debrief copié — prêt à envoyer'); },
         shareEmail:()=>{ window.location.href='mailto:?subject='+encodeURIComponent('Debrief de campagne — '+o.brand)+'&body='+encodeURIComponent(shareText); },
@@ -1177,7 +1180,11 @@ class Component extends DCLogic {
       ncoPhoneV:this.state.ncoPhone||'', onNcoPhone:_ncoField('ncoPhone'),
       // ===== ACCÈS (gestion des comptes créateurs / employés) =====
       vAcces: this.state.view==='acces',
-      accessList: (this.state.accessAccounts||[]).map((a,i)=>({ email:a.email, roleLabel:(a.role==='creator'?'Créateur':'Agence / Équipe'), creator:a.creator||'', dotStyle:dotS(a.role==='creator'?'cyan':'signal',false), roleStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 10px;border-radius:20px;white-space:nowrap;color:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+";background:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+"18;", del:(()=>{const ii=i,em=a.email;return ()=>{ if(!window.confirm('Supprimer l\'accès '+em+' ?'))return; this.setState(s=>({ accessAccounts:(s.accessAccounts||[]).filter((_,j)=>j!==ii) })); };})() })),
+      accessList: (this.state.accessAccounts||[]).map((a,i)=>({ email:a.email, roleLabel:(a.role==='creator'?'Créateur':'Agence / Équipe'), creator:a.creator||'', dotStyle:dotS(a.role==='creator'?'cyan':'signal',false), roleStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 10px;border-radius:20px;white-space:nowrap;color:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+";background:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+"18;",
+        pwdShown: this.state.acReveal===a.email, pwdDisplay: (this.state.acReveal===a.email ? (a.pwd||'—') : '••••••••'), pwdToggleLabel: (this.state.acReveal===a.email?'Masquer':'Voir'),
+        pwdToggle:(()=>{const em=a.email;return ()=>this.setState(s=>({ acReveal: s.acReveal===em?null:em }));})(),
+        copyPwd:(()=>{const pw=a.pwd||'';return ()=>{ if(!pw)return; try{ if(navigator.clipboard) navigator.clipboard.writeText(pw).catch(()=>{}); }catch(_){} toast('Mot de passe copié'); };})(),
+        del:(()=>{const ii=i,em=a.email;return ()=>{ if(!window.confirm('Supprimer l\'accès '+em+' ?'))return; this.setState(s=>({ accessAccounts:(s.accessAccounts||[]).filter((_,j)=>j!==ii) })); };})() })),
       accessEmpty: (this.state.accessAccounts||[]).length===0,
       acEmailV:this.state.acEmail||'', onAcEmail:(e)=>{const v=e.target.value;this.setState({acEmail:v});},
       acPwdV:this.state.acPwd||'', onAcPwd:(e)=>{const v=e.target.value;this.setState({acPwd:v});},
@@ -1188,8 +1195,15 @@ class Component extends DCLogic {
         // 1) enregistre l'accès localement (actif immédiatement) + relie le portail du créateur
         this.setState(s=>{ const upd={ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator}], acEmail:'', acPwd:'' }; if(role==='creator' && creator){ const idx=this.rosterRaw.findIndex(c=>c.name===creator); if(idx>=0){ const ri=Object.assign({},s.rosterInfo); ri[idx]=Object.assign({}, this.rosterInfoRaw[idx]||{}, ri[idx]||{}, {email}); upd.rosterInfo=ri; } } return upd; });
         toast('Accès créé ✓ — le portail est prêt');
-        // 2) crée le vrai compte Supabase pour que la connexion marche au niveau base de données
-        if(this._sb && this._sb.auth && this._sb.auth.signUp){ this._sb.auth.signUp({ email, password:pwd }).then(({data,error})=>{ if(error){ console.warn('[supabase] signup:', error.message); toast('Accès local OK · Supabase : '+error.message); return; } toast('Compte Supabase créé ✓'); try{ const uid=data&&data.user&&data.user.id; if(uid){ this._sb.from('profiles').upsert({ user_id:uid, role, creator_name:creator }).then(({error:e2})=>{ if(e2) console.warn('[supabase] profile:', e2.message); }); } }catch(_){ } }).catch(e=>console.warn('[supabase] signup failed', e)); }
+        // 2) crée le VRAI compte Supabase via un client jetable (pour ne pas remplacer
+        //    la session agence en cours), avec rôle + créateur en métadonnées : le
+        //    trigger handle_new_user crée alors le profil rattaché → isolation par créateur.
+        try{
+          if(window.supabase && window.__SB_URL__ && window.__SB_KEY__){
+            const tmp=window.supabase.createClient(window.__SB_URL__, window.__SB_KEY__, { auth:{ persistSession:false, autoRefreshToken:false, storageKey:'ttp_signup_tmp' } });
+            tmp.auth.signUp({ email, password:pwd, options:{ data:{ role, creator_name:creator } } }).then(({error})=>{ if(error){ console.warn('[supabase] signup:', error.message); toast('Accès local OK · Supabase : '+error.message); } else { toast('Compte Supabase créé ✓ (confirme l\'email)'); } }).catch(e=>console.warn('[supabase] signup failed', e));
+          }
+        }catch(e){ console.warn('[supabase] signup setup', e); }
       },
       calLabel, prevMonth, nextMonth,
       addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,
@@ -1401,6 +1415,15 @@ class Component extends DCLogic {
       vPlanning:this.state.view==='planning', vProspection:this.state.view==='prospection',
       vModule: !!this.modules[this.state.view] && this.state.view!=='idees' && this.state.view!=='checklist' && this.state.view!=='debrief',
       vDebrief:this.state.view==='debrief', debriefList, debriefOpenObj, debriefDetailOpen, debriefListMode:!debriefDetailOpen, closeDebrief,
+      showDebriefForm:!!this.state.showDebriefForm, openDebriefForm:()=>this.setState({showDebriefForm:true, debriefOpen:null}), closeDebriefForm:()=>this.setState({showDebriefForm:false}),
+      ndBrandV:this.state.ndBrand||'', onNdBrand:(e)=>{const v=e.target.value;this.setState({ndBrand:v});},
+      ndPeriodV:this.state.ndPeriod||'', onNdPeriod:(e)=>{const v=e.target.value;this.setState({ndPeriod:v});},
+      ndDelivV:this.state.ndDeliv||'', onNdDeliv:(e)=>{const v=e.target.value;this.setState({ndDeliv:v});},
+      ndBudgetV:this.state.ndBudget||'', onNdBudget:(e)=>{const v=e.target.value;this.setState({ndBudget:v});},
+      ndRevenueV:this.state.ndRevenue||'', onNdRevenue:(e)=>{const v=e.target.value;this.setState({ndRevenue:v});},
+      ndSummaryV:this.state.ndSummary||'', onNdSummary:(e)=>{const v=e.target.value;this.setState({ndSummary:v});},
+      ndCreatorChips: this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name.split(' ')[0], style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.ndCreator==null?0:this.state.ndCreator))===i?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const k=i;return ()=>this.setState({ndCreator:k});})() })),
+      addDebrief:()=>{ const brand=(this.state.ndBrand||'').trim(); if(!brand){ toast('Indique la marque / campagne'); return; } const ci=this.state.ndCreator==null?0:this.state.ndCreator; const c=this.rosterRaw[ci]||this.rosterRaw[0]; const _n=(s)=>{ const x=Number(String(s||'').replace(/[^0-9.,]/g,'').replace(',','.'))||0; return x; }; const bud=_n(this.state.ndBudget), rev=_n(this.state.ndRevenue); const roi=bud>0?((rev/bud).toFixed(1).replace('.',',')+'×'):'—'; const fmt=(n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €'; const deb={ brand, creator:c?c.name:'', period:(this.state.ndPeriod||'').trim()||'—', deliverables:(this.state.ndDeliv||'').trim()||'—', budget:bud?fmt(bud):'—', revenue:rev?fmt(rev):'—', roi, tone:c?c.tone:'cyan', summary:(this.state.ndSummary||'').trim()||'—', kpis:[], highlights:[] }; this.setState(s=>({ debriefData:[deb].concat(_dbCommit(s)), showDebriefForm:false, ndBrand:'', ndPeriod:'', ndDeliv:'', ndBudget:'', ndRevenue:'', ndSummary:'', ndCreator:null })); toast('Debrief créé ✓'); },
       vChecklist: this.state.view==='checklist', checklistPhases, checklistPct, checklistProgress, checklistBar, resetChecklist, collabList, checklistInDeal, checklistList:!checklistInDeal, openCollabLabel, backToCollabs, addCollab,
       pAccueil:this.state.portalTab==='accueil', pBriefs:this.state.portalTab==='briefs', pPlanning:this.state.portalTab==='planning', pStats:this.state.portalTab==='stats', pProfil:this.state.portalTab==='profil',
       goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}), goPDocuments:()=>this.setState({portalTab:'documents'}),

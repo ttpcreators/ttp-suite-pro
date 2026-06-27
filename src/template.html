@@ -988,7 +988,9 @@
         <sc-for list="{{ accessList }}" as="a" hint-placeholder-count="3">
           <div style="display:flex; align-items:center; gap:14px; padding:14px 14px; border-radius:12px" style-hover="background:var(--rowhover)">
             <span style="{{ a.dotStyle }}"></span>
-            <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ a.email }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ a.creator }}</div></div>
+            <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ a.email }}</div><div style="display:flex; align-items:center; gap:8px; margin-top:3px"><span style="font:400 11px 'Inter',sans-serif; color:var(--faint)">{{ a.creator }}</span><span style="font:600 11px 'Inter',sans-serif; color:var(--muted); letter-spacing:.5px">· {{ a.pwdDisplay }}</span></div></div>
+            <span onclick="{{ a.pwdToggle }}" title="Voir / masquer le mot de passe" style="flex-shrink:0; font:600 9px 'Inter',sans-serif; letter-spacing:.4px; color:var(--signaltext); cursor:pointer; padding:5px 10px; border-radius:8px; background:var(--signalsoft)">👁 {{ a.pwdToggleLabel }}</span>
+            <span onclick="{{ a.copyPwd }}" title="Copier le mot de passe" style="flex-shrink:0; font:600 9px 'Inter',sans-serif; color:var(--faint); cursor:pointer; padding:5px 9px; border-radius:8px; border:1px solid var(--hair)" style-hover="color:var(--text)">⧉</span>
             <span style="{{ a.roleStyle }}">{{ a.roleLabel }}</span>
             <span onclick="{{ a.del }}" title="Supprimer l'accès" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
           </div>
@@ -1000,7 +1002,26 @@
 
       <!-- ============ DEBRIEF ============ -->
       <sc-if value="{{ vDebrief }}" hint-placeholder-val="{{ false }}">
-      <div style="margin-bottom:22px"><div style="font:500 46px 'Inter',sans-serif; letter-spacing:-2px; color:var(--text)">Debrief</div><div style="display:flex; align-items:center; gap:9px; margin-top:10px; font:500 12px 'Inter',sans-serif; color:var(--faint)"><span>Outils</span><span>›</span><span style="color:var(--text)">Bilans de campagne</span></div></div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; flex-wrap:wrap; gap:12px"><div><div style="font:500 46px 'Inter',sans-serif; letter-spacing:-2px; color:var(--text)">Debrief</div><div style="display:flex; align-items:center; gap:9px; margin-top:10px; font:500 12px 'Inter',sans-serif; color:var(--faint)"><span>Outils</span><span>›</span><span style="color:var(--text)">Bilans de campagne</span></div></div><sc-if value="{{ debriefListMode }}" hint-placeholder-val="{{ true }}"><div onclick="{{ openDebriefForm }}" style="padding:11px 16px; border-radius:13px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">+ NOUVEAU DEBRIEF</div></sc-if></div>
+      <!-- CREATE FORM -->
+      <sc-if value="{{ showDebriefForm }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border:1px solid var(--hair); border-radius:20px; padding:20px; margin-bottom:16px">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px"><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">Nouveau debrief</div><div onclick="{{ closeDebriefForm }}" style="font:600 14px 'Inter',sans-serif; color:var(--faint); cursor:pointer">✕</div></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+          <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">MARQUE / CAMPAGNE</div><input value="{{ ndBrandV }}" oninput="{{ onNdBrand }}" placeholder="Ex : Sephora — Collection été" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
+          <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">PÉRIODE</div><input value="{{ ndPeriodV }}" oninput="{{ onNdPeriod }}" placeholder="Ex : 15 mars – 12 avril 2026" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
+        </div>
+        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin:16px 0 8px">CRÉATEUR</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap"><sc-for list="{{ ndCreatorChips }}" as="c" hint-placeholder-count="8"><div onclick="{{ c.pick }}" style="{{ c.style }}">{{ c.name }}</div></sc-for></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:16px">
+          <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">LIVRABLES</div><input value="{{ ndDelivV }}" oninput="{{ onNdDeliv }}" placeholder="3 posts · 2 reels" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
+          <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">INVESTISSEMENT (€)</div><input value="{{ ndBudgetV }}" oninput="{{ onNdBudget }}" placeholder="12000" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
+          <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">CA GÉNÉRÉ (€)</div><input value="{{ ndRevenueV }}" oninput="{{ onNdRevenue }}" placeholder="49200" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
+        </div>
+        <div style="margin-top:12px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">SYNTHÈSE</div><textarea value="{{ ndSummaryV }}" oninput="{{ onNdSummary }}" placeholder="Résultats clés de la campagne…" style="width:100%; min-height:70px; resize:vertical; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:400 12px 'Inter',sans-serif; outline:none"></textarea></div>
+        <div style="margin-top:14px"><div onclick="{{ addDebrief }}" style="display:inline-block; padding:11px 22px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">CRÉER LE DEBRIEF</div><span style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-left:12px">Le ROI est calculé automatiquement.</span></div>
+      </div>
+      </sc-if>
       <!-- LIST -->
       <sc-if value="{{ debriefListMode }}" hint-placeholder-val="{{ true }}">
       <div style="background:var(--surface); border-radius:20px; padding:8px">
