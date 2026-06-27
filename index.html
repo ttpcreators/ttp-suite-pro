@@ -826,12 +826,26 @@
         </div>
         <div style="background:var(--text); border-radius:20px; padding:24px; color:var(--bg); display:flex; flex-direction:column">
           <div style="font:600 12px 'Inter',sans-serif; color:var(--signal); letter-spacing:.5px">SIMULATEUR DE TARIF</div>
-          <div style="font:400 10px 'Inter',sans-serif; color:var(--faint); letter-spacing:.8px; margin-top:18px">CRÉATEUR</div>
+          <div style="font:400 10px 'Inter',sans-serif; color:var(--faint); letter-spacing:.8px; margin-top:18px">CRÉATEUR (roster ou externe)</div>
           <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px"><sc-for list="{{ priceChips }}" as="c" hint-placeholder-count="8"><div onclick="{{ c.pick }}" style="{{ c.style }}">{{ c.name }}</div></sc-for></div>
-          <div style="font:400 10px 'Inter',sans-serif; color:var(--faint); letter-spacing:.8px; margin-top:16px">FORMAT</div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px"><sc-for list="{{ priceFormats }}" as="f" hint-placeholder-count="6"><div onclick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</div></sc-for></div>
-          <div style="margin-top:auto; padding-top:22px"><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">Estimation · {{ priceCreatorName }}</div><div style="font:700 38px 'Inter',sans-serif; letter-spacing:-2px; margin-top:4px; white-space:nowrap">{{ priceValue }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:4px">{{ priceMeta }}</div></div>
-          <div onclick="{{ genDevis }}" style="margin-top:16px; padding:11px 0; text-align:center; border-radius:12px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">GÉNÉRER LE DEVIS</div>
+          <sc-if value="{{ priceCustom }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px"><input value="{{ priceFollowersV }}" oninput="{{ onPriceFollowers }}" type="number" placeholder="Abonnés" style="width:100%; padding:9px 11px; border-radius:9px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#fff; font:500 11px 'Inter',sans-serif; outline:none"><input value="{{ priceERV }}" oninput="{{ onPriceER }}" placeholder="ER % (ex 4,5)" style="width:100%; padding:9px 11px; border-radius:9px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#fff; font:500 11px 'Inter',sans-serif; outline:none"></div>
+          <input value="{{ priceCustomNameV }}" oninput="{{ onPriceCustomName }}" placeholder="Nom du créateur" style="width:100%; margin-top:8px; padding:9px 11px; border-radius:9px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#fff; font:500 11px 'Inter',sans-serif; outline:none">
+          </sc-if>
+          <div style="font:400 10px 'Inter',sans-serif; color:var(--faint); letter-spacing:.8px; margin-top:16px">CONTENUS · CHOISIS LES QUANTITÉS</div>
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:7px"><sc-for list="{{ priceFormatSteppers }}" as="f" hint-placeholder-count="5">
+            <div style="display:flex; align-items:center; gap:10px"><div style="flex:1; min-width:0"><div style="font:600 11px 'Inter',sans-serif; color:var(--bg)">{{ f.label }}</div><div style="font:400 9px 'Inter',sans-serif; color:var(--faint)">{{ f.unit }} / unité</div></div><div style="display:flex; align-items:center; gap:7px"><span onclick="{{ f.dec }}" style="width:24px; height:24px; border-radius:7px; background:rgba(255,255,255,.12); color:var(--bg); display:flex; align-items:center; justify-content:center; cursor:pointer; font:600 14px 'Inter',sans-serif">−</span><span style="width:18px; text-align:center; font:700 12px 'Inter',sans-serif; color:var(--bg)">{{ f.qty }}</span><span onclick="{{ f.inc }}" style="width:24px; height:24px; border-radius:7px; background:rgba(255,255,255,.12); color:var(--bg); display:flex; align-items:center; justify-content:center; cursor:pointer; font:600 13px 'Inter',sans-serif">+</span></div></div>
+          </sc-for></div>
+          <div onclick="{{ priceExclToggle }}" style="display:flex; align-items:center; gap:9px; margin-top:14px; cursor:pointer"><span style="{{ priceExclBoxStyle }}">{{ priceExclCheck }}</span><span style="font:500 11px 'Inter',sans-serif; color:var(--bg)">Exclusivité (+30%)</span></div>
+          <sc-if value="{{ priceHasLines }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px; border-top:1px solid rgba(255,255,255,.12); padding-top:12px; display:flex; flex-direction:column; gap:5px"><sc-for list="{{ priceLines }}" as="l" hint-placeholder-count="3"><div style="display:flex; justify-content:space-between; font:500 10px 'Inter',sans-serif; color:var(--faint)"><span>{{ l.label }} · {{ l.qtyLabel }}</span><span style="color:var(--bg)">{{ l.line }}</span></div></sc-for></div>
+          </sc-if>
+          <div style="margin-top:16px; background:rgba(255,255,255,.06); border-radius:14px; padding:15px">
+            <div style="display:flex; justify-content:space-between; align-items:baseline"><span style="font:600 9px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">MINIMUM À PROPOSER</span><span style="font:700 28px 'Inter',sans-serif; letter-spacing:-1.5px; color:var(--signal); white-space:nowrap">{{ priceMinV }}</span></div>
+            <div style="display:flex; justify-content:space-between; margin-top:9px; font:500 11px 'Inter',sans-serif"><span style="color:var(--faint)">Tarif conseillé</span><span style="color:var(--bg)">{{ priceTotalV }}</span></div>
+            <div style="font:400 9px 'Inter',sans-serif; color:var(--faint); margin-top:7px">{{ priceCreatorName }} · {{ priceMeta }}</div>
+          </div>
+          <div onclick="{{ genDevis }}" style="margin-top:14px; padding:11px 0; text-align:center; border-radius:12px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">↓ GÉNÉRER LE DEVIS</div>
         </div>
       </div>
       </sc-if>
@@ -2461,11 +2475,27 @@ class Component extends DCLogic {
     engChips.push({ name:'+ Autre', dotStyle:'width:7px;height:7px;border-radius:50%;background:var(--faint);', style:'display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(engCustom?'background:var(--text);color:var(--bg);':'border:1px dashed var(--hair);color:var(--muted);'), pick:()=>this.setState(Object.assign({engCreator:'autre'}, engReset)) });
     // ===== PRICING CALCULATOR =====
     const fmtEur = (n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
-    const pci = this.state.priceCreator || 0; const pcr = this.rosterRaw[pci]; const pErf = parseFloat(pcr.er.replace(',','.'));
-    const rateMap = {post:9,reel:13,story:5,ugc:4,youtube:18,pack:38}; const fmtLabel = {post:'Post',reel:'Reel',story:'Story x3',ugc:'UGC',youtube:'YouTube',pack:'Pack mois'};
-    const pf = this.state.priceFormat || 'reel'; const pmult = 0.85 + pErf/12; const priceN = Math.round(fnum[pci]/1000*rateMap[pf]*pmult/100)*100;
-    const priceChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], style:'padding:6px 11px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(i===pci?'background:var(--signal);color:var(--onsignal);':'background:rgba(255,255,255,.1);color:var(--bg);'), pick:()=>this.setState({priceCreator:i}) }));
-    const priceFormats = Object.keys(rateMap).map(k=>({ label:fmtLabel[k], style:'padding:6px 11px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(k===pf?'background:var(--signal);color:var(--onsignal);':'background:rgba(255,255,255,.1);color:var(--bg);'), pick:()=>this.setState({priceFormat:k}) }));
+    const pCustom = this.state.priceCreator==='autre';
+    const pci = pCustom ? -1 : (this.state.priceCreator||0);
+    const pcr = pCustom ? null : this.rosterRaw[pci];
+    const pFollowers = pCustom ? (Number(String(this.state.priceFollowers||'').replace(/[^0-9]/g,''))||0) : (fnum[pci]||0);
+    const pErf = pCustom ? (Number(String(this.state.priceER||'').replace(',','.').replace(/[^0-9.]/g,''))||0) : parseFloat(String(pcr.er).replace(',','.'));
+    const rateMap = {post:9,reel:13,story:5,ugc:4,youtube:18}; const fmtLabel = {post:'Post Instagram',reel:'Reel',story:'Story (×3)',ugc:'UGC vidéo',youtube:'YouTube intégration'};
+    const pErMult = Math.max(0.6, 0.85 + (isFinite(pErf)?pErf:0)/12);
+    const _unit = (f)=> Math.round(pFollowers/1000*rateMap[f]*pErMult/100)*100;
+    const pQty = this.state.priceQty || {};
+    const priceLines = Object.keys(rateMap).filter(f=>(pQty[f]||0)>0).map(f=>{ const u=_unit(f); const q=pQty[f]; return { label:fmtLabel[f], qty:q, qtyLabel:q+' × '+fmtEur(u), line:fmtEur(u*q), lineN:u*q }; });
+    const pSubtotal = priceLines.reduce((a,l)=>a+l.lineN,0);
+    const pExcl = !!this.state.priceExcl;
+    const pTotal = Math.round(pSubtotal*(pExcl?1.30:1));
+    const pMin = Math.round(pTotal*0.80/100)*100;            // plancher à proposer
+    const priceCreatorName = pCustom ? (this.state.priceCustomName||'Créateur externe') : pcr.name;
+    const _kf=(n)=> n>=1000000?((n/1000000).toFixed(1).replace('.',',')+'M'):(n>=1000?Math.round(n/1000)+'K':String(n));
+    const priceMeta = (pFollowers?(_kf(pFollowers)+' abonnés'):'—')+' · ER '+(isFinite(pErf)?String(pErf).replace('.',','):'0')+'%';
+    const priceChips = this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name.split(' ')[0], style:'padding:6px 11px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(i===pci?'background:var(--signal);color:var(--onsignal);':'background:rgba(255,255,255,.12);color:var(--bg);'), pick:(()=>{const k=i;return ()=>this.setState({priceCreator:k});})() }));
+    priceChips.push({ name:'+ Autre', style:'padding:6px 11px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(pCustom?'background:var(--signal);color:var(--onsignal);':'border:1px dashed rgba(255,255,255,.35);color:var(--bg);'), pick:()=>this.setState({priceCreator:'autre'}) });
+    const priceFormatSteppers = Object.keys(rateMap).map(f=>({ key:f, label:fmtLabel[f], unit:fmtEur(_unit(f)), qty:String(pQty[f]||0), hasQty:(pQty[f]||0)>0, dec:(()=>{const k=f;return ()=>this.setState(s=>{const q=Object.assign({},s.priceQty); q[k]=Math.max(0,(q[k]||0)-1); return {priceQty:q};});})(), inc:(()=>{const k=f;return ()=>this.setState(s=>{const q=Object.assign({},s.priceQty); q[k]=(q[k]||0)+1; return {priceQty:q};});})() }));
+    const priceExclToggle = ()=>this.setState(s=>({priceExcl:!s.priceExcl}));
     // ===== CONTACT DETAIL =====
     const oc = this.state.openContact; let openContactObj = null;
     if(oc!=null){ const k=(this._contacts())[oc]; const cp=(key,val)=>()=>{ try{ navigator.clipboard && navigator.clipboard.writeText(val); }catch(e){} this.setState({copied:key}); setTimeout(()=>this.setState(s=> s.copied===key?{copied:null}:{}),1500); }; openContactObj={ brand:k.brand, person:k.person, role:k.role, email:k.email, phone:k.phone, last:k.last, deals:k.deals, initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,52), copyEmail:cp('email',k.email), copyPhone:cp('phone',k.phone), emailLabel:this.state.copied==='email'?'COPIÉ ✓':'COPIER', phoneLabel:this.state.copied==='phone'?'COPIÉ ✓':'COPIER' }; }
@@ -2541,7 +2571,10 @@ class Component extends DCLogic {
     const myDocs = (docBase[myCi]||[]).map((d,idx)=>mkDoc(d,myCi,idx));
 
     // ===== MEDIA KIT =====
-    const mkCi = this.state.mkCreator!=null?this.state.mkCreator:0;
+    const _mkDel=this.state.deletedRoster||{};
+    const _mkFirst=this.rosterRaw.findIndex((_,i)=>!_mkDel[i]);
+    let mkCi = this.state.mkCreator!=null?this.state.mkCreator:(_mkFirst>=0?_mkFirst:0);
+    if(_mkDel[mkCi]) mkCi=(_mkFirst>=0?_mkFirst:0);   // si le créateur sélectionné a été retiré
     const mkc = this.rosterRaw[mkCi]; const mkSeed = this.mediaKitRaw[mkCi]||{}; const mkFn=mkc.name.split(' ')[0];
     const _mkOv = (this.state.mediaKitData&&this.state.mediaKitData[mkCi])||{};   // overrides éditables
     const _mkGet = (k,def)=> (_mkOv[k]!==undefined&&_mkOv[k]!=='') ? _mkOv[k] : (mkSeed[k]||def);
@@ -2553,7 +2586,7 @@ class Component extends DCLogic {
     const mkGeo = (mkSeed.geo||['Paris','Lyon','Bruxelles']);
     const mkBrands = (mkSeed.brands||['Sephora','Dior','L’Oréal']);
     const mkFormats = (mkSeed.formats||[{label:'Reel Instagram',price:'1 800 €'},{label:'Story (×3)',price:'700 €'},{label:'Post feed',price:'1 200 €'},{label:'Vidéo UGC',price:'650 €'}]);
-    const mkCreatorChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;'+(i===mkCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({mkCreator:k});})() }));
+    const mkCreatorChips = this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!_mkDel[x.i]).map(({c,i})=>({ name:c.name.split(' ')[0], initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;'+(i===mkCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({mkCreator:k});})() }));
 
     // ===== PORTAL: MESSAGES + IDENTITY =====
     const announcements = [
@@ -2727,7 +2760,7 @@ class Component extends DCLogic {
       niFacDueV:this.state.niFacDue||'', onNiFacDue:(e)=>{const v=e.target.value;this.setState({niFacDue:v});},
       invFacCreatorChips: this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name.split(' ')[0], style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+((this.state.niFacCreator)===i?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const k=i;return ()=>this.setState({niFacCreator:k});})() })),
       invFacStatusChips: [['brouillon','Brouillon','cyan'],['attente','En attente','indigo'],['payee','Payée','signal'],['retard','En retard','indigo']].map(p=>({ label:p[1], style:'padding:8px 14px;border-radius:11px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.niFacStatus)||'brouillon')===p[0]?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({niFacStatus:k});})() })),
-      genDevis:()=>{ const body='<h1>Devis</h1><p class="muted">'+priceCreatorName+' — '+priceMeta+'</p><hr><div class="row"><span>Prestation</span><b>'+priceMeta+'</b></div><div class="row"><span>Créateur</span><b>'+priceCreatorName+'</b></div><div class="row"><span>Montant estimé</span><b>'+priceValue+'</b></div><p class="muted" style="margin-top:18px">Devis indicatif établi par TTP Agency. Validité 30 jours.</p>'; this._openPrint('Devis — '+priceCreatorName, body); },
+      genDevis:()=>{ const lines=(priceLines||[]).map(l=>'<div class="row"><span>'+l.label+' ('+l.qtyLabel+')</span><b>'+l.line+'</b></div>').join('') || '<p class="muted">Aucun contenu sélectionné.</p>'; const body='<h1>Devis</h1><p class="muted">'+priceCreatorName+' · '+priceMeta+'</p><hr>'+lines+'<hr>'+(pExcl?'<div class="row"><span>Exclusivité</span><b>+30%</b></div>':'')+'<div class="row"><span>Tarif conseillé</span><b>'+fmtEur(pTotal)+'</b></div><div class="row"><span><b>Minimum à proposer</b></span><b>'+fmtEur(pMin)+'</b></div><p class="muted" style="margin-top:18px">Devis indicatif établi par TTP Agency. Validité 30 jours.</p>'; this._openPrint('Devis — '+priceCreatorName, body); },
       genMediaPdf:()=>{ const stats=(mkStats||[]).map(s=>'<div class="row"><span>'+s.label+'</span><b>'+s.value+'</b></div>').join(''); const body='<h1>'+mk.name+'</h1><p class="muted">'+mk.handle+' · '+mk.niche+' · '+mk.plat+'</p><p>'+mk.bio+'</p><hr><h2>STATISTIQUES</h2>'+stats+'<h2>AUDIENCE</h2><div class="row"><span>Tranche d\'âge</span><b>'+mk.age+' ('+mk.agePct+')</b></div><div class="row"><span>Genre</span><b>'+mk.gender+'</b></div>'; this._openPrint('Media kit — '+mk.name, body); },
       sendCanva:()=>toast('Envoyé vers Canva ✓'),
       genContractPdf:()=>{ const terms=(ctTerms||[]).map(t=>'<div class="row"><span>'+t.l+'</span><b>'+t.v+'</b></div>').join(''); const clauses=(ctClauses||[]).map(c=>'<h2>'+c.title+'</h2><p>'+c.body+'</p>').join(''); const body='<h1>'+ctTitle+'</h1><p class="muted">'+ctParties+'</p><hr>'+terms+'<hr>'+clauses+'<div class="sign"><div>Pour TTP Agency</div><div>Pour '+ctName+'</div></div>'; this._openPrint(ctTitle, body); },
@@ -2808,7 +2841,11 @@ class Component extends DCLogic {
       ctExclStyle:'display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:11px;cursor:pointer;font:600 11px \'Inter\',sans-serif;'+(this.state.ctExcl?'background:var(--signalsoft);color:var(--signaltext);':'border:1px solid var(--hair);color:var(--muted);'),
       onCtBrand:(e)=>{const v=e.target.value;this.setState({ctBrand:v});}, onCtValue:(e)=>{const v=e.target.value;this.setState({ctValue:v});}, onCtCommission:(e)=>{const v=e.target.value;this.setState({ctCommission:v});}, onCtDuration:(e)=>{const v=e.target.value;this.setState({ctDuration:v});}, onCtDeliverables:(e)=>{const v=e.target.value;this.setState({ctDeliverables:v});}, toggleCtExcl:()=>this.setState(s=>({ctExcl:!s.ctExcl})),
       engChips, engPlatforms, engInputs, engFormula:cfg.formula, engCalcDetail, engPlatformLabel:cfg.label, engEr:erCalc.toFixed(1).replace('.',',')+'%', engVerdict, engVerdictStyle:"padding:5px 11px;border-radius:20px;font:600 9px 'Inter',sans-serif;background:"+this.toneHex(evTone,dark)+";color:"+(evTone==='signal'?'#10141A':'#FFFFFF')+";",
-      priceChips, priceFormats, priceValue:fmtEur(priceN), priceCreatorName:pcr.name, priceMeta:fmtLabel[pf]+' · ER '+pcr.er+' · '+pcr.followers+' abonnés',
+      priceChips, priceFormatSteppers, priceLines, priceHasLines:priceLines.length>0,
+      priceSubtotalV:fmtEur(pSubtotal), priceTotalV:fmtEur(pTotal), priceMinV:fmtEur(pMin),
+      priceCustom:pCustom, priceFollowersV:this.state.priceFollowers||'', onPriceFollowers:(e)=>{const v=e.target.value;this.setState({priceFollowers:v});}, priceERV:this.state.priceER||'', onPriceER:(e)=>{const v=e.target.value;this.setState({priceER:v});}, priceCustomNameV:this.state.priceCustomName||'', onPriceCustomName:(e)=>{const v=e.target.value;this.setState({priceCustomName:v});},
+      priceExcl:pExcl, priceExclToggle, priceExclBoxStyle:'width:16px;height:16px;border-radius:5px;border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;color:var(--onsignal);flex-shrink:0;'+(pExcl?'background:var(--signal);border-color:var(--signal);':''), priceExclCheck:pExcl?'✓':'',
+      priceCreatorName, priceMeta,
       showContact: oc!=null, openContactObj, closeContact:()=>this.setState({openContact:null}),
       objForm:this.state.objForm, openObjForm:()=>this.setState({objForm:true}), closeObjForm:()=>this.setState({objForm:false}),
       objName:this.state.no?this.state.no.name:'', objTarget:this.state.no?this.state.no.target:'', objPct:this.state.no?this.state.no.pct:'',
