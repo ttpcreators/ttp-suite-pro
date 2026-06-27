@@ -111,7 +111,7 @@ class Component extends DCLogic {
     return ({ signal:'#70FC8E', indigo: dark?'#5B82F8':'#3765F6', cyan: dark?'#9AA6B4':'#8590A1', amber: dark?'#5B82F8':'#3765F6' })[tone] || (dark?'#6E6E6E':'#8A8A85');
   }
   initials(name){ return name.split(' ').map(w => w[0]).slice(0,2).join(''); }
-  dots(n, pct, fill, empty){ const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:8px;height:8px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
+  dots(n, pct, fill, empty, size){ const s=size||8; const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:'+s+'px;height:'+s+'px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
   // keys that hold real data (not transient UI) — these survive a refresh
@@ -406,7 +406,10 @@ class Component extends DCLogic {
 
     // ===== ENGAGEMENT CALCULATOR =====
     const fnum = [540000,1200000,480000,320000,210000,95000,64000,175000];
-    const eci = this.state.engCreator || 0; const ecr = this.rosterRaw[eci]; const ecErf = parseFloat(ecr.er.replace(',','.'));
+    const engCustom = this.state.engCreator === 'autre';
+    const eci = engCustom ? -1 : (this.state.engCreator || 0);
+    const ecr = engCustom ? null : this.rosterRaw[eci];
+    const ecErf = ecr ? parseFloat(ecr.er.replace(',','.')) : 0;
     const platCfg = {
       instagram:{label:'Instagram', denom:'Abonnés', metrics:['Likes moyens','Commentaires'], ratios:[0.9,0.1], formula:'(likes + commentaires) ÷ abonnés × 100', viewBase:false, good:3, exc:6},
       tiktok:{label:'TikTok', denom:'Vues moyennes', metrics:['Likes','Commentaires','Partages'], ratios:[0.78,0.08,0.14], formula:'(likes + commentaires + partages) ÷ vues × 100', viewBase:true, good:5, exc:9},
@@ -414,7 +417,7 @@ class Component extends DCLogic {
       snapchat:{label:'Snapchat', denom:'Vues de story', metrics:['Captures écran','Réponses'], ratios:[0.6,0.4], formula:'(captures + réponses) ÷ vues × 100', viewBase:true, good:5, exc:10},
     };
     const pl = this.state.engPlatform || 'instagram'; const cfg = platCfg[pl];
-    const baseDefault = cfg.viewBase ? Math.round(fnum[eci]*0.35) : fnum[eci];
+    const baseDefault = engCustom ? 0 : (cfg.viewBase ? Math.round(fnum[eci]*0.35) : fnum[eci]);
     const totalInter = baseDefault*ecErf/100;
     const metricDefaults = cfg.ratios.map(r=>Math.round(totalInter*r));
     const baseVal = (this.state.engBase!==''&&this.state.engBase!=null) ? Number(this.state.engBase) : baseDefault;
@@ -424,9 +427,11 @@ class Component extends DCLogic {
     const erCalc = baseVal>0 ? interSum/baseVal*100 : 0;
     let engVerdict='Faible', evTone='cyan';
     if(erCalc>=cfg.exc){engVerdict='Excellent';evTone='signal';} else if(erCalc>=cfg.good){engVerdict='Bon';evTone='signal';} else if(erCalc>=cfg.good*0.6){engVerdict='Correct';evTone='indigo';}
-    const engInputs = [{label:cfg.denom, value:String(baseVal), onInput:(e)=>{const v=e.target.value;this.setState({engBase:v});}}].concat(cfg.metrics.map((lab,i)=>({label:lab, value:String(mVals[i]), onInput:(()=>{const k='engM'+i; return (e)=>{const v=e.target.value;this.setState({[k]:v});};})()})));
+    const _disp=(st,def)=>(st!==''&&st!=null)?String(st):(engCustom?'':String(def));
+    const engInputs = [{label:cfg.denom, value:_disp(this.state.engBase,baseDefault), placeholder:'ex : 50 000', onInput:(e)=>{const v=e.target.value;this.setState({engBase:v});}}].concat(cfg.metrics.map((lab,i)=>({label:lab, value:_disp(mState[i],metricDefaults[i]), placeholder:'0', onInput:(()=>{const k='engM'+i; return (e)=>{const v=e.target.value;this.setState({[k]:v});};})()})));
     const engPlatforms = Object.keys(platCfg).map(k=>({ label:platCfg[k].label, style:'padding:9px 14px;border-radius:11px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(k===pl?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({engPlatform:kk, engBase:'', engM0:'', engM1:'', engM2:''});})() }));
     const engChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], dotStyle:dotS(c.tone,false), style:'display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(i===eci?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const ii=i;return ()=>this.setState({engCreator:ii, engBase:'', engM0:'', engM1:'', engM2:''});})() }));
+    engChips.push({ name:'+ Autre', dotStyle:'width:7px;height:7px;border-radius:50%;background:var(--faint);', style:'display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(engCustom?'background:var(--text);color:var(--bg);':'border:1px dashed var(--hair);color:var(--muted);'), pick:()=>this.setState({engCreator:'autre', engBase:'', engM0:'', engM1:'', engM2:''}) });
     // ===== PRICING CALCULATOR =====
     const fmtEur = (n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
     const pci = this.state.priceCreator || 0; const pcr = this.rosterRaw[pci]; const pErf = parseFloat(pcr.er.replace(',','.'));
@@ -681,8 +686,15 @@ class Component extends DCLogic {
       onNETime: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{time:v})})); },
       addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:null}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
       addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const cr2=this.state.creatorId!=null?this.rosterRaw[this.state.creatorId].name:null; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, {day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); },
-      incomeDots: this.dots(91, 42, sig, empty),
-      paidDots: this.dots(91, 78, sig, empty),
+      incomeDots: this.dots(126, ({hebdo:28,mensuel:42,trimestre:60,annuel:82})[this.state.caPeriod||'mensuel'], sig, empty, 11),
+      paidDots: this.dots(126, ({hebdo:34,mensuel:78,trimestre:64,annuel:88})[this.state.caPeriod||'mensuel'], sig, empty, 11),
+      periodLabel: ({hebdo:'HEBDO',mensuel:'MENSUEL',trimestre:'TRIMESTRE',annuel:'ANNUEL'})[this.state.caPeriod||'mensuel'],
+      incomeValue: ({hebdo:'24 200 €',mensuel:'96 700 €',trimestre:'271 400 €',annuel:'1 284 000 €'})[this.state.caPeriod||'mensuel'],
+      paidValue: ({hebdo:'19 600 €',mensuel:'78 540 €',trimestre:'220 300 €',annuel:'1 041 000 €'})[this.state.caPeriod||'mensuel'],
+      caMenuIncome: this.state.caMenu==='income', caMenuPaid: this.state.caMenu==='paid',
+      toggleIncomeMenu:()=>this.setState(s=>({caMenu:s.caMenu==='income'?null:'income'})),
+      togglePaidMenu:()=>this.setState(s=>({caMenu:s.caMenu==='paid'?null:'paid'})),
+      periodOptions: [['hebdo','Hebdo'],['mensuel','Mensuel'],['trimestre','Trimestre'],['annuel','Annuel']].map(p=>({ label:p[1], active:(this.state.caPeriod||'mensuel')===p[0], rowStyle:"display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:9px;cursor:pointer;font:600 11px 'Inter',sans-serif;color:"+((this.state.caPeriod||'mensuel')===p[0]?'var(--text)':'var(--muted)'), check:(this.state.caPeriod||'mensuel')===p[0]?'✓':'', pick:(()=>{const k=p[0];return ()=>this.setState({caPeriod:k, caMenu:null});})() })),
       countdownDots: this.dots(18, 66, this.toneHex('amber',dark), empty),
       margeBars: this.bars([40,55,48,70,62,80,72,90,84,68,100], sig),
       growthBars: this.bars([30,45,38,60,52,70,64,82,76,58,90,84,72,100], dark ? '#70FC8E' : '#FFFFFF', 4).map((b,i,a)=> i===a.length-2 ? {style:b.style.replace(/background:[^;]+;/, 'background:'+sig+';')} : b),

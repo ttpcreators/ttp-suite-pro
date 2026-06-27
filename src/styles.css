@@ -89,3 +89,9 @@
     #dc-root .m-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
     #dc-root .m-scroll [style*="grid-template-columns: repeat(7,"] { min-width:520px; }
   }
+  /* ===================== DESKTOP ===================== */
+  @media (min-width: 861px) {
+    /* the app fills exactly one screen: the sidebar scrolls internally rather
+       than letting the whole page grow and leave a grey gap under the panel */
+    .dc-shell { height: calc(100vh - 28px); }
+  }
