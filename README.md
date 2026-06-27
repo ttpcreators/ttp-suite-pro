@@ -59,6 +59,39 @@ Le Roster lit la table `creators` (voir `supabase/`). Config (URL + clé
 publishable) injectée dans le `<head>`. La clé `anon`/publishable est publique
 par design ; la sécurité repose sur les politiques RLS.
 
+## Version React + Vite (`app/`)
+
+Une **SPA React + Vite** complète vit dans `app/` (migration de l'app HTML
+vers une vraie architecture composants). Les deux coexistent : la racine sert
+toujours l'app HTML statique ; `app/` est l'application React.
+
+```
+app/
+├── index.html              # point d'entrée Vite (<div id="root">)
+├── vite.config.js
+├── public/                 # cover.png + assets/fonts (Inter)
+└── src/
+    ├── main.jsx            # BrowserRouter + AppProvider + App
+    ├── App.jsx             # routes (21 vues sous le Layout)
+    ├── lib/supabase.js     # client Supabase centralisé
+    ├── context/AppContext.jsx   # état global + CRUD + chargement Supabase
+    ├── components/         # Layout, Sidebar, TopBar, BottomBar, PageHeader
+    ├── pages/              # 1 composant par vue (Dashboard, Roster, …)
+    ├── data/seed.js        # données de démo (fallback hors-ligne)
+    ├── utils/              # helpers.jsx (Icon, avatars, statuts), nav.js
+    └── styles/variables.css     # tokens CSS (thèmes clair/sombre)
+```
+
+```bash
+cd app
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # -> app/dist (statique)
+```
+
+Responsive mobile géré dans `app/src/components/Layout.css` (sidebar → drawer,
+barre d'onglets en bas, empilement des grilles, tables larges scrollables).
+
 ## Déploiement
 
 Site statique : déployez la racine du dépôt.
