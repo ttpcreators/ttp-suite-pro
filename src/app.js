@@ -119,7 +119,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefDone','briefNotes','customObjs','threadMsgs','msgsData']; }
+  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','threadMsgs','msgsData']; }
   // override setState so every data change is mirrored to localStorage
   setState(update, cb){ super.setState(update, ()=>{ try{ this._persist(); }catch(e){} if(cb) cb(); }); }
   // keys synced to Supabase (cross-device). Roster lives in the `creators`
@@ -371,7 +371,21 @@ class Component extends DCLogic {
     const contactsGrid = contactsView === 'grid', contactsList = contactsView === 'list';
     const contactsViewTabs = [['grid','Cartes'],['list','Liste']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(contactsView===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({contactsView:k});})() }));
     const contacts = cbase.map((k,i)=>({ brand:k.brand, person:k.person, role:k.role, tag:k.tag, email:k.email||'—', phone:k.phone||'—', initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,44), avatarStyleSm:this.avatarStyle(k.tone,dark,38), tagStyle:"padding:5px 10px;border-radius:20px;background:var(--rowhover);font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);white-space:nowrap;", open:()=>this.setState({openContact:i}), del:(()=>{const ii=i,nm=k.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le contact '+nm+' ?'))return; this.setState(s=>{ const base=(s.contactsData||this.contactRaw).slice(); base.splice(ii,1); return { contactsData:base, openContact:(s.openContact===ii?null:s.openContact) }; }); };})() })).filter(k=> _match(k.brand,k.person,k.role,k.tag));
-    const objCreators = this.objRaw.map(o=>({ name:o.name, ca:o.ca, target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex(o.tone,dark)+';' })).concat((this.state.customObjs||[]).map(o=>({ name:o.name, ca:'—', target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex('indigo',dark)+';' })));
+    // ---- Objectifs par mois (édition / suppression / navigation) ----
+    const _objMo=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const objOffset = this.state.objOffset||0;
+    const _objD = new Date(2026, 5+objOffset, 1);
+    const objMonthLabel = _objMo[_objD.getMonth()]+' '+_objD.getFullYear();
+    const _objSeed0 = this.objRaw.map(o=>({name:o.name,ca:o.ca,target:o.target,pct:o.pct,tone:o.tone})).concat((this.state.customObjs||[]).map(o=>({name:String(o.name).toUpperCase(),ca:o.ca||'—',target:o.target,pct:o.pct,tone:'indigo'})));
+    const _omAll = this.state.objByMonth||{};
+    const _objList = (_omAll[objOffset]!==undefined) ? _omAll[objOffset] : (objOffset===0 ? _objSeed0 : []);
+    const _writeObj = (list)=> this.setState(s=>({ objByMonth: Object.assign({}, s.objByMonth, {[objOffset]: list}) }));
+    const _curObjList = ()=>{ const a=this.state.objByMonth; const off=this.state.objOffset||0; return (a&&a[off]!==undefined)?a[off].slice():(off===0?_objSeed0.slice():[]); };
+    const objCreators = _objList.map((o,idx)=>({ name:o.name, ca:o.ca||'—', target:o.target||'—', pctLabel:(o.pct||0)+'%', barStyle:'width:'+Math.min(o.pct||0,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex(o.tone||'indigo',dark)+';',
+      edit:(()=>{const i=idx;return ()=>{ const cur=_curObjList(); const o2=cur[i]; if(!o2)return; const nt=window.prompt('Objectif / cible pour '+o2.name+' :', o2.target||''); if(nt==null)return; const np=window.prompt('Avancement (%) :', String(o2.pct||0)); if(np==null)return; const nc=window.prompt('Réalisé (€) :', o2.ca||''); cur[i]=Object.assign({},o2,{target:nt.trim()||o2.target, pct:Number(np)||0, ca:(nc==null?o2.ca:(nc.trim()||o2.ca))}); _writeObj(cur); };})(),
+      del:(()=>{const i=idx;return ()=>{ if(!window.confirm('Supprimer cet objectif ?'))return; const cur=_curObjList(); cur.splice(i,1); _writeObj(cur); };})() }));
+    const prevObjMonth=()=>this.setState(s=>({objOffset:(s.objOffset||0)-1}));
+    const nextObjMonth=()=>this.setState(s=>({objOffset:(s.objOffset||0)+1}));
     const pricing = this.pricingRaw;
     const briefItems = this.state.briefItems || this.briefRaw;
     const mkBrief = (b)=>{ const bval=!!(this.state.briefVal||{})[b.brand]; const bdone=!!(this.state.briefDone||{})[b.brand]; const st=this.briefStatus(b.status); const note=(this.state.briefNotes||{})[b.brand]||''; return { brand:b.brand, creator:b.creator, creatorFirst:(b.creator||'').split(' ')[0], deliverables:b.deliverables, due:b.due, consignes:b.consignes||'Consignes à préciser avec la marque.', budget:b.budget||'—', objectif:b.objectif||'—', done:bdone, statusLabel:bdone?'TERMINÉ':(bval?'VALIDÉ':st.label), dotStyle:dotS(bdone?'signal':(bval?'signal':b.tone),false), chipStyle:this.chip(), completeLabel:bdone?'Rouvrir':'Terminer', complete:(()=>{const k=b.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState(s=>({briefDone:Object.assign({},s.briefDone,{[k]:!(s.briefDone&&s.briefDone[k])})})); };})(), validated:bval, validateLabel:bval?'VALIDÉ ✓':'VALIDER', validateStyle:'flex:1; padding:10px 0; text-align:center; border-radius:11px; font:600 10px \'Inter\',sans-serif; cursor:pointer;'+(bval?'background:var(--signalsoft);color:var(--signaltext);':'background:var(--signal);color:var(--onsignal);'), validate:(()=>{const k=b.brand;return ()=>this.setState(s=>({briefVal:Object.assign({},s.briefVal,{[k]:true})}));})(), noteValue:note, hasNote:!!note, onNote:(()=>{const k=b.brand;return (e)=>{const v=e.target.value;this.setState(s=>({briefNotes:Object.assign({},s.briefNotes,{[k]:v})}));};})(), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le brief '+b.brand+' ?'))return; this.setState(s=>({ briefItems:(s.briefItems||this.briefRaw).filter(x=>x!==b) })); }, edit:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const nv=window.prompt('Modifier les consignes du brief '+b.brand+' :', b.consignes||''); if(nv==null)return; this.setState(s=>({ briefItems:(s.briefItems||this.briefRaw).map(x=> x===b ? Object.assign({},x,{consignes:nv}) : x) })); } }; };
@@ -595,7 +609,7 @@ class Component extends DCLogic {
       genDevis:()=>toast('Devis généré ✓'), genMediaPdf:()=>toast('Media kit PDF généré ✓'), sendCanva:()=>toast('Envoyé vers Canva ✓'),
       genContractPdf:()=>toast('Contrat PDF généré ✓'), sendSignature:()=>toast('Envoyé pour signature ✓'),
       editProfil:()=>toast('Édition du profil bientôt disponible'), contactAgent:()=>toast('Message envoyé à votre agent ✓'),
-      dashMore:()=>toast('Options bientôt disponibles'), dashFilters:()=>toast('Filtres bientôt disponibles'),
+      dashMore:()=>toast('Activité à jour ✓'), actFiltersOpen: this.state.actFiltersOpen!==false, toggleActFilters:()=>this.setState(s=>({actFiltersOpen: s.actFiltersOpen===false})),
       showDealsChip:!this.state.hideDeals, showBriefsChip:!this.state.hideBriefs,
       removeDealsChip:()=>this.setState({hideDeals:true}), removeBriefsChip:()=>this.setState({hideBriefs:true}),
       bottomNav, navOpenCls, openMobileNav, closeMobileNav,
@@ -664,7 +678,8 @@ class Component extends DCLogic {
       objForm:this.state.objForm, openObjForm:()=>this.setState({objForm:true}), closeObjForm:()=>this.setState({objForm:false}),
       objName:this.state.no?this.state.no.name:'', objTarget:this.state.no?this.state.no.target:'', objPct:this.state.no?this.state.no.pct:'',
       onObjName:(e)=>{const v=e.target.value;this.setState(s=>({no:Object.assign({},s.no,{name:v})}));}, onObjTarget:(e)=>{const v=e.target.value;this.setState(s=>({no:Object.assign({},s.no,{target:v})}));}, onObjPct:(e)=>{const v=e.target.value;this.setState(s=>({no:Object.assign({},s.no,{pct:v})}));},
-      addObjective:()=>{const n=this.state.no; if(!n||!n.name)return; const cur=this.state.customObjs||[]; this.setState({customObjs:[...cur,{name:String(n.name).toUpperCase(),target:n.target||'—',pct:Number(n.pct)||60}], objForm:false, no:{name:'',target:'',pct:''}});},
+      addObjective:()=>{const n=this.state.no; if(!n||!n.name)return; const cur=_curObjList(); cur.push({name:String(n.name).toUpperCase(), ca:'—', target:n.target||'—', pct:Number(n.pct)||0, tone:'indigo'}); this.setState(s=>({ objByMonth:Object.assign({},s.objByMonth,{[objOffset]:cur}), objForm:false, no:{name:'',target:'',pct:''} }));},
+      objMonthLabel, prevObjMonth, nextObjMonth,
       upcoming,
       toggleTheme: () => this.setState(s => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
       isAgency: this.state.space === 'agency',
