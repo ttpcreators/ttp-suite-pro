@@ -1,6 +1,6 @@
 
 class Component extends DCLogic {
-  state = { theme:'light', space:'agency', view:'apercu', creatorId:null, portalTab:'accueil', showEventForm:false, ne:{day:26,time:'',title:'',type:'call'}, events:null, doneSet:null, openContact:null, objForm:false, no:{name:'',target:'',pct:''}, engCreator:0, engPlatform:'instagram', engBase:'', engM0:'', engM1:'', engM2:'', priceCreator:0, priceFormat:'reel', ctType:'marque', ctCreator:0, ctBrand:'Sephora', ctValue:'32 000 €', ctCommission:'20', ctDuration:'12 mois', ctDeliverables:'3 posts · 1 reel', ctExcl:true, photos:{}, copied:null, rosterDetail:null, openThread:null, draft:'', threadMsgs:null };
+  state = { theme:'light', space:'agency', view:'apercu', creatorId:null, portalTab:'accueil', authed:false, authRole:null, loginTab:'agency', loginEmail:'', loginPwd:'', loginError:'', showEventForm:false, ne:{day:26,time:'',title:'',type:'call',date:'2026-06-26'}, events:null, doneSet:null, openContact:null, objForm:false, no:{name:'',target:'',pct:''}, engCreator:0, engPlatform:'instagram', engBase:'', engM0:'', engM1:'', engM2:'', priceCreator:0, priceFormat:'reel', ctType:'marque', ctCreator:0, ctBrand:'Sephora', ctValue:'32 000 €', ctCommission:'20', ctDuration:'12 mois', ctDeliverables:'3 posts · 1 reel', ctExcl:true, photos:{}, copied:null, rosterDetail:null, openThread:null, draft:'', threadMsgs:null };
 
   rosterRaw = [
     {name:'CAMILLE ORSINI', handle:'@camille.o', niche:'Mode', plat:'Instagram', followers:'540K', reach:'2,1 M', er:'4,8%', ca:'62 400 €', status:'live', tone:'signal', trend:6},
@@ -119,12 +119,15 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData']; }
+  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','authed','authRole','space','creatorId','portalTab']; }
+  // session/auth keys stay device-local (never synced to the shared cloud blob)
+  _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
+  _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
   // override setState so every data change is mirrored to localStorage
   setState(update, cb){ super.setState(update, ()=>{ try{ this._persist(); }catch(e){} if(cb) cb(); }); }
   // keys synced to Supabase (cross-device). Roster lives in the `creators`
   // table, photos stay device-local (kept out of the shared blob).
-  _cloudKeys(){ return this._persistKeys().filter(k=> k!=='deletedRoster' && k!=='photos'); }
+  _cloudKeys(){ const local={deletedRoster:1,photos:1,authed:1,authRole:1,space:1,creatorId:1,portalTab:1}; return this._persistKeys().filter(k=> !local[k]); }
   _persist(){
     // debounce: rapid setStates (e.g. typing) shouldn't each serialize/sync
     clearTimeout(this._persistT);
@@ -385,7 +388,7 @@ class Component extends DCLogic {
         moreLabel: '+' + (dayEvents.length - 2),
         cellStyle: 'min-height:88px;min-width:0;overflow:hidden;border-radius:12px;padding:8px;cursor:'+(has?'pointer':'default')+';'+(has?('background:'+(isToday?'var(--signalsoft)':'var(--panel)')+';'):'background:transparent;')+(isToday?'border:1px solid var(--signal);':''),
         numStyle: 'font:600 12px \'Inter\',sans-serif;color:'+(isToday?'var(--signaltext)':'var(--text)')+';',
-        select: has ? (() => this.setState(s => ({ showEventForm:true, ne: Object.assign({}, s.ne, { day: day }) }))) : (()=>{}),
+        select: has ? (()=>{ const _d=day; return () => this.setState(s => ({ showEventForm:true, ne: Object.assign({}, s.ne, { day:_d, date:'2026-06-'+String(_d).padStart(2,'0') }) })); })() : (()=>{}),
       });
     }
     const eventTypes = Object.keys(this.eventTypeMap).map(k => { const t=this.eventTypeMap[k]; const sel=this.state.ne.type===k; return { label:t.label, dotStyle:'width:7px;height:7px;border-radius:50%;background:'+this.toneHex(t.tone,dark)+';', chipStyle:'display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(sel?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:()=>this.setState(s=>({ne:Object.assign({},s.ne,{type:k})})) }; });
@@ -653,6 +656,19 @@ class Component extends DCLogic {
     const alerts = _alRaw.filter(a=> !((this.state.dismissedAlerts||{})[a.id])).map(a=>({ title:a.title, detail:a.detail, tag:a.tag, dotStyle:dotS(a.tone,false), tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);padding:5px 10px;border-radius:20px;background:var(--rowhover);white-space:nowrap;", treat:(()=>{const id=a.id;return ()=>{ this.setState(s=>({dismissedAlerts:Object.assign({},s.dismissedAlerts,{[id]:true})})); toast('Alerte traitée ✓'); };})() }));
     const alertsCount = alerts.length;
 
+    // ---- NOTIFICATIONS (derived from live data, dismissable + persistent) ----
+    const _ntRaw = [];
+    (this.state.ideasData||this.ideasRaw).forEach((x,i)=>{ if(x && x.source==='creator') _ntRaw.push({ id:'nt:idea:'+(x.text||i), icon:'◆', tone:'signal', title:(x.creator?x.creator.split(' ')[0]+' a proposé une idée':'Nouvelle idée proposée'), time:x.text }); });
+    briefItems.forEach(b=>{ if(b.status==='valider' && !((this.state.briefDone||{})[b.brand])) _ntRaw.push({ id:'nt:brief:'+b.brand, icon:'✎', tone:'indigo', title:'Brief à valider — '+b.brand, time:(b.who||'créateur à attribuer')+' · échéance '+b.due }); });
+    (this.state.invoiceData||this.invoiceRaw).forEach(v=>{ if(v.status==='retard') _ntRaw.push({ id:'nt:inv:'+v.ref, icon:'€', tone:'indigo', title:'Facture en retard — '+v.party, time:'#'+v.ref+' · '+v.amount }); });
+    (this.state.prospectData||this.prospectRaw).forEach(p=>{ if(p.stage==='Négociation') _ntRaw.push({ id:'nt:deal:'+p.brand, icon:'⌖', tone:'cyan', title:'Deal en négociation — '+p.brand, time:(p.contact||'')+' · '+p.value }); });
+    this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).forEach(c=>{ if(c.status==='pause') _ntRaw.push({ id:'nt:crea:'+c.name, icon:'◵', tone:'cyan', title:c.name.split(' ')[0]+' est en pause', time:'À relancer · sans activité' }); });
+    const _ntDismissed = this.state.dismissedNotifs||{};
+    const _ntVisible = _ntRaw.filter(n=> !_ntDismissed[n.id]);
+    const notifications = _ntVisible.map(n=>({ icon:n.icon, title:n.title, time:n.time, iconStyle:'width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 12px \'Inter\',sans-serif;background:'+this.toneHex(n.tone,dark)+'18;color:'+this.toneHex(n.tone,dark)+';', dismiss:(()=>{const id=n.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState(s=>({dismissedNotifs:Object.assign({},s.dismissedNotifs,{[id]:true})})); };})() }));
+    const clearNotifs = ()=>{ const all=Object.assign({}, this.state.dismissedNotifs); _ntVisible.forEach(n=>{ all[n.id]=true; }); this.setState({ dismissedNotifs:all, notifOpen:false }); toast('Notifications effacées'); };
+    const notifEmpty = notifications.length===0;
+
     // ---- action handlers (add / contact / export) ----
     const addInvoice = () => { const party=window.prompt('Marque × Créateur :',''); if(party==null||!party.trim())return; const amount=window.prompt('Montant (ex : 12 000 €) :',''); if(amount==null)return; this.setState(s=>{ const base=(s.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0'); return { invoiceData:[{ref:ref, party:party.trim(), amount:(amount.trim()||'—'), date:'—', status:'brouillon'}].concat(base) }; }); toast('Facture créée'); };
     const addContact = () => { const brand=window.prompt('Marque / société :',''); if(brand==null||!brand.trim())return; const person=window.prompt('Contact (nom) :','')||''; const email=window.prompt('Email :','')||''; this.setState(s=>({ contactsData:[{brand:brand.trim(), person:(person.trim()||'—'), role:'', tag:'NOUVEAU', email:email.trim(), phone:'', tone:'indigo'}].concat(s.contactsData||this.contactRaw) })); toast('Contact ajouté'); };
@@ -683,8 +699,8 @@ class Component extends DCLogic {
       removeDealsChip:()=>this.setState({hideDeals:true}), removeBriefsChip:()=>this.setState({hideBriefs:true}),
       bottomNav, navOpenCls, openMobileNav, closeMobileNav,
       notifOpen:!!this.state.notifOpen, toggleNotif:()=>this.setState(s=>({notifOpen:!s.notifOpen})), closeNotif:()=>this.setState({notifOpen:false}),
-      hasNotif:true, notifCount:'4',
-      notifications:[ {icon:'◆', title:'Inès a proposé une idée de contenu', time:'il y a 12 min', tone:'signal'}, {icon:'✉', title:'Nouveau message — campagne Sephora', time:'il y a 1 h', tone:'indigo'}, {icon:'◷', title:'Échéance brief Sephora · 02/07', time:'demain', tone:'cyan'}, {icon:'€', title:'Facture L\u2019Oréal en retard de paiement', time:'il y a 2 j', tone:'indigo'} ].map(n=>({ icon:n.icon, title:n.title, time:n.time, iconStyle:'width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 12px \'Inter\',sans-serif;background:'+this.toneHex(n.tone,dark)+'18;color:'+this.toneHex(n.tone,dark)+';' })),
+      hasNotif:notifications.length>0, notifCount:String(notifications.length), notifEmpty, clearNotifs,
+      notifications,
       vAlertes:this.state.view==='alertes', alerts,
       vMessages:this.state.view==='messages', agencyThreads,
       aMsgListShown: this.state.openAThread==null, aThreadOpen: this.state.openAThread!=null, aConvMsgs, aConvWho, aConvTitle, aConvInitials, aAvatarStyle, adraft:this.state.adraft,
@@ -751,12 +767,48 @@ class Component extends DCLogic {
       objMonthLabel, prevObjMonth, nextObjMonth,
       upcoming,
       toggleTheme: () => this.setState(s => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
-      isAgency: this.state.space === 'agency',
-      isCreatorSpace: this.state.space === 'creator',
+      // ---- AUTH GATE ----
+      authed: this.state.authed === true,
+      notAuthed: this.state.authed !== true,
+      isAgencyRole: this.state.authRole === 'agency',
+      isCreatorRole: this.state.authRole === 'creator',
+      loginTab: this.state.loginTab || 'agency',
+      loginTabAgency: (this.state.loginTab||'agency') === 'agency',
+      loginTabCreator: (this.state.loginTab||'agency') === 'creator',
+      loginTabAgencyStyle: "flex:1; text-align:center; padding:9px 0; border-radius:9px; font:600 11px 'Inter',sans-serif; cursor:pointer; "+((this.state.loginTab||'agency')==='agency'?'background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.06);':'color:var(--faint);'),
+      loginTabCreatorStyle: "flex:1; text-align:center; padding:9px 0; border-radius:9px; font:600 11px 'Inter',sans-serif; cursor:pointer; "+((this.state.loginTab||'agency')==='creator'?'background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.06);':'color:var(--faint);'),
+      setLoginAgency: ()=>this.setState({loginTab:'agency', loginError:''}),
+      setLoginCreator: ()=>this.setState({loginTab:'creator', loginError:''}),
+      loginEmail: this.state.loginEmail||'', loginPwd: this.state.loginPwd||'',
+      loginEmailPh: (this.state.loginTab||'agency')==='agency' ? 'agence@ttp.com' : 'prenom@ttp.com',
+      onLoginEmail: (e)=>{ const v=e.target.value; this.setState({loginEmail:v}); },
+      onLoginPwd: (e)=>{ const v=e.target.value; this.setState({loginPwd:v}); },
+      loginError: this.state.loginError||'', hasLoginError: !!this.state.loginError,
+      loginHint: (this.state.loginTab||'agency')==='agency' ? 'Démo agence — agence@ttp.com · ttp2026' : 'Démo créateur — prénom@ttp.com · mot de passe = prénom (ex : camille / camille)',
+      doLogin: () => {
+        const tab=this.state.loginTab||'agency';
+        const email=(this.state.loginEmail||'').trim().toLowerCase();
+        const pwd=this.state.loginPwd||'';
+        if(tab==='agency'){
+          if(email==='agence@ttp.com' && pwd==='ttp2026'){ this.setState({ authed:true, authRole:'agency', space:'agency', view:'apercu', creatorId:null, loginEmail:'', loginPwd:'', loginError:'', mobileNav:false }); }
+          else { this.setState({ loginError:'Identifiants agence incorrects.' }); }
+        } else {
+          let found=-1; this.rosterRaw.forEach((c,i)=>{ const cr=this._creatorCreds(c.name); if(email===cr.email && pwd===cr.pwd) found=i; });
+          if(found>=0){ this.setState({ authed:true, authRole:'creator', space:'creator', creatorId:found, portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false }); }
+          else { this.setState({ loginError:'Email ou mot de passe créateur incorrect.' }); }
+        }
+      },
+      logout: () => this.setState({ authed:false, authRole:null, space:'agency', creatorId:null, view:'apercu', portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false, notifOpen:false }),
+      isAgency: this.state.authed===true && this.state.authRole==='agency' && this.state.space === 'agency',
+      isCreatorSpace: this.state.authed===true && this.state.space === 'creator',
       needsLogin: this.state.space === 'creator' && this.state.creatorId == null,
       loggedIn: this.state.space === 'creator' && this.state.creatorId != null,
-      enterPortal: () => this.setState({ space:'creator', mobileNav:false }),
-      backToAgency: () => this.setState({ space:'agency' }),
+      // portal exit: agency previewing -> back to agency; creator -> log out
+      portalExitLabel: this.state.authRole==='agency' ? 'Espace agence' : 'Se déconnecter',
+      portalExitIcon: this.state.authRole==='agency' ? '←' : '⎋',
+      portalExit: this.state.authRole==='agency' ? (()=>this.setState({ space:'agency', creatorId:null })) : (()=>this.setState({ authed:false, authRole:null, space:'agency', creatorId:null, view:'apercu', portalTab:'accueil', loginEmail:'', loginPwd:'', loginError:'', mobileNav:false, notifOpen:false })),
+      enterPortal: () => this.setState({ space:'creator', creatorId:null, mobileNav:false }),
+      backToAgency: () => this.setState({ space:'agency', creatorId:null }),
       navApercu: [ this.navItem('apercu','◴','Dashboard'), this.navItem('objectifs','◎','Objectifs') ],
       navCreators: [ this.navItem('roster','◵','Roster'), this.navItem('engagement','✦','Engagement'), this.navItem('pricing','€','Pricing'), this.navItem('briefs','✎','Briefs'), this.navItem('todo','☑','To-do'), this.navItem('documents','▤','Documents'), this.navItem('mediakit','△','Media kit') ],
       navAgence: [ this.navItem('messages','✉','Messages'), this.navItem('contacts','☎','Contacts'), this.navItem('planning','◷','Planning'), this.navItem('contrats','▤','Contrats'), this.navItem('facturation','⊞','Facturation'), this.navItem('checklist','▣','Checklist') ],
@@ -784,6 +836,8 @@ class Component extends DCLogic {
       openEventForm: () => this.setState({ showEventForm:true }),
       closeEventForm: () => this.setState({ showEventForm:false }),
       neTitle: this.state.ne.title, neDay: String(this.state.ne.day), neTime: this.state.ne.time,
+      neDate: this.state.ne.date || ('2026-06-'+String(this.state.ne.day||26).padStart(2,'0')),
+      onNEDate: (e)=>{ const v=e.target.value; const d=v?(Number(v.slice(8,10))||26):26; this.setState(s=>({ne:Object.assign({},s.ne,{date:v, day:d})})); },
       onNETitle: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{title:v})})); },
       onNEDay: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{day:v})})); },
       onNETime: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{time:v})})); },
