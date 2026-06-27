@@ -1012,12 +1012,12 @@
         <div style="background:var(--surface); border-radius:20px; padding:24px">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:3px"><div style="font:600 13px 'Inter',sans-serif; color:var(--text)">À déclarer &amp; provisionner</div><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint); background:var(--panel); padding:4px 9px; border-radius:20px">JUIN 2026 · INDICATIF</span></div>
           <div style="font:400 11px 'Inter',sans-serif; color:var(--muted); margin-bottom:16px">Estimation à mettre de côté avant les échéances fiscales et sociales.</div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--hair)"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">TVA collectée (20%)</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">27 680 €</span></div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--hair)"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">TVA déductible</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">− 4 120 €</span></div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 14px; margin:8px 0; border-radius:11px; background:var(--signalsoft)"><span style="font:600 12px 'Inter',sans-serif; color:var(--signaltext)">TVA à reverser (CA3)</span><span style="font:700 14px 'Inter',sans-serif; color:var(--signaltext)">23 560 €</span></div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--hair)"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">Cotisations URSSAF (est.)</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">8 900 €</span></div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">Acompte IS</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">6 400 €</span></div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:16px; border-top:1px solid var(--hair)"><span style="font:600 13px 'Inter',sans-serif; color:var(--text)">Total à provisionner</span><span style="font:700 24px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px">38 860 €</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--hair)"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">TVA collectée (20%)</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">{{ provTvaColl }}</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--hair)"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">TVA déductible</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">{{ provTvaDed }}</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 14px; margin:8px 0; border-radius:11px; background:var(--signalsoft)"><span style="font:600 12px 'Inter',sans-serif; color:var(--signaltext)">TVA à reverser (CA3)</span><span style="font:700 14px 'Inter',sans-serif; color:var(--signaltext)">{{ provTvaNet }}</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--hair)"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">Cotisations URSSAF (est.)</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">{{ provUrssaf }}</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0"><span style="font:500 12px 'Inter',sans-serif; color:var(--muted)">Acompte IS</span><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">{{ provIS }}</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:16px; border-top:1px solid var(--hair)"><span style="font:600 13px 'Inter',sans-serif; color:var(--text)">Total à provisionner</span><span style="font:700 24px 'Inter',sans-serif; color:var(--text); letter-spacing:-1px">{{ provTotal }}</span></div>
         </div>
         <div style="background:var(--surface); border-radius:20px; padding:24px">
           <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:16px">Échéances déclaratives</div>
@@ -2546,6 +2546,14 @@ class Component extends DCLogic {
     const _objArr=(this.state.objByMonth&&this.state.objByMonth[0])||this.objRaw;
     const finObjPct = _objArr.length ? Math.round(_objArr.reduce((a,o)=>a+(Number(o.pct)||0),0)/_objArr.length) : 0;
     const _incomeFill = Math.max(8, Math.min(100, finObjPct));
+    // provision fiscale & sociale — estimations dérivées du facturé / encaissé
+    const finMarge = Math.round(finEncaisse*finCommission/100);
+    const fTvaColl = Math.round(finTotalFacture*0.20);
+    const fTvaDed = Math.round(finTotalFacture*0.03);
+    const fTvaNet = fTvaColl - fTvaDed;
+    const fUrssaf = Math.round(finEncaisse*0.10);
+    const fIS = Math.round(finMarge*0.25);
+    const fProvTotal = fTvaNet + fUrssaf + fIS;
 
     // ---- action handlers (add / contact / export) ----
     const addInvoice = () => { const party=window.prompt('Marque × Créateur :',''); if(party==null||!party.trim())return; const amount=window.prompt('Montant (ex : 12 000 €) :',''); if(amount==null)return; this.setState(s=>{ const base=(s.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0'); return { invoiceData:[{ref:ref, party:party.trim(), amount:(amount.trim()||'—'), date:'—', status:'brouillon'}].concat(base) }; }); toast('Facture créée'); };
@@ -2767,6 +2775,7 @@ class Component extends DCLogic {
       caHeadline: _fmtE(finEncaisse+finAttente), caCumul: _fmtE(finTotalFacture),
       finAttenteValue: _fmtE(finAttente), finRetardValue: _fmtE(finRetard), finEncaisseValue: _fmtE(finEncaisse),
       finAttenteCount: String(_cntInv('attente'))+' facture'+(_cntInv('attente')>1?'s':''),
+      provTvaColl:_fmtE(fTvaColl), provTvaDed:'− '+_fmtE(fTvaDed), provTvaNet:_fmtE(fTvaNet), provUrssaf:_fmtE(fUrssaf), provIS:_fmtE(fIS), provTotal:_fmtE(fProvTotal),
       caMenuIncome: this.state.caMenu==='income', caMenuPaid: this.state.caMenu==='paid',
       toggleIncomeMenu:()=>this.setState(s=>({caMenu:s.caMenu==='income'?null:'income'})),
       togglePaidMenu:()=>this.setState(s=>({caMenu:s.caMenu==='paid'?null:'paid'})),

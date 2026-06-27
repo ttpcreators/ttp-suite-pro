@@ -883,6 +883,14 @@ class Component extends DCLogic {
     const _objArr=(this.state.objByMonth&&this.state.objByMonth[0])||this.objRaw;
     const finObjPct = _objArr.length ? Math.round(_objArr.reduce((a,o)=>a+(Number(o.pct)||0),0)/_objArr.length) : 0;
     const _incomeFill = Math.max(8, Math.min(100, finObjPct));
+    // provision fiscale & sociale — estimations dérivées du facturé / encaissé
+    const finMarge = Math.round(finEncaisse*finCommission/100);
+    const fTvaColl = Math.round(finTotalFacture*0.20);
+    const fTvaDed = Math.round(finTotalFacture*0.03);
+    const fTvaNet = fTvaColl - fTvaDed;
+    const fUrssaf = Math.round(finEncaisse*0.10);
+    const fIS = Math.round(finMarge*0.25);
+    const fProvTotal = fTvaNet + fUrssaf + fIS;
 
     // ---- action handlers (add / contact / export) ----
     const addInvoice = () => { const party=window.prompt('Marque × Créateur :',''); if(party==null||!party.trim())return; const amount=window.prompt('Montant (ex : 12 000 €) :',''); if(amount==null)return; this.setState(s=>{ const base=(s.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0'); return { invoiceData:[{ref:ref, party:party.trim(), amount:(amount.trim()||'—'), date:'—', status:'brouillon'}].concat(base) }; }); toast('Facture créée'); };
@@ -1104,6 +1112,7 @@ class Component extends DCLogic {
       caHeadline: _fmtE(finEncaisse+finAttente), caCumul: _fmtE(finTotalFacture),
       finAttenteValue: _fmtE(finAttente), finRetardValue: _fmtE(finRetard), finEncaisseValue: _fmtE(finEncaisse),
       finAttenteCount: String(_cntInv('attente'))+' facture'+(_cntInv('attente')>1?'s':''),
+      provTvaColl:_fmtE(fTvaColl), provTvaDed:'− '+_fmtE(fTvaDed), provTvaNet:_fmtE(fTvaNet), provUrssaf:_fmtE(fUrssaf), provIS:_fmtE(fIS), provTotal:_fmtE(fProvTotal),
       caMenuIncome: this.state.caMenu==='income', caMenuPaid: this.state.caMenu==='paid',
       toggleIncomeMenu:()=>this.setState(s=>({caMenu:s.caMenu==='income'?null:'income'})),
       togglePaidMenu:()=>this.setState(s=>({caMenu:s.caMenu==='paid'?null:'paid'})),
