@@ -285,6 +285,22 @@ class Component extends DCLogic {
   // effective contact list — fall back to the bundled seed when the stored list
   // is missing OR empty (an empty [] must never hide the seeded contacts)
   _contacts(){ const d=this.state.contactsData; return (Array.isArray(d)&&d.length)?d:this.contactRaw; }
+  // génère un vrai document imprimable / PDF (via iframe -> dialogue d'impression "Enregistrer en PDF")
+  _openPrint(title, body){
+    try{
+      const ifr=document.createElement('iframe');
+      ifr.setAttribute('aria-hidden','true');
+      ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+      document.body.appendChild(ifr);
+      const doc=ifr.contentWindow.document;
+      const css='*{box-sizing:border-box}body{font-family:Inter,Helvetica,Arial,sans-serif;color:#181D25;max-width:760px;margin:36px auto;padding:0 28px;line-height:1.6}h1{font-size:26px;letter-spacing:-1px;margin:0 0 4px}.brand{font:700 12px Inter,sans-serif;letter-spacing:1px;color:#16A34A}h2{font-size:12px;margin:20px 0 4px}p{font-size:13px;color:#333;margin:5px 0;white-space:pre-wrap}.muted{color:#888;font-size:12px;margin:0 0 8px}.row{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid #eee;padding:8px 0;font-size:13px}.row b{font-weight:600}hr{border:none;border-top:1px solid #eee;margin:18px 0}.sign{display:flex;justify-content:space-between;gap:24px;margin-top:34px}.sign div{flex:1;border-top:1px solid #181D25;padding-top:6px;font-size:11px;color:#888}';
+      doc.open();
+      doc.write('<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title><style>'+css+'</style></head><body><div class="brand">TTP AGENCY</div>'+body+'</body></html>');
+      doc.close();
+      ifr.contentWindow.focus();
+      setTimeout(()=>{ try{ ifr.contentWindow.print(); }catch(e){} setTimeout(()=>{ try{ ifr.remove(); }catch(_){} }, 1500); }, 350);
+    }catch(e){ try{ alert('Impossible de générer le PDF.'); }catch(_){} }
+  }
   _contactsFrom(s){ const d=s.contactsData; return (Array.isArray(d)&&d.length)?d:this.contactRaw; }
   _restore(){
     if (typeof localStorage === 'undefined') return;
@@ -960,9 +976,12 @@ class Component extends DCLogic {
       addAccess:()=>{ const email=(this.state.acEmail||'').trim().toLowerCase(); const pwd=(this.state.acPwd||'').trim(); if(!email||!pwd){ toast('Email et mot de passe requis'); return; } const role=this.state.acRole||'creator'; const creator= role==='creator' ? (this.state.acCreator||(this.rosterRaw[0]||{}).name||null) : null; if((this.state.accessAccounts||[]).some(a=>String(a.email||'').toLowerCase()===email)){ toast('Cet email a déjà un accès'); return; } this.setState(s=>({ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator}], acEmail:'', acPwd:'' })); toast('Accès créé ✓'); },
       calLabel, prevMonth, nextMonth,
       addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,
-      genDevis:()=>toast('Devis généré ✓'), genMediaPdf:()=>toast('Media kit PDF généré ✓'), sendCanva:()=>toast('Envoyé vers Canva ✓'),
-      genContractPdf:()=>toast('Contrat PDF généré ✓'), sendSignature:()=>toast('Envoyé pour signature ✓'),
-      editProfil:()=>toast('Édition du profil bientôt disponible'), contactAgent:()=>toast('Message envoyé à votre agent ✓'),
+      genDevis:()=>{ const body='<h1>Devis</h1><p class="muted">'+priceCreatorName+' — '+priceMeta+'</p><hr><div class="row"><span>Prestation</span><b>'+priceMeta+'</b></div><div class="row"><span>Créateur</span><b>'+priceCreatorName+'</b></div><div class="row"><span>Montant estimé</span><b>'+priceValue+'</b></div><p class="muted" style="margin-top:18px">Devis indicatif établi par TTP Agency. Validité 30 jours.</p>'; this._openPrint('Devis — '+priceCreatorName, body); },
+      genMediaPdf:()=>{ const stats=(mkStats||[]).map(s=>'<div class="row"><span>'+s.label+'</span><b>'+s.value+'</b></div>').join(''); const body='<h1>'+mk.name+'</h1><p class="muted">'+mk.handle+' · '+mk.niche+' · '+mk.plat+'</p><p>'+mk.bio+'</p><hr><h2>STATISTIQUES</h2>'+stats+'<h2>AUDIENCE</h2><div class="row"><span>Tranche d\'âge</span><b>'+mk.age+' ('+mk.agePct+')</b></div><div class="row"><span>Genre</span><b>'+mk.gender+'</b></div>'; this._openPrint('Media kit — '+mk.name, body); },
+      sendCanva:()=>toast('Envoyé vers Canva ✓'),
+      genContractPdf:()=>{ const terms=(ctTerms||[]).map(t=>'<div class="row"><span>'+t.l+'</span><b>'+t.v+'</b></div>').join(''); const clauses=(ctClauses||[]).map(c=>'<h2>'+c.title+'</h2><p>'+c.body+'</p>').join(''); const body='<h1>'+ctTitle+'</h1><p class="muted">'+ctParties+'</p><hr>'+terms+'<hr>'+clauses+'<div class="sign"><div>Pour TTP Agency</div><div>Pour '+ctName+'</div></div>'; this._openPrint(ctTitle, body); },
+      sendSignature:()=>toast('Envoyé pour signature ✓'),
+      editProfil:()=>toast('Édition du profil bientôt disponible'), contactAgent:()=>{ try{ window.location.href='mailto:marc@ttpcreators.pro?subject='+encodeURIComponent('Contact — '+(cr?cr.name:'créateur')); }catch(_){ toast('marc@ttpcreators.pro'); } },
       dashMore:()=>toast('Activité à jour ✓'), actFiltersOpen: this.state.actFiltersOpen!==false, toggleActFilters:()=>this.setState(s=>({actFiltersOpen: s.actFiltersOpen===false})),
       showDealsChip:!this.state.hideDeals, showBriefsChip:!this.state.hideBriefs,
       removeDealsChip:()=>this.setState({hideDeals:true}), removeBriefsChip:()=>this.setState({hideBriefs:true}),
