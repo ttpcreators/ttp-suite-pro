@@ -228,7 +228,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','deletedDebriefs','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -412,66 +412,88 @@ class Component extends DCLogic {
   async _dbInsert(table,row){ if(!this._sb) return null; try{ const {data,error}=await this._sb.from(table).insert(row).select(); if(error){ console.warn('[db] insert '+table+':',error.message); return null; } return (data&&data[0])||null; }catch(e){ return null; } }
   async _dbUpdate(table,id,patch){ if(!this._sb||!id) return; try{ const {error}=await this._sb.from(table).update(patch).eq('id',id); if(error) console.warn('[db] update '+table+':',error.message); }catch(e){} }
   async _dbDelete(table,id){ if(!this._sb||!id) return; try{ const {error}=await this._sb.from(table).delete().eq('id',id); if(error) console.warn('[db] delete '+table+':',error.message); }catch(e){} }
+  // Sème une table UNE SEULE FOIS. Si l'utilisateur a tout supprimé (table vide
+  // mais déjà semée), on NE re-sème PAS. Renvoie {status:'seeded'|'skip'|'fail'}.
+  _markSeeded(entity){ if(!(this.state.seededTables && this.state.seededTables[entity])) this.setState(s=>({ seededTables:Object.assign({},s.seededTables||{},{[entity]:true}) })); }
+  async _seedTable(entity, table, seedRows){
+    if(this.state.seededTables && this.state.seededTables[entity]) return {status:'skip'};
+    try{ const {data,error}=await this._sb.from(table).insert(seedRows).select(); if(error) return {status:'fail'}; this.setState(s=>({ seededTables:Object.assign({},s.seededTables||{},{[entity]:true}) })); return {status:'seeded', data:data||[]}; }catch(e){ return {status:'fail'}; }
+  }
   // Première entité branchée sur sa table : PROSPECTS (pipeline marques).
   async _loadProspects(){
     const rows = await this._dbList('prospects');
     if(rows===null) return; // Supabase indisponible → repli local
     const map=(r)=>({ id:r.id, brand:r.brand, contact:r.contact||'', value:r.value||'—', stage:r.stage||'Prospection', tone:r.tone||'cyan' });
-    if(rows.length){ this._prospectsTable=true; this.setState({ prospectData: rows.map(map) }); return; }
-    // table vide au tout premier lancement → on la sème depuis l'amorçage
+    if(rows.length){ this._prospectsTable=true; this._markSeeded('prospects'); this.setState({ prospectData: rows.map(map) }); return; }
     const seed=this.prospectRaw.map((p,i)=>({ brand:p.brand, contact:p.contact, value:p.value, stage:p.stage, tone:p.tone, sort_order:i }));
-    try{ const {data,error}=await this._sb.from('prospects').insert(seed).select(); if(!error && data){ this._prospectsTable=true; this.setState({ prospectData: data.map(map) }); } }catch(e){}
+    const r=await this._seedTable('prospects','prospects',seed);
+    if(r.status==='seeded'){ this._prospectsTable=true; this.setState({ prospectData: r.data.map(map) }); }
+    else if(r.status==='skip'){ this._prospectsTable=true; this.setState({ prospectData: [] }); }
   }
   async _loadContacts(){
     const rows = await this._dbList('contacts');
     if(rows===null) return;
     const map=(r)=>({ id:r.id, brand:r.brand, person:r.person||'', role:r.role||'', tag:r.tag||'Autre', email:r.email||'', phone:r.phone||'', tone:r.tone||'cyan', last:'jamais', deals:'—' });
-    if(rows.length){ this._contactsTable=true; this.setState({ contactsData: rows.map(map) }); return; }
+    if(rows.length){ this._contactsTable=true; this._markSeeded('contacts'); this.setState({ contactsData: rows.map(map) }); return; }
     const seed=this._contacts().map((c,i)=>({ brand:c.brand, person:c.person, role:c.role, tag:c.tag, email:c.email||'', phone:c.phone||'', tone:c.tone||'cyan', sort_order:i }));
-    try{ const {data,error}=await this._sb.from('contacts').insert(seed).select(); if(!error && data){ this._contactsTable=true; this.setState({ contactsData: data.map(map) }); } }catch(e){}
+    const r=await this._seedTable('contacts','contacts',seed);
+    if(r.status==='seeded'){ this._contactsTable=true; this.setState({ contactsData: r.data.map(map) }); }
+    else if(r.status==='skip'){ this._contactsTable=true; this.setState({ contactsData: [] }); }
   }
   async _loadInvoices(){
     const rows = await this._dbList('invoices');
     if(rows===null) return;
     const map=(r)=>({ id:r.id, ref:r.ref, party:r.party, amount:r.amount, date:r.date, status:r.status||'brouillon' });
-    if(rows.length){ this._invoicesTable=true; this.setState({ invoiceData: rows.map(map) }); return; }
+    if(rows.length){ this._invoicesTable=true; this._markSeeded('invoices'); this.setState({ invoiceData: rows.map(map) }); return; }
     const seed=this.invoiceRaw.map((v,i)=>({ ref:v.ref, party:v.party, amount:v.amount, date:v.date, status:v.status, sort_order:i }));
-    try{ const {data,error}=await this._sb.from('invoices').insert(seed).select(); if(!error && data){ this._invoicesTable=true; this.setState({ invoiceData: data.map(map) }); } }catch(e){}
+    const r=await this._seedTable('invoices','invoices',seed);
+    if(r.status==='seeded'){ this._invoicesTable=true; this.setState({ invoiceData: r.data.map(map) }); }
+    else if(r.status==='skip'){ this._invoicesTable=true; this.setState({ invoiceData: [] }); }
   }
   async _loadTodos(){
     const rows = await this._dbList('todos'); if(rows===null) return;
     const map=(r)=>({ id:r.id, text:r.text, desc:r.descr||'', tag:r.tag||'', due:r.due||'—', creator:r.creator||null, priority:r.priority||'moyenne', source:r.source||'agency' });
-    if(rows.length){ this._todosTable=true; this.setState({ todoItems: rows.map(map) }); return; }
+    if(rows.length){ this._todosTable=true; this._markSeeded('todos'); this.setState({ todoItems: rows.map(map) }); return; }
     const seed=this.todoRaw.map((t,i)=>({ text:t.text, descr:t.desc||'', tag:t.tag, due:t.due, creator:t.creator||null, priority:t.priority||'moyenne', source:t.source||'agency', sort_order:i }));
-    try{ const {data,error}=await this._sb.from('todos').insert(seed).select(); if(!error&&data){ this._todosTable=true; this.setState({ todoItems:data.map(map) }); } }catch(e){}
+    const r=await this._seedTable('todos','todos',seed);
+    if(r.status==='seeded'){ this._todosTable=true; this.setState({ todoItems:r.data.map(map) }); }
+    else if(r.status==='skip'){ this._todosTable=true; this.setState({ todoItems:[] }); }
   }
   async _loadBriefs(){
     const rows = await this._dbList('briefs'); if(rows===null) return;
     const map=(r)=>({ id:r.id, brand:r.brand, creator:r.creator, who:r.who||r.creator, deliverables:r.deliverables||'', due:r.due||'', status:r.status||'cours', tone:r.tone||'cyan', consignes:r.consignes||'', budget:r.budget||'', objectif:r.objectif||'' });
-    if(rows.length){ this._briefsTable=true; this.setState({ briefItems: rows.map(map) }); return; }
+    if(rows.length){ this._briefsTable=true; this._markSeeded('briefs'); this.setState({ briefItems: rows.map(map) }); return; }
     const seed=this.briefRaw.map((b,i)=>({ brand:b.brand, creator:b.creator, who:b.who, deliverables:b.deliverables, due:b.due, status:b.status, tone:b.tone, consignes:b.consignes, budget:b.budget, objectif:b.objectif, sort_order:i }));
-    try{ const {data,error}=await this._sb.from('briefs').insert(seed).select(); if(!error&&data){ this._briefsTable=true; this.setState({ briefItems:data.map(map) }); } }catch(e){}
+    const r=await this._seedTable('briefs','briefs',seed);
+    if(r.status==='seeded'){ this._briefsTable=true; this.setState({ briefItems:r.data.map(map) }); }
+    else if(r.status==='skip'){ this._briefsTable=true; this.setState({ briefItems:[] }); }
   }
   async _loadIdeas(){
     const rows = await this._dbList('ideas'); if(rows===null) return;
     const map=(r)=>({ id:r.id, text:r.text, creator:r.creator||null, status:r.status||'À explorer', source:r.source||'agency' });
-    if(rows.length){ this._ideasTable=true; this.setState({ ideasData: rows.map(map) }); return; }
+    if(rows.length){ this._ideasTable=true; this._markSeeded('ideas'); this.setState({ ideasData: rows.map(map) }); return; }
     const seed=this.ideasRaw.map((x,i)=>({ text:x.text, creator:x.creator, status:x.status, source:x.source, sort_order:i }));
-    try{ const {data,error}=await this._sb.from('ideas').insert(seed).select(); if(!error&&data){ this._ideasTable=true; this.setState({ ideasData:data.map(map) }); } }catch(e){}
+    const r=await this._seedTable('ideas','ideas',seed);
+    if(r.status==='seeded'){ this._ideasTable=true; this.setState({ ideasData:r.data.map(map) }); }
+    else if(r.status==='skip'){ this._ideasTable=true; this.setState({ ideasData:[] }); }
   }
   async _loadEvents(){
     const rows = await this._dbList('events'); if(rows===null) return;
     const map=(r)=>({ id:r.id, day:r.day, time:r.time||'—', title:r.title, type:r.type||'call', who:r.who||null });
-    if(rows.length){ this._eventsTable=true; this.setState({ events: rows.map(map) }); return; }
+    if(rows.length){ this._eventsTable=true; this._markSeeded('events'); this.setState({ events: rows.map(map) }); return; }
     const seed=this.eventsRaw.map((e,i)=>({ day:e.day, time:e.time, title:e.title, type:e.type, who:e.who, sort_order:i }));
-    try{ const {data,error}=await this._sb.from('events').insert(seed).select(); if(!error&&data){ this._eventsTable=true; this.setState({ events:data.map(map) }); } }catch(e){}
+    const r=await this._seedTable('events','events',seed);
+    if(r.status==='seeded'){ this._eventsTable=true; this.setState({ events:r.data.map(map) }); }
+    else if(r.status==='skip'){ this._eventsTable=true; this.setState({ events:[] }); }
   }
   async _loadMessages(){
     const rows = await this._dbList('messages'); if(rows===null) return;
     const group=(arr)=>{ const o={}; arr.forEach(r=>{ const k=r.thread_key; (o[k]=o[k]||[]).push({from:r.sender, text:r.body, id:r.id}); }); return o; };
-    if(rows.length){ this._messagesTable=true; this.setState({ threadMsgs: group(rows) }); return; }
+    if(rows.length){ this._messagesTable=true; this._markSeeded('messages'); this.setState({ threadMsgs: group(rows) }); return; }
     const seed=[]; Object.keys(this.msgsRaw).forEach(k=>{ this.msgsRaw[k].forEach((m,i)=>{ seed.push({ thread_key:String(k), sender:m.from, body:m.text, sort_order:i }); }); });
-    try{ const {data,error}=await this._sb.from('messages').insert(seed).select(); if(!error&&data){ this._messagesTable=true; this.setState({ threadMsgs: group(data) }); } }catch(e){}
+    const r=await this._seedTable('messages','messages',seed);
+    if(r.status==='seeded'){ this._messagesTable=true; this.setState({ threadMsgs: group(r.data) }); }
+    else if(r.status==='skip'){ this._messagesTable=true; this.setState({ threadMsgs: {} }); }
   }
   icon(name){
     const M={ apercu:['M3 12l9-8 9 8','M5 10v10h14V10'], objectifs:['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18','M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10','M12 12h.01'], roster:['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2','M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8','M22 21v-2a4 4 0 0 0-3-3.9','M16 3.1a4 4 0 0 1 0 7.8'], engagement:['M3 12h4l3 8 4-16 3 8h4'], pricing:['M17 7a6 6 0 1 0 0 10','M4 10h9','M4 14h9'], briefs:['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z','M14 2v6h6','M8 13h8','M8 17h5'], todo:['M9 11l3 3 8-8','M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'], documents:['M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], mediakit:['M3 5h18v14H3z','M3 16l5-5 4 4 3-3 6 6','M8.5 9a1.5 1.5 0 1 0-.001-.001'], messages:['M4 5h16v14H4z','M4 7l8 6 8-6'], contacts:['M5 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2'], planning:['M4 6h16v15H4z','M4 10h16','M8 3v4','M16 3v4'], contrats:['M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z','M14 3v6h6','M9 14h6','M9 17h4'], facturation:['M4 5h16v15l-3-2-3 2-3-2-3 2z','M8 9h8','M8 13h5'], checklist:['M9 6h11','M9 12h11','M9 18h11','M4 5.5l1 1 2-2','M4 11.5l1 1 2-2','M4 17.5l1 1 2-2'], prospection:['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14','M21 21l-4-4'], acces:['M7 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8','M11 10h10','M17 10v4','M21 10v3'], alertes:['M12 3l9 17H3z','M12 9v5','M12 17h.01'], idees:['M9 18h6','M10 22h4','M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A7 7 0 0 0 12 2'], debrief:['M3 12a9 9 0 1 0 2.6-6.3','M3 4v5h5'], templates:['M3 3h8v8H3z','M13 3h8v8h-8z','M13 13h8v8h-8z','M3 13h8v8H3z'], accueil:['M3 12l9-8 9 8','M5 10v10h14V10'], stats:['M4 20V4','M4 20h16','M8 20v-7','M13 20V8','M18 20v-4'], profil:['M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8','M5 21a7 7 0 0 1 14 0'] };
