@@ -974,6 +974,8 @@ class Component extends DCLogic {
       vMessages:this.state.view==='messages', agencyThreads,
       aMsgListShown: this.state.openAThread==null, aThreadOpen: this.state.openAThread!=null, aConvMsgs, aConvWho, aConvTitle, aConvInitials, aAvatarStyle, adraft:this.state.adraft,
       aNewMsgOpen, newMsgCreators, openNewMsg:()=>this.setState({aNewMsg:true}), closeNewMsg:()=>this.setState({aNewMsg:false}),
+      aDelConvo:()=>{ const at=this.state.openAThread; if(at!=null) _delConvo(at); },
+      delConvo:()=>{ const ot=this.state.openThread; if(ot!=null) _delConvo(ot); },
       onADraft:(e)=>{const v=e.target.value;this.setState({adraft:v});}, backAThreads:()=>this.setState({openAThread:null}),
       sendMsgA:()=>{ const at=this.state.openAThread; if(at==null)return; const d=(this.state.adraft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); cur[at]=[...(cur[at]||[]),{from:'agency',text:d}]; this.setState({threadMsgs:cur, adraft:''}); },
       pMessages:this.state.portalTab==='messages', announcements, threads, bannerStyle, onPhotoBanner: mkPhoto('banner'),

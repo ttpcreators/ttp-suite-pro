@@ -1293,7 +1293,7 @@
       <sc-if value="{{ aThreadOpen }}" hint-placeholder-val="{{ false }}">
       <div onclick="{{ backAThreads }}" style="display:flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; color:var(--faint); cursor:pointer; margin-bottom:14px">← BOÎTE DE RÉCEPTION</div>
       <div style="background:var(--panel); border-radius:20px; padding:18px; min-height:520px; display:flex; flex-direction:column">
-        <div style="display:flex; align-items:center; gap:12px; padding-bottom:14px; border-bottom:1px solid var(--hair); margin-bottom:16px"><div style="{{ aAvatarStyle }}">{{ aConvInitials }}</div><div><div style="font:700 13px 'Inter',sans-serif; color:var(--text); letter-spacing:.3px">{{ aConvWho }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">{{ aConvTitle }}</div></div></div>
+        <div style="display:flex; align-items:center; gap:12px; padding-bottom:14px; border-bottom:1px solid var(--hair); margin-bottom:16px"><div style="{{ aAvatarStyle }}">{{ aConvInitials }}</div><div style="flex:1; min-width:0"><div style="font:700 13px 'Inter',sans-serif; color:var(--text); letter-spacing:.3px">{{ aConvWho }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">{{ aConvTitle }}</div></div><div onclick="{{ aDelConvo }}" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; border:1px solid var(--hair); color:var(--muted); font:600 9px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover); color:#E5484D">✕ SUPPRIMER</div></div>
         <div style="flex:1"><sc-for list="{{ aConvMsgs }}" as="m" hint-placeholder-count="3"><div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div></sc-for></div>
         <div style="display:flex; align-items:center; gap:9px; margin-top:16px; background:var(--surface); border-radius:14px; padding:8px 8px 8px 16px"><input value="{{ adraft }}" oninput="{{ onADraft }}" placeholder="Répondre…" style="flex:1; border:none; background:transparent; color:var(--text); font:400 13px 'Inter',sans-serif; outline:none"><div onclick="{{ sendMsgA }}" style="padding:10px 18px; border-radius:10px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">ENVOYER</div></div>
       </div>
@@ -1587,7 +1587,7 @@
       </div>
       </sc-if>
       <sc-if value="{{ threadOpen }}" hint-placeholder-val="{{ false }}">
-      <div onclick="{{ backThreads }}" style="display:flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; color:var(--faint); cursor:pointer; margin-bottom:14px">← CONVERSATIONS</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px"><div onclick="{{ backThreads }}" style="display:flex; align-items:center; gap:7px; font:600 10px 'Inter',sans-serif; color:var(--faint); cursor:pointer">← CONVERSATIONS</div><div onclick="{{ delConvo }}" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; border:1px solid var(--hair); color:var(--muted); font:600 9px 'Inter',sans-serif; cursor:pointer" style-hover="background:var(--rowhover); color:#E5484D">✕ SUPPRIMER</div></div>
       <div style="background:var(--panel); border-radius:20px; padding:18px; min-height:380px; display:flex; flex-direction:column">
         <div style="font:600 13px 'Inter',sans-serif; color:var(--text); padding-bottom:14px; border-bottom:1px solid var(--hair); margin-bottom:16px">{{ convTitle }}</div>
         <div style="flex:1"><sc-for list="{{ convMsgs }}" as="m" hint-placeholder-count="3"><div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div></sc-for></div>
@@ -2679,6 +2679,8 @@ class Component extends DCLogic {
       vMessages:this.state.view==='messages', agencyThreads,
       aMsgListShown: this.state.openAThread==null, aThreadOpen: this.state.openAThread!=null, aConvMsgs, aConvWho, aConvTitle, aConvInitials, aAvatarStyle, adraft:this.state.adraft,
       aNewMsgOpen, newMsgCreators, openNewMsg:()=>this.setState({aNewMsg:true}), closeNewMsg:()=>this.setState({aNewMsg:false}),
+      aDelConvo:()=>{ const at=this.state.openAThread; if(at!=null) _delConvo(at); },
+      delConvo:()=>{ const ot=this.state.openThread; if(ot!=null) _delConvo(ot); },
       onADraft:(e)=>{const v=e.target.value;this.setState({adraft:v});}, backAThreads:()=>this.setState({openAThread:null}),
       sendMsgA:()=>{ const at=this.state.openAThread; if(at==null)return; const d=(this.state.adraft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); cur[at]=[...(cur[at]||[]),{from:'agency',text:d}]; this.setState({threadMsgs:cur, adraft:''}); },
       pMessages:this.state.portalTab==='messages', announcements, threads, bannerStyle, onPhotoBanner: mkPhoto('banner'),
