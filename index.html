@@ -2161,6 +2161,10 @@ class Component extends DCLogic {
     try {
       if (window.supabase && window.__SB_URL__ && window.__SB_KEY__) {
         this._sb = window.supabase.createClient(window.__SB_URL__, window.__SB_KEY__);
+        // Au rafraîchissement, supabase-js restaure la session de façon asynchrone.
+        // On écoute l'état d'auth : dès qu'une session est (re)connue, on bascule en
+        // "Base connectée" et on recharge les données AVEC la session authentifiée.
+        try{ this._sb.auth.onAuthStateChange((event, session)=>{ try{ const real=!!(session && session.user); if(real && !this._authReal){ this._authReal=true; this._cloudReady=false; this._cloudRowId=null; this._loadAllData(); this._loadCloudState(); this.setState({}); } else if(!real && this._authReal){ this._authReal=false; this.setState({}); } }catch(_){} }); }catch(_){}
         this._loadAllData();
         this._loadCloudState();
       }
