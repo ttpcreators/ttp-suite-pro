@@ -115,7 +115,7 @@ class Component extends DCLogic {
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefNotes','customObjs','threadMsgs','msgsData']; }
+  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefDone','briefNotes','customObjs','threadMsgs','msgsData']; }
   // override setState so every data change is mirrored to localStorage
   setState(update, cb){ super.setState(update, ()=>{ try{ this._persist(); }catch(e){} if(cb) cb(); }); }
   // keys synced to Supabase (cross-device). Roster lives in the `creators`
@@ -279,6 +279,7 @@ class Component extends DCLogic {
     const mkTodo = (t, i) => {
       const isDone = !!done[i];
       return {
+        done: isDone,
         text: t.text, tag: t.tag||'', due: t.due||'', desc: t.desc||'', hasDesc: !!t.desc, creatorLabel: t.creator||'Agence', fromCreator: t.source==='creator', hasPriority: !!t.priority, priorityLabel: t.priority?t.priority.toUpperCase():'', priorityStyle: "font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:3px 8px;border-radius:6px;color:"+this.toneHex(t.priority==='haute'?'indigo':(t.priority==='basse'?'signal':'cyan'),dark)+";background:"+this.toneHex(t.priority==='haute'?'indigo':(t.priority==='basse'?'signal':'cyan'),dark)+"18;",
         check: isDone ? '✓' : '',
         boxStyle: 'width:16px;height:16px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(isDone?'background:var(--signal);color:var(--onsignal);':'border:1.5px solid var(--faint);color:transparent;'),
@@ -362,8 +363,11 @@ class Component extends DCLogic {
     const objCreators = this.objRaw.map(o=>({ name:o.name, ca:o.ca, target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex(o.tone,dark)+';' })).concat((this.state.customObjs||[]).map(o=>({ name:o.name, ca:'—', target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex('indigo',dark)+';' })));
     const pricing = this.pricingRaw;
     const briefItems = this.state.briefItems || this.briefRaw;
-    const mkBrief = (b)=>{ const bval=!!(this.state.briefVal||{})[b.brand]; const st=this.briefStatus(b.status); const note=(this.state.briefNotes||{})[b.brand]||''; return { brand:b.brand, creator:b.creator, creatorFirst:(b.creator||'').split(' ')[0], deliverables:b.deliverables, due:b.due, consignes:b.consignes||'Consignes à préciser avec la marque.', budget:b.budget||'—', objectif:b.objectif||'—', statusLabel:bval?'VALIDÉ':st.label, dotStyle:dotS(bval?'signal':b.tone,false), chipStyle:this.chip(), validated:bval, validateLabel:bval?'VALIDÉ ✓':'VALIDER', validateStyle:'flex:1; padding:10px 0; text-align:center; border-radius:11px; font:600 10px \'Inter\',sans-serif; cursor:pointer;'+(bval?'background:var(--signalsoft);color:var(--signaltext);':'background:var(--signal);color:var(--onsignal);'), validate:(()=>{const k=b.brand;return ()=>this.setState(s=>({briefVal:Object.assign({},s.briefVal,{[k]:true})}));})(), noteValue:note, hasNote:!!note, onNote:(()=>{const k=b.brand;return (e)=>{const v=e.target.value;this.setState(s=>({briefNotes:Object.assign({},s.briefNotes,{[k]:v})}));};})(), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le brief '+b.brand+' ?'))return; this.setState(s=>({ briefItems:(s.briefItems||this.briefRaw).filter(x=>x!==b) })); }, edit:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const nv=window.prompt('Modifier les consignes du brief '+b.brand+' :', b.consignes||''); if(nv==null)return; this.setState(s=>({ briefItems:(s.briefItems||this.briefRaw).map(x=> x===b ? Object.assign({},x,{consignes:nv}) : x) })); } }; };
-    const briefs = briefItems.map(mkBrief);
+    const mkBrief = (b)=>{ const bval=!!(this.state.briefVal||{})[b.brand]; const bdone=!!(this.state.briefDone||{})[b.brand]; const st=this.briefStatus(b.status); const note=(this.state.briefNotes||{})[b.brand]||''; return { brand:b.brand, creator:b.creator, creatorFirst:(b.creator||'').split(' ')[0], deliverables:b.deliverables, due:b.due, consignes:b.consignes||'Consignes à préciser avec la marque.', budget:b.budget||'—', objectif:b.objectif||'—', done:bdone, statusLabel:bdone?'TERMINÉ':(bval?'VALIDÉ':st.label), dotStyle:dotS(bdone?'signal':(bval?'signal':b.tone),false), chipStyle:this.chip(), completeLabel:bdone?'Rouvrir':'Terminer', complete:(()=>{const k=b.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState(s=>({briefDone:Object.assign({},s.briefDone,{[k]:!(s.briefDone&&s.briefDone[k])})})); };})(), validated:bval, validateLabel:bval?'VALIDÉ ✓':'VALIDER', validateStyle:'flex:1; padding:10px 0; text-align:center; border-radius:11px; font:600 10px \'Inter\',sans-serif; cursor:pointer;'+(bval?'background:var(--signalsoft);color:var(--signaltext);':'background:var(--signal);color:var(--onsignal);'), validate:(()=>{const k=b.brand;return ()=>this.setState(s=>({briefVal:Object.assign({},s.briefVal,{[k]:true})}));})(), noteValue:note, hasNote:!!note, onNote:(()=>{const k=b.brand;return (e)=>{const v=e.target.value;this.setState(s=>({briefNotes:Object.assign({},s.briefNotes,{[k]:v})}));};})(), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le brief '+b.brand+' ?'))return; this.setState(s=>({ briefItems:(s.briefItems||this.briefRaw).filter(x=>x!==b) })); }, edit:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const nv=window.prompt('Modifier les consignes du brief '+b.brand+' :', b.consignes||''); if(nv==null)return; this.setState(s=>({ briefItems:(s.briefItems||this.briefRaw).map(x=> x===b ? Object.assign({},x,{consignes:nv}) : x) })); } }; };
+    const briefFilter = this.state.briefFilter || 'cours';
+    const _briefMatch = (bm)=> briefFilter==='all' ? true : (briefFilter==='done' ? bm.done : !bm.done);
+    const briefFilterTabs = [['cours','En cours'],['done','Terminés'],['all','Tous']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(briefFilter===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({briefFilter:k});})() }));
+    const briefs = briefItems.map(mkBrief).filter(_briefMatch);
     const briefPreview = briefs.slice(0,3);
     const rdvPreview = events.slice().sort((a,b)=>a.day-b.day).slice(0,4).map(e=>{ const d=eventDeco(e); return { when:(e.day===26?"Auj. ":(e.day+'/06 '))+e.time, title:e.title, dotStyle:d.dotStyle }; });
 
@@ -384,10 +388,12 @@ class Component extends DCLogic {
     const cr = (ci != null) ? this.rosterRaw[ci] : this.rosterRaw[0];
     const myEvents = events.filter(e => e.who === cr.name);
     const myAgenda = (myEvents.length ? myEvents : events.slice(0,3)).map(e => { const d=eventDeco(e); return { day:e.day, time:e.time, title:e.title, dotStyle:d.dotStyle, dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);' }; });
+    const pTodoFilter = this.state.pTodoFilter || 'todo';
+    const pTodoFilterTabs = [['todo','À faire'],['done','Terminées'],['all','Toutes']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(pTodoFilter===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({pTodoFilter:k});})() }));
     const myTodosArr = todoItems.map((t,i)=>({t,i})).filter(x => x.t.creator === cr.name);
-    const myTodos = myTodosArr.map(x => mkTodo(x.t, x.i));
+    const myTodos = myTodosArr.map(x => mkTodo(x.t, x.i)).filter(tm=> pTodoFilter==='all' ? true : (pTodoFilter==='done' ? tm.done : !tm.done));
     const myBriefsArr = briefItems.filter(b => b.who === cr.name);
-    const myBriefs = (myBriefsArr.length ? myBriefsArr : briefItems.slice(0,2)).map(mkBrief);
+    const myBriefs = (myBriefsArr.length ? myBriefsArr : briefItems.slice(0,2)).map(mkBrief).filter(_briefMatch);
     const nextEv = myAgenda[0] || {};
     const me = {
       name: cr.name, first: (s=>s.charAt(0)+s.slice(1).toLowerCase())(cr.name.split(' ')[0]), initials: this.initials(cr.name), handle: cr.handle, niche: cr.niche, plat: cr.plat,
@@ -673,7 +679,7 @@ class Component extends DCLogic {
       portalBottomNav,
       goRoster, goFacturation, goObjectifs, goContacts, goPlanning, goBriefs, goTodo, goProspection, goEngagement, goRosterUgc,
       topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
-      me, myAgenda, myTodos, myBriefs, loginCreators,
+      me, myAgenda, myTodos, myBriefs, loginCreators, briefFilterTabs, pTodoFilterTabs,
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('c'+(ci!=null?ci:0)),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
       calendarCells: cells, eventTypes,
