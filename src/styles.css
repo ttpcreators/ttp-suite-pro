@@ -132,6 +132,9 @@
     #dc-root .m-home-quick > * span:last-child { font-size:8px !important; letter-spacing:0 !important; }
     /* creator profil coordinates: single column on phone */
     #dc-root .m-prof-grid { grid-template-columns:1fr !important; }
+    /* creator-portal picker: 2 columns on phone */
+    #dc-root .m-pick-grid, .m-pick-grid { grid-template-columns:1fr 1fr !important; }
+    .m-pick-grid > * { min-width:0 !important; grid-column:auto !important; }
     /* ---- LOGIN: stack the split-screen on phones ---- */
     .login-wrap { flex-direction:column !important; }
     .login-left { min-height:160px !important; flex:0 0 auto !important; }

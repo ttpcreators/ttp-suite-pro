@@ -408,6 +408,9 @@
     #dc-root .m-home-quick > * span:last-child { font-size:8px !important; letter-spacing:0 !important; }
     /* creator profil coordinates: single column on phone */
     #dc-root .m-prof-grid { grid-template-columns:1fr !important; }
+    /* creator-portal picker: 2 columns on phone */
+    #dc-root .m-pick-grid, .m-pick-grid { grid-template-columns:1fr 1fr !important; }
+    .m-pick-grid > * { min-width:0 !important; grid-column:auto !important; }
     /* ---- LOGIN: stack the split-screen on phones ---- */
     .login-wrap { flex-direction:column !important; }
     .login-left { min-height:160px !important; flex:0 0 auto !important; }
@@ -1445,20 +1448,27 @@
 
   <!-- ===== LOGIN ===== -->
   <sc-if value="{{ needsLogin }}" hint-placeholder-val="{{ true }}">
-  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; min-height:calc(100vh - 28px)">
-    <div style="width:48px; height:48px; border-radius:14px; background:#14181E; overflow:hidden; display:flex; align-items:center; justify-content:center"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div>
-    <div style="font:500 30px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text); margin-top:20px">Espace créateur</div>
-    <div style="font:400 13px 'Inter',sans-serif; color:var(--muted); margin-top:8px">Sélectionne ton profil pour te connecter</div>
-    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:32px; max-width:720px; width:100%">
-      <sc-for list="{{ loginCreators }}" as="c" hint-placeholder-count="8">
-        <div onclick="{{ c.login }}" style="background:var(--surface); border:1px solid var(--hair); border-radius:18px; padding:18px; display:flex; flex-direction:column; align-items:center; text-align:center; cursor:pointer" style-hover="border-color:var(--signal)">
-          <div style="{{ c.avatarStyle }}">{{ c.initials }}</div>
-          <div style="font:600 12px 'Inter',sans-serif; color:var(--text); margin-top:12px; letter-spacing:.3px; line-height:1.3">{{ c.name }}</div>
-          <div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:3px">{{ c.niche }}</div>
+  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 28px; min-height:calc(100vh - 28px)">
+    <div style="width:100%; max-width:880px">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:30px">
+        <div>
+          <div style="display:flex; align-items:center; gap:12px"><div style="width:40px; height:40px; border-radius:12px; background:#14181E; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1.4px; color:var(--faint)">APERÇU AGENCE</div></div>
+          <div style="font:500 34px 'Inter',sans-serif; letter-spacing:-1.5px; color:var(--text); margin-top:14px">Portails créateurs</div>
+          <div style="font:400 13px 'Inter',sans-serif; color:var(--muted); margin-top:6px">Choisis un créateur pour ouvrir son portail.</div>
         </div>
-      </sc-for>
+        <div onclick="{{ backToAgency }}" style="padding:11px 16px; border-radius:12px; border:1px solid var(--hair); color:var(--text); font:600 10px 'Inter',sans-serif; letter-spacing:.3px; cursor:pointer; white-space:nowrap" style-hover="background:var(--rowhover)">← Espace agence</div>
+      </div>
+      <div class="m-pick-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; width:100%">
+        <sc-for list="{{ loginCreators }}" as="c" hint-placeholder-count="8">
+          <div onclick="{{ c.login }}" class="pick-card" style="background:var(--surface); border:1px solid var(--hair); border-radius:18px; padding:18px; cursor:pointer; transition:border-color .15s, transform .12s, box-shadow .15s" style-hover="border-color:var(--signal); transform:translateY(-2px); box-shadow:0 12px 30px -16px rgba(0,0,0,.35)">
+            <div style="display:flex; align-items:center; justify-content:space-between"><div style="{{ c.avatarStyle }}">{{ c.initials }}</div><span style="{{ c.dotStyle }}"></span></div>
+            <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-top:14px; letter-spacing:.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ c.name }}</div>
+            <div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:3px">{{ c.niche }} · {{ c.handle }}</div>
+            <div style="display:flex; gap:14px; margin-top:14px; padding-top:12px; border-top:1px solid var(--hair)"><div><div style="font:700 13px 'Inter',sans-serif; color:var(--text); letter-spacing:-.5px">{{ c.followers }}</div><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint); margin-top:2px">ABONNÉS</div></div><div><div style="font:700 13px 'Inter',sans-serif; color:var(--text); letter-spacing:-.5px">{{ c.er }}</div><div style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint); margin-top:2px">ENGAGEMENT</div></div></div>
+          </div>
+        </sc-for>
+      </div>
     </div>
-    <div onclick="{{ backToAgency }}" style="margin-top:28px; font:600 10px 'Inter',sans-serif; letter-spacing:.5px; color:var(--faint); cursor:pointer" style-hover="color:var(--text)">← RETOUR ESPACE AGENCE</div>
   </div>
   </sc-if>
 
@@ -2370,7 +2380,7 @@ class Component extends DCLogic {
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
     const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); };
-    const loginCreators = this.rosterRaw.map((c,i)=>({ name:c.name, niche:c.niche, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,48), login:()=>this.setState({creatorId:i, portalTab:'accueil'}) }));
+    const loginCreators = this.rosterRaw.map((c,i)=>({i,c})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name, niche:c.niche, handle:c.handle, followers:c.followers, er:c.er, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,52), dotStyle:dotS(c.tone,c.status==='live'), login:(()=>{const ii=i;return ()=>this.setState({creatorId:ii, portalTab:'accueil'});})() }));
     // creator's own editable coordinates — shared with the agency roster detail
     // (same rosterInfo store, keyed by creator index) so the agency sees updates.
     const _meIdx = ci!=null?ci:0;

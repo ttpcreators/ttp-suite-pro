@@ -665,7 +665,7 @@ class Component extends DCLogic {
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
     const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); };
-    const loginCreators = this.rosterRaw.map((c,i)=>({ name:c.name, niche:c.niche, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,48), login:()=>this.setState({creatorId:i, portalTab:'accueil'}) }));
+    const loginCreators = this.rosterRaw.map((c,i)=>({i,c})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name, niche:c.niche, handle:c.handle, followers:c.followers, er:c.er, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,52), dotStyle:dotS(c.tone,c.status==='live'), login:(()=>{const ii=i;return ()=>this.setState({creatorId:ii, portalTab:'accueil'});})() }));
     // creator's own editable coordinates — shared with the agency roster detail
     // (same rosterInfo store, keyed by creator index) so the agency sees updates.
     const _meIdx = ci!=null?ci:0;
