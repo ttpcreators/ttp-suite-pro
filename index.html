@@ -593,7 +593,7 @@
         </div>
         <div style="grid-column:span 4; background:var(--surface); border-radius:20px; padding:22px; display:flex; flex-direction:column">
           <div style="display:flex; justify-content:space-between; align-items:flex-start">
-            <div style="font:700 19px 'Inter',sans-serif; letter-spacing:1px; color:var(--text); font-style:italic">TTP<span style="color:var(--signal)">·</span>PRO</div>
+            <div style="display:flex; align-items:center; gap:9px; color:var(--text)"><svg width="24" height="24" viewBox="0 0 100 100" fill="currentColor" style="display:block"><g transform="rotate(45 50 50)"><path d="M50 50 C 33 33, 38 13, 50 5 C 62 13, 67 33, 50 50 Z"/></g><g transform="rotate(135 50 50)"><path d="M50 50 C 33 33, 38 13, 50 5 C 62 13, 67 33, 50 50 Z"/></g><g transform="rotate(225 50 50)"><path d="M50 50 C 33 33, 38 13, 50 5 C 62 13, 67 33, 50 50 Z"/></g><g transform="rotate(315 50 50)"><path d="M50 50 C 33 33, 38 13, 50 5 C 62 13, 67 33, 50 50 Z"/></g></svg><span style="font:600 17px 'Inter',sans-serif; letter-spacing:-.3px">Qonto</span></div>
             <div style="display:flex; align-items:center; gap:5px; padding:6px 11px; border-radius:20px; border:1px solid var(--hair); font:600 9px 'Inter',sans-serif; color:var(--muted)">PRÉLÈVEMENTS ▾</div>
           </div>
           <div style="margin-top:22px"><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); letter-spacing:.5px">Compte agence principal</div><div style="font:600 16px 'Inter',sans-serif; color:var(--text); margin-top:6px; letter-spacing:2px">•••• 2719</div></div>
@@ -1885,7 +1885,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','authed','authRole','space','creatorId','portalTab']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -1928,7 +1928,16 @@ class Component extends DCLogic {
       if (error){ console.warn('[cloud] load:', error.message); this._cloudReady=true; return; }
       if (data && data[0]){ this._cloudRowId = data[0].id; let o=null; try{ o=JSON.parse(data[0].a); }catch(_){} if (o && typeof o==='object') this.setState(o); }
     } catch(e){ console.warn('[cloud] load failed', e); }
-    finally { this._cloudReady = true; this._persistNow(); } // flush current state to cloud (seeds the row if empty)
+    finally { this._cloudReady = true; try{ this._applySeeds(); }catch(e){} this._persistNow(); } // apply forced seeds, then flush to cloud
+  }
+  // One-time forced seeds: when the bundled seed version changes, override the
+  // saved (possibly stale) data once so everyone gets the new defaults. Bump the
+  // version string to push a new seed. Runs after restore AND after cloud load.
+  _applySeeds(){
+    const V = 'contacts-csv-2026-06-27';
+    if (this.state.contactsSeedV !== V){
+      this.setState({ contactsData: this.contactRaw.slice(), contactsSeedV: V });
+    }
   }
   _restore(){
     if (typeof localStorage === 'undefined') return;
@@ -1955,6 +1964,10 @@ class Component extends DCLogic {
         this._loadCloudState();
       }
     } catch(e){ console.warn('[supabase] init failed', e); }
+    // apply forced seeds against the restored (localStorage) state right away;
+    // _loadCloudState re-applies after the cloud snapshot lands so a stale cloud
+    // copy can't bring the old data back.
+    try{ this._applySeeds(); }catch(e){}
   }
   _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend }; }
   async _loadCreators(){
