@@ -228,7 +228,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','accessAccounts','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -815,22 +815,33 @@ class Component extends DCLogic {
     // Shared message store keyed by thread. aMeta maps each thread -> (creator, campaign);
     // key 2 is the agency broadcast shown to every creator. The AGENCY sees every
     // thread (one per creator); a CREATOR sees only their own threads + the broadcast.
-    const aMeta = { 0:{creator:'CAMILLE ORSINI', campaign:'Sephora — Collection été', tone:'indigo'}, 1:{creator:'CAMILLE ORSINI', campaign:'Dior Beauty — Gifting', tone:'cyan'}, 3:{creator:'THÉO RIVIÈRE', campaign:'Logitech — Sponso', tone:'indigo'}, 4:{creator:'JADE NGUYEN', campaign:'Sephora UGC', tone:'signal'}, 5:{creator:'INÈS KABORÉ', campaign:"L'Oréal — Soin", tone:'cyan'} };
-    const aMetaAll = Object.assign({ 2:{creator:'__all__', campaign:'Annonce agence', tone:'signal'} }, aMeta);
+    const aMetaSeed = { 0:{creator:'CAMILLE ORSINI', campaign:'Sephora — Collection été', tone:'indigo'}, 1:{creator:'CAMILLE ORSINI', campaign:'Dior Beauty — Gifting', tone:'cyan'}, 3:{creator:'THÉO RIVIÈRE', campaign:'Logitech — Sponso', tone:'indigo'}, 4:{creator:'JADE NGUYEN', campaign:'Sephora UGC', tone:'signal'}, 5:{creator:'INÈS KABORÉ', campaign:"L'Oréal — Soin", tone:'cyan'} };
+    const _customConvos = this.state.customConvos || [];           // [{key, creator, tone}]
+    const _delConvos = this.state.deletedConvos || {};
+    const _toneOf = (name)=>{ const c=this.rosterRaw.find(x=>x.name===name); return c?c.tone:'indigo'; };
+    // full meta map : seed campaigns + broadcast + conversations directes créées
+    const aMetaAll = Object.assign({ 2:{creator:'__all__', campaign:'Annonce agence', tone:'signal'} }, aMetaSeed);
+    _customConvos.forEach(c=>{ aMetaAll[c.key]={ creator:c.creator, campaign:'Conversation directe', tone:c.tone||_toneOf(c.creator) }; });
+    const aMeta = aMetaAll;
     const _bubble=(mine)=> 'max-width:75%;padding:11px 15px;border-radius:16px;font:400 13px \'Inter\',sans-serif;line-height:1.5;'+(mine?'background:var(--signal);color:var(--onsignal);border-bottom-right-radius:5px;':'background:var(--surface);color:var(--text);border:1px solid var(--hair);border-bottom-left-radius:5px;');
-    // ---- CREATOR PORTAL : only this creator's threads (+ the agency broadcast) ----
-    const _myThreadKeys = Object.keys(aMetaAll).map(Number).sort((a,b)=>a-b).filter(k=> aMetaAll[k].creator===cr.name || aMetaAll[k].creator==='__all__');
+    const _delConvo=(key)=>{ if(!window.confirm('Supprimer cette discussion ?'))return; this.setState(s=>{ const dc=Object.assign({},s.deletedConvos,{[key]:true}); const cc=(s.customConvos||[]).filter(c=>c.key!==key); const tm=Object.assign({},(s.threadMsgs||this.msgsRaw)); delete tm[key]; return { deletedConvos:dc, customConvos:cc, threadMsgs:tm, openAThread:(s.openAThread===key?null:s.openAThread), openThread:(s.openThread===key?null:s.openThread) }; }); toast('Discussion supprimée'); };
+    // ---- CREATOR PORTAL : only this creator's threads (+ broadcast), non supprimées ----
+    const _myThreadKeys = Object.keys(aMetaAll).filter(k=> !_delConvos[k] && (aMetaAll[k].creator===cr.name || aMetaAll[k].creator==='__all__'));
     const threads = _myThreadKeys.map(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; let u=0; for(let j=ms.length-1;j>=0;j--){ if(ms[j].from==='agency') u++; else break; } const last= lm ? (lm.from==='me'?'Toi : ':'Agence : ')+lm.text : '—'; return { campaign:aMetaAll[k].campaign, last, time:'', unread:u>0?String(u):'', hasUnread:u>0, read:u===0, dotStyle:dotS(aMetaAll[k].tone,false), open:(()=>{const kk=k;return ()=>this.setState({openThread:kk});})() }; });
     const convMsgs = _ot!=null ? (_base[_ot]||[]).map(m=>({ text:m.text, rowStyle:'display:flex;margin-bottom:10px;'+(m.from==='me'?'justify-content:flex-end;':'justify-content:flex-start;'), bubbleStyle:_bubble(m.from==='me') })) : [];
     const convTitle = (_ot!=null && aMetaAll[_ot]) ? aMetaAll[_ot].campaign : '';
-    // ---- AGENCY INBOX : every creator's thread ----
-    const agencyThreads = [0,1,3,4,5].map(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; const w=aMeta[k].creator.split(' ')[0]; const lcap=w.charAt(0)+w.slice(1).toLowerCase(); const last= lm ? (lm.from==='agency'?'Vous : ':lcap+' : ')+lm.text : '—'; return { creator:aMeta[k].creator, campaign:aMeta[k].campaign, initials:this.creatorPhoto(aMeta[k].creator)?'':this.initials(aMeta[k].creator), avatarStyle:this.avatarFor(aMeta[k].creator,aMeta[k].tone,dark,38), last, hasUnread:(!!lm && lm.from==='me'), open:(()=>{const kk=k;return ()=>this.setState({openAThread:kk});})() }; });
+    // ---- AGENCY INBOX : tous les fils (campagnes + directs), non supprimés ----
+    const _agencyKeys = [0,1,3,4,5].concat(_customConvos.map(c=>c.key)).filter(k=> !_delConvos[k] && aMetaAll[k]);
+    const agencyThreads = _agencyKeys.map(k=>{ const meta=aMetaAll[k]; const ms=_base[k]||[]; const lm=ms[ms.length-1]; const w=meta.creator.split(' ')[0]; const lcap=w.charAt(0)+w.slice(1).toLowerCase(); const last= lm ? (lm.from==='agency'?'Vous : ':lcap+' : ')+lm.text : 'Nouvelle conversation'; return { creator:meta.creator, campaign:meta.campaign, initials:this.creatorPhoto(meta.creator)?'':this.initials(meta.creator), avatarStyle:this.avatarFor(meta.creator,meta.tone,dark,38), last, hasUnread:(!!lm && lm.from==='me'), open:(()=>{const kk=k;return ()=>this.setState({openAThread:kk});})(), del:(()=>{const kk=k;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); _delConvo(kk); };})() }; });
     const _at = this.state.openAThread;
     const aConvMsgs = _at!=null ? (_base[_at]||[]).map(m=>({ text:m.text, rowStyle:'display:flex;margin-bottom:10px;'+(m.from==='agency'?'justify-content:flex-end;':'justify-content:flex-start;'), bubbleStyle:_bubble(m.from==='agency') })) : [];
-    const aConvWho = _at!=null ? aMeta[_at].creator : '';
-    const aConvTitle = _at!=null ? aMeta[_at].campaign : '';
-    const aConvInitials = _at!=null ? this.initials(aMeta[_at].creator) : '';
-    const aAvatarStyle = _at!=null ? this.avatarStyle(aMeta[_at].tone,dark,38) : '';
+    const aConvWho = (_at!=null && aMetaAll[_at]) ? aMetaAll[_at].creator : '';
+    const aConvTitle = (_at!=null && aMetaAll[_at]) ? aMetaAll[_at].campaign : '';
+    const aConvInitials = (_at!=null && aMetaAll[_at]) ? this.initials(aMetaAll[_at].creator) : '';
+    const aAvatarStyle = (_at!=null && aMetaAll[_at]) ? this.avatarStyle(aMetaAll[_at].tone,dark,38) : '';
+    // ---- nouvelle conversation : choisir un créateur ----
+    const aNewMsgOpen = !!this.state.aNewMsg;
+    const newMsgCreators = this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>({ name:c.name, niche:c.niche, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,38), pick:(()=>{const nm=c.name, key='dm:'+c.name, tn=c.tone;return ()=>{ this.setState(s=>{ const cc=(s.customConvos||[]).slice(); if(!cc.some(x=>x.key===key)) cc.push({key, creator:nm, tone:tn}); const dc=Object.assign({},s.deletedConvos); delete dc[key]; return { customConvos:cc, deletedConvos:dc, openAThread:key, aNewMsg:false }; }); };})() }));
     const bannerPhoto = (this.state.photos||{}).banner || '';
     const bannerStyle = 'height:118px;border-radius:18px;position:relative;overflow:hidden;'+(bannerPhoto?'background-image:url('+bannerPhoto+');background-size:cover;background-position:center;':'background:'+this.toneHex(cr.tone,dark)+';');
     me.bio = 'Créateur '+cr.niche.toLowerCase()+' basé en France. Contenus premium, ton authentique et publication régulière.';
@@ -962,6 +973,7 @@ class Component extends DCLogic {
       vAlertes:this.state.view==='alertes', alerts,
       vMessages:this.state.view==='messages', agencyThreads,
       aMsgListShown: this.state.openAThread==null, aThreadOpen: this.state.openAThread!=null, aConvMsgs, aConvWho, aConvTitle, aConvInitials, aAvatarStyle, adraft:this.state.adraft,
+      aNewMsgOpen, newMsgCreators, openNewMsg:()=>this.setState({aNewMsg:true}), closeNewMsg:()=>this.setState({aNewMsg:false}),
       onADraft:(e)=>{const v=e.target.value;this.setState({adraft:v});}, backAThreads:()=>this.setState({openAThread:null}),
       sendMsgA:()=>{ const at=this.state.openAThread; if(at==null)return; const d=(this.state.adraft||'').trim(); if(!d)return; const base=this.state.threadMsgs||this.msgsRaw; const cur=Object.assign({},base); cur[at]=[...(cur[at]||[]),{from:'agency',text:d}]; this.setState({threadMsgs:cur, adraft:''}); setTimeout(()=>{ const b=this.state.threadMsgs||this.msgsRaw; const c2=Object.assign({},b); const rep=['Merci, c\'est noté ! 🙏','Super, je m\'en occupe.','Parfait 👍','Reçu, je vous tiens au courant.'][Math.floor(Math.random()*4)]; c2[at]=[...(c2[at]||[]),{from:'me',text:rep}]; this.setState({threadMsgs:c2}); },1300); },
       pMessages:this.state.portalTab==='messages', announcements, threads, bannerStyle, onPhotoBanner: mkPhoto('banner'),
