@@ -519,12 +519,12 @@
         <div style="grid-column:span 8; background:var(--surface); border-radius:20px; padding:22px">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
             <div style="font:600 15px 'Inter',sans-serif; color:var(--text)">Activité de l'agence</div>
-            <div style="display:flex; align-items:center; gap:14px; font:500 11px 'Inter',sans-serif; color:var(--muted)"><span style="cursor:pointer">⋯</span><span style="display:flex; align-items:center; gap:5px; cursor:pointer">▽ Filtres</span></div>
+            <div style="display:flex; align-items:center; gap:14px; font:500 11px 'Inter',sans-serif; color:var(--muted)"><span onclick="{{ dashMore }}" style="cursor:pointer" style-hover="color:var(--text)">⋯</span><span onclick="{{ dashFilters }}" style="display:flex; align-items:center; gap:5px; cursor:pointer" style-hover="color:var(--text)">▽ Filtres</span></div>
           </div>
           <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px">
             <div style="flex:1; display:flex; align-items:center; gap:9px; background:var(--panel); border-radius:12px; padding:10px 14px"><span style="font:600 12px 'Inter',sans-serif; color:var(--faint)">⌕</span><input value="{{ activitySearch }}" oninput="{{ onActivitySearch }}" placeholder="Rechercher dans l'activité…" style="flex:1; min-width:0; border:none; background:transparent; outline:none; font:400 12px 'Inter',sans-serif; color:var(--text)"></div>
-            <span style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; background:var(--signalsoft); font:600 10px 'Inter',sans-serif; color:var(--signaltext); cursor:pointer">Deals <span>✕</span></span>
-            <span style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px solid var(--hair); font:600 10px 'Inter',sans-serif; color:var(--muted); cursor:pointer">Briefs <span>✕</span></span>
+            <sc-if value="{{ showDealsChip }}" hint-placeholder-val="{{ true }}"><span onclick="{{ removeDealsChip }}" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; background:var(--signalsoft); font:600 10px 'Inter',sans-serif; color:var(--signaltext); cursor:pointer; white-space:nowrap">Deals <span>✕</span></span></sc-if>
+            <sc-if value="{{ showBriefsChip }}" hint-placeholder-val="{{ true }}"><span onclick="{{ removeBriefsChip }}" style="display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:20px; border:1px solid var(--hair); font:600 10px 'Inter',sans-serif; color:var(--muted); cursor:pointer; white-space:nowrap">Briefs <span>✕</span></span></sc-if>
           </div>
           <div style="display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:14px">
             <div onclick="{{ goFacturation }}" style="background:var(--panel); border-radius:16px; padding:18px; display:flex; flex-direction:column; cursor:pointer">
@@ -1908,6 +1908,9 @@ class Component extends DCLogic {
       genDevis:()=>toast('Devis généré ✓'), genMediaPdf:()=>toast('Media kit PDF généré ✓'), sendCanva:()=>toast('Envoyé vers Canva ✓'),
       genContractPdf:()=>toast('Contrat PDF généré ✓'), sendSignature:()=>toast('Envoyé pour signature ✓'),
       editProfil:()=>toast('Édition du profil bientôt disponible'), contactAgent:()=>toast('Message envoyé à votre agent ✓'),
+      dashMore:()=>toast('Options bientôt disponibles'), dashFilters:()=>toast('Filtres bientôt disponibles'),
+      showDealsChip:!this.state.hideDeals, showBriefsChip:!this.state.hideBriefs,
+      removeDealsChip:()=>this.setState({hideDeals:true}), removeBriefsChip:()=>this.setState({hideBriefs:true}),
       bottomNav, navOpenCls, openMobileNav, closeMobileNav,
       notifOpen:!!this.state.notifOpen, toggleNotif:()=>this.setState(s=>({notifOpen:!s.notifOpen})), closeNotif:()=>this.setState({notifOpen:false}),
       hasNotif:true, notifCount:'4',
