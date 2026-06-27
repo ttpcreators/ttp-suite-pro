@@ -87,7 +87,15 @@
     /* ---- wide non-table grids (the month calendar) -> contained horizontal scroll
        so only the calendar scrolls sideways, never the whole page ---- */
     #dc-root .m-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    #dc-root .m-scroll [style*="grid-template-columns: repeat(7,"] { min-width:520px; }
+    /* Planning calendar: FIT 7 columns on the phone (no sideways scroll).
+       Compact day cells showing the date + event dots; details live in the
+       "Prochains jours" list below. */
+    #dc-root .m-scroll { overflow-x:visible; }
+    #dc-root .cal-cell { min-height:46px !important; padding:5px 4px !important; }
+    #dc-root .cal-evs { flex-direction:row !important; flex-wrap:wrap; gap:3px !important; margin-top:4px !important; }
+    #dc-root .cal-ev { padding:0 !important; background:transparent !important; border-radius:0 !important; }
+    #dc-root .cal-ev-lbl { display:none !important; }
+    #dc-root .cal-ev span:first-child { width:7px !important; height:7px !important; }
   }
   /* ===================== DESKTOP ===================== */
   @media (min-width: 861px) {

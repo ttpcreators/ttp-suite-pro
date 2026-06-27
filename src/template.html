@@ -609,10 +609,10 @@
       <div class="m-scroll" style="background:var(--surface); border-radius:20px; padding:18px 18px 10px">
         <div style="display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-bottom:8px"><sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); text-align:center; padding:4px 0">{{ w }}</div></sc-for></div>
         <div style="display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px"><sc-for list="{{ calendarCells }}" as="c" hint-placeholder-count="35">
-          <div onclick="{{ c.select }}" style="{{ c.cellStyle }}">
+          <div onclick="{{ c.select }}" class="cal-cell" style="{{ c.cellStyle }}">
             <sc-if value="{{ c.hasDay }}" hint-placeholder-val="{{ true }}">
               <div style="{{ c.numStyle }}">{{ c.day }}</div>
-              <div style="display:flex; flex-direction:column; gap:3px; margin-top:5px; min-width:0"><sc-for list="{{ c.chips }}" as="e" hint-placeholder-count="2"><div style="{{ e.chipStyle }}"><span style="{{ e.dotStyle }}"></span><span style="min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ e.label }}</span></div></sc-for></div>
+              <div class="cal-evs" style="display:flex; flex-direction:column; gap:3px; margin-top:5px; min-width:0"><sc-for list="{{ c.chips }}" as="e" hint-placeholder-count="2"><div class="cal-ev" style="{{ e.chipStyle }}"><span style="{{ e.dotStyle }}"></span><span class="cal-ev-lbl" style="min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ e.label }}</span></div></sc-for></div>
               <sc-if value="{{ c.hasMore }}" hint-placeholder-val="{{ false }}"><div style="font:600 8px 'Inter',sans-serif; color:var(--faint); margin-top:3px">{{ c.moreLabel }}</div></sc-if>
             </sc-if>
           </div>
