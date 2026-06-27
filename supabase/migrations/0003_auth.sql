@@ -36,8 +36,10 @@ begin
   foreach t in array array['invoices','contacts','prospects','todos','briefs','ideas','events','module_rows','creators']
   loop
     execute format('alter table public.%I enable row level security;', t);
-    -- retire l'ancienne politique anonyme ouverte
+    -- retire les anciennes politiques anonymes ouvertes (tous noms historiques)
     execute format('drop policy if exists %I on public.%I;', t||'_anon_all', t);
+    execute format('drop policy if exists %I on public.%I;', t||'_anon_read', t);
+    execute format('drop policy if exists %I on public.%I;', t||'_anon_write', t);
     execute format('drop policy if exists %I on public.%I;', t||'_auth_all', t);
     -- nouvelle politique : lecture + écriture pour les comptes connectés seulement
     execute format('create policy %I on public.%I for all to authenticated using (true) with check (true);', t||'_auth_all', t);
