@@ -195,6 +195,8 @@ class Component extends DCLogic {
     const navOpenCls = mobileNav ? ' nav-open' : '';
     const openMobileNav = () => this.setState({mobileNav:true});
     const closeMobileNav = () => this.setState({mobileNav:false});
+    // lightweight toast for confirmations / export actions
+    const toast = (msg) => { this.setState({toast:msg}); setTimeout(()=>this.setState(s=> s.toast===msg ? {toast:null} : {}), 2200); };
     const _bbStyle = (key) => "flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:"+(this.state.view===key?'var(--text)':'var(--faint)')+";font:600 9px 'Inter',sans-serif";
     const _bbMk = (key,label,extra) => ({ icon:this.icon(key), iconTxt:'', label, style:_bbStyle(key), tap:()=>this.setState(Object.assign({view:key, mobileNav:false}, extra||{})) });
     const bottomNav = [ _bbMk('apercu','Accueil'), _bbMk('roster','Roster',{rosterDetail:null}), _bbMk('messages','Messages'), _bbMk('planning','Planning'), { icon:'', iconTxt:'☰', label:'Menu', style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:var(--faint);font:600 9px 'Inter',sans-serif", tap:openMobileNav } ];
@@ -252,15 +254,24 @@ class Component extends DCLogic {
     // ---- events / calendar ----
     const events = this.state.events || this.eventsRaw;
     const eventDeco = (e) => { const t=this.eventTypeMap[e.type]||this.eventTypeMap.call; return { dotStyle:'width:6px;height:6px;border-radius:50%;flex-shrink:0;background:'+this.toneHex(t.tone,dark)+';', chipStyle:"display:flex;align-items:center;gap:5px;min-width:0;max-width:100%;overflow:hidden;font:600 9px 'Inter',sans-serif;color:var(--text);background:var(--rowhover);border-radius:6px;padding:3px 6px;", label:(e.time?e.time+' ':'')+e.title, time:e.time, title:e.title, tone:t.tone }; };
-    const firstDow = new Date(2026,5,1).getDay(); // 0 Sun
+    const _moNames=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const calOffset = this.state.calOffset||0;            // 0 = Juin 2026 (mois des données)
+    const _calD = new Date(2026, 5 + calOffset, 1);
+    const _calY = _calD.getFullYear(), _calM = _calD.getMonth();
+    const calLabel = _moNames[_calM] + ' ' + _calY;
+    const _daysIn = new Date(_calY, _calM + 1, 0).getDate();
+    const _showEv = calOffset === 0;                       // les évènements n'existent que pour Juin
+    const prevMonth = () => this.setState(s=>({ calOffset:(s.calOffset||0)-1 }));
+    const nextMonth = () => this.setState(s=>({ calOffset:(s.calOffset||0)+1 }));
+    const firstDow = _calD.getDay(); // 0 Sun
     const lead = (firstDow + 6) % 7; // Monday-first
     const cells = [];
-    const totalCells = Math.ceil((lead + 30) / 7) * 7;
+    const totalCells = Math.ceil((lead + _daysIn) / 7) * 7;
     for (let i = 0; i < totalCells; i++){
       const day = i - lead + 1;
-      const has = day >= 1 && day <= 30;
-      const dayEvents = has ? events.filter(e => Number(e.day) === day).map(eventDeco) : [];
-      const isToday = day === 26;
+      const has = day >= 1 && day <= _daysIn;
+      const dayEvents = (has && _showEv) ? events.filter(e => Number(e.day) === day).map(eventDeco) : [];
+      const isToday = _showEv && day === 26;
       cells.push({
         day: has ? day : '', hasDay: has, isToday,
         chips: dayEvents.slice(0,2),
@@ -276,7 +287,9 @@ class Component extends DCLogic {
     // ---- roster / engagement ----
     const rf = this.state.rosterFilter||'all';
     const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.setState(s=>({ deletedRoster:Object.assign({}, s.deletedRoster||{}, {[ii]:true}), rosterDetail:(s.rosterDetail===ii?null:s.rosterDetail) })); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
-    const roster = rosterAll.filter(c=> rf==='all'?true:(rf==='ugc'?c.isUgc:!c.isUgc));
+    const q = (this.state.topSearch||'').trim().toLowerCase();
+    const _match = (...parts) => !q || parts.join(' ').toLowerCase().includes(q);
+    const roster = rosterAll.filter(c=> rf==='all'?true:(rf==='ugc'?c.isUgc:!c.isUgc)).filter(c=> _match(c.name,c.handle,c.niche));
     const rosterTab=(k,label)=>({ label, style:'padding:7px 13px;border-radius:9px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(rf===k?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({rosterFilter:kk, rosterDetail:null});})() });
     const rosterTabs=[rosterTab('all','TOUS'),rosterTab('influence','INFLUENCE'),rosterTab('ugc','UGC')];
     const rosterCount = roster.length+' '+(rf==='ugc'?'UGC':(rf==='influence'?'influence':'représentés'));
@@ -285,12 +298,12 @@ class Component extends DCLogic {
     const topCreators = this.rosterRaw.slice(0,4).map((c,i)=>({ name:c.name, ca:c.ca, rank:String(i+1).padStart(2,'0'), dotStyle:dotS(c.tone, c.status==='live'), open:goRoster }));
     const pipeline = this.pipeRaw.map(p=>({ label:p.label, amount:p.amount, dotStyle:dotS(p.tone,false) }));
     const _invDoc = (v,stl)=>{ const html='<!doctype html><html><head><meta charset="utf-8"><title>Facture '+v.ref+'</title></head><body style="font-family:Inter,Arial,sans-serif;max-width:620px;margin:48px auto;color:#181D25;padding:0 24px"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:22px;font-weight:700">TTP Agency</div><div style="color:#9AA6B4;font-size:12px;margin-top:4px">Trust the Process</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600">FACTURE</div><div style="color:#9AA6B4;font-size:13px;margin-top:4px">#'+v.ref+'</div></div></div><hr style="border:none;border-top:1px solid #EAECEF;margin:28px 0"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr><td style="color:#9AA6B4;padding:8px 0">Client</td><td style="text-align:right;font-weight:600">'+v.party+'</td></tr><tr><td style="color:#9AA6B4;padding:8px 0">Échéance</td><td style="text-align:right">'+v.date+'</td></tr><tr><td style="color:#9AA6B4;padding:8px 0">Statut</td><td style="text-align:right">'+stl+'</td></tr></table><hr style="border:none;border-top:1px solid #EAECEF;margin:20px 0"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:600">Total</div><div style="font-size:24px;font-weight:700">'+v.amount+'</div></div><p style="margin-top:48px;color:#9AA6B4;font-size:11px">Document généré par TTP Suite — démonstration.</p></body></html>'; return 'data:text/html;charset=utf-8,'+encodeURIComponent(html); };
-    const invoices = (this.state.invoiceData||this.invoiceRaw).map(v=>{ const st=this.invStatus(v.status); const url=_invDoc(v,st.label); const filename='facture-'+v.ref+'.html'; return { ref:v.ref, party:v.party, amount:v.amount, date:v.date, statusLabel:st.label, dotStyle:dotS(st.tone,false), chipStyle:this.chip(), url, filename, open:(()=>{const u=url,fn=filename,rf=v.ref;return ()=>this.setState({previewDoc:{name:'Facture '+rf,url:u,filename:fn,isImage:false}});})(), share:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const txt='Facture '+v.ref+' — '+v.party+' — '+v.amount+' (échéance '+v.date+')'; if(navigator.share){navigator.share({title:'Facture '+v.ref, text:txt}).catch(()=>{});}else if(navigator.clipboard){navigator.clipboard.writeText(txt); this.setState({copied:'inv'+v.ref}); setTimeout(()=>this.setState(s=>s.copied==='inv'+v.ref?{copied:null}:{}),1500);}else{alert(txt);} }, shareLabel:(this.state.copied==='inv'+v.ref?'COPIÉ ✓':'PARTAGER'), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer la facture '+v.ref+' ?'))return; this.setState(s=>({ invoiceData:(s.invoiceData||this.invoiceRaw).filter(x=>x!==v) })); } }; });
+    const invoices = (this.state.invoiceData||this.invoiceRaw).filter(v=> _match(v.ref,v.party,v.amount)).map(v=>{ const st=this.invStatus(v.status); const url=_invDoc(v,st.label); const filename='facture-'+v.ref+'.html'; return { ref:v.ref, party:v.party, amount:v.amount, date:v.date, statusLabel:st.label, dotStyle:dotS(st.tone,false), chipStyle:this.chip(), url, filename, _hit:_match(v.ref,v.party,v.amount), open:(()=>{const u=url,fn=filename,rf=v.ref;return ()=>this.setState({previewDoc:{name:'Facture '+rf,url:u,filename:fn,isImage:false}});})(), share:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const txt='Facture '+v.ref+' — '+v.party+' — '+v.amount+' (échéance '+v.date+')'; if(navigator.share){navigator.share({title:'Facture '+v.ref, text:txt}).catch(()=>{});}else if(navigator.clipboard){navigator.clipboard.writeText(txt); this.setState({copied:'inv'+v.ref}); setTimeout(()=>this.setState(s=>s.copied==='inv'+v.ref?{copied:null}:{}),1500);}else{alert(txt);} }, shareLabel:(this.state.copied==='inv'+v.ref?'COPIÉ ✓':'PARTAGER'), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer la facture '+v.ref+' ?'))return; this.setState(s=>({ invoiceData:(s.invoiceData||this.invoiceRaw).filter(x=>x!==v) })); } }; });
     const cbase = this.state.contactsData || this.contactRaw;
     const contactsView = this.state.contactsView || 'grid';
     const contactsGrid = contactsView === 'grid', contactsList = contactsView === 'list';
     const contactsViewTabs = [['grid','Cartes'],['list','Liste']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(contactsView===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({contactsView:k});})() }));
-    const contacts = cbase.map((k,i)=>({ brand:k.brand, person:k.person, role:k.role, tag:k.tag, email:k.email||'—', phone:k.phone||'—', initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,44), avatarStyleSm:this.avatarStyle(k.tone,dark,38), tagStyle:"padding:5px 10px;border-radius:20px;background:var(--rowhover);font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);white-space:nowrap;", open:()=>this.setState({openContact:i}), del:(()=>{const ii=i,nm=k.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le contact '+nm+' ?'))return; this.setState(s=>{ const base=(s.contactsData||this.contactRaw).slice(); base.splice(ii,1); return { contactsData:base, openContact:(s.openContact===ii?null:s.openContact) }; }); };})() }));
+    const contacts = cbase.map((k,i)=>({ brand:k.brand, person:k.person, role:k.role, tag:k.tag, email:k.email||'—', phone:k.phone||'—', initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,44), avatarStyleSm:this.avatarStyle(k.tone,dark,38), tagStyle:"padding:5px 10px;border-radius:20px;background:var(--rowhover);font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);white-space:nowrap;", open:()=>this.setState({openContact:i}), del:(()=>{const ii=i,nm=k.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le contact '+nm+' ?'))return; this.setState(s=>{ const base=(s.contactsData||this.contactRaw).slice(); base.splice(ii,1); return { contactsData:base, openContact:(s.openContact===ii?null:s.openContact) }; }); };})() })).filter(k=> _match(k.brand,k.person,k.role,k.tag));
     const objCreators = this.objRaw.map(o=>({ name:o.name, ca:o.ca, target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex(o.tone,dark)+';' })).concat((this.state.customObjs||[]).map(o=>({ name:o.name, ca:'—', target:o.target, pctLabel:o.pct+'%', barStyle:'width:'+Math.min(o.pct,100)+'%;height:100%;border-radius:5px;background:'+this.toneHex('indigo',dark)+';' })));
     const pricing = this.pricingRaw;
     const briefItems = this.state.briefItems || this.briefRaw;
@@ -477,10 +490,25 @@ class Component extends DCLogic {
       {title:'Deal Nike sans MAJ depuis 8 j', detail:'Négociation · 24 000 €', tone:'cyan', tag:'DEAL'},
       {title:'Objectif CA à 88% — palier 80% franchi', detail:'248 600 / 280 000 €', tone:'signal', tag:'OBJECTIF'},
       {title:'Brief HelloFresh non assigné +48 h', detail:'Reçu le 24/06 · à attribuer', tone:'amber', tag:'BRIEF'},
-    ].map(a=>({ title:a.title, detail:a.detail, tag:a.tag, dotStyle:dotS(a.tone,false), tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);padding:5px 10px;border-radius:20px;background:var(--rowhover);white-space:nowrap;" }));
+    ].map((a,i)=>Object.assign({},a,{_i:i})).filter(a=> !((this.state.dismissedAlerts||{})[a._i])).map(a=>({ title:a.title, detail:a.detail, tag:a.tag, dotStyle:dotS(a.tone,false), tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);padding:5px 10px;border-radius:20px;background:var(--rowhover);white-space:nowrap;", treat:(()=>{const ii=a._i;return ()=>{ this.setState(s=>({dismissedAlerts:Object.assign({},s.dismissedAlerts,{[ii]:true})})); toast('Alerte traitée ✓'); };})() }));
 
+    // ---- action handlers (add / contact / export) ----
+    const addInvoice = () => { const party=window.prompt('Marque × Créateur :',''); if(party==null||!party.trim())return; const amount=window.prompt('Montant (ex : 12 000 €) :',''); if(amount==null)return; this.setState(s=>{ const base=(s.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0'); return { invoiceData:[{ref:ref, party:party.trim(), amount:(amount.trim()||'—'), date:'—', status:'brouillon'}].concat(base) }; }); toast('Facture créée'); };
+    const addContact = () => { const brand=window.prompt('Marque / société :',''); if(brand==null||!brand.trim())return; const person=window.prompt('Contact (nom) :','')||''; const email=window.prompt('Email :','')||''; this.setState(s=>({ contactsData:[{brand:brand.trim(), person:(person.trim()||'—'), role:'', tag:'NOUVEAU', email:email.trim(), phone:'', tone:'indigo'}].concat(s.contactsData||this.contactRaw) })); toast('Contact ajouté'); };
+    const addProspect = () => { const brand=window.prompt('Marque :',''); if(brand==null||!brand.trim())return; const value=window.prompt('Montant estimé :','')||''; this.setState(s=>({ prospectData:[{brand:brand.trim(), contact:'', value:(value.trim()||'—'), stage:'Prospection', tone:'cyan'}].concat(s.prospectData||this.prospectRaw) })); toast('Marque ajoutée au pipeline'); };
+    const addModuleRow = () => { const view=this.state.view; const m=this.modules[view]; if(!m)return; const a=window.prompt('Titre :',''); if(a==null||!a.trim())return; const b2=window.prompt('Sous-titre :','')||''; this.setState(s=>{ const mr=Object.assign({}, s.moduleRows); const base=((mr[view]||m.rows)).slice(); base.unshift({a:a.trim(), b:b2.trim(), c:'', tone:'cyan'}); mr[view]=base; return { moduleRows:mr }; }); toast('Élément ajouté'); };
+    const _ocData = (this.state.openContact!=null) ? ((this.state.contactsData||this.contactRaw)[this.state.openContact]) : null;
+    const sendEmailContact = () => { if(_ocData&&_ocData.email){ window.location.href='mailto:'+_ocData.email; } else { toast('Aucune adresse email'); } };
+    const callContact = () => { if(_ocData&&_ocData.phone){ window.location.href='tel:'+String(_ocData.phone).replace(/\s/g,''); } else { toast('Aucun numéro de téléphone'); } };
     return {
       themeVars, themeGlyph: dark ? '☀' : '☾',
+      toastMsg:this.state.toast||'', hasToast:!!this.state.toast,
+      topSearch:this.state.topSearch||'', onTopSearch:(e)=>this.setState({topSearch:e.target.value}),
+      calLabel, prevMonth, nextMonth,
+      addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,
+      genDevis:()=>toast('Devis généré ✓'), genMediaPdf:()=>toast('Media kit PDF généré ✓'), sendCanva:()=>toast('Envoyé vers Canva ✓'),
+      genContractPdf:()=>toast('Contrat PDF généré ✓'), sendSignature:()=>toast('Envoyé pour signature ✓'),
+      editProfil:()=>toast('Édition du profil bientôt disponible'), contactAgent:()=>toast('Message envoyé à votre agent ✓'),
       bottomNav, navOpenCls, openMobileNav, closeMobileNav,
       notifOpen:!!this.state.notifOpen, toggleNotif:()=>this.setState(s=>({notifOpen:!s.notifOpen})), closeNotif:()=>this.setState({notifOpen:false}),
       hasNotif:true, notifCount:'4',

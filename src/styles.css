@@ -10,6 +10,7 @@
   /* ===================== RESPONSIVE / MOBILE ===================== */
   .dc-bottombar { display:none; }
   .dc-backdrop { display:none; }
+  .dc-toast { bottom:30px; }
   @media (max-width: 860px) {
     .dc-pad { padding:0 !important; }
     .dc-shell { border-radius:0 !important; min-height:100vh !important; }
@@ -30,6 +31,7 @@
     .dc-docname { flex:1 1 60% !important; }
     /* bottom tab bar */
     .dc-bottombar { display:flex !important; position:fixed; left:0; right:0; bottom:0; z-index:200; background:var(--surface); border-top:1px solid var(--hair); padding:6px 4px calc(6px + env(safe-area-inset-bottom)); box-shadow:0 -4px 22px rgba(0,0,0,.07); }
+    .dc-toast { bottom:90px !important; }
     /* stack multi-column CARD grids to a single column.
        Selectors are EXACT (trailing ";") so "1fr 1fr;" never matches "1fr 1fr 1fr;"
        — small data rows (pricing 2fr 1fr 1fr, etc.) stay as compact rows. */
