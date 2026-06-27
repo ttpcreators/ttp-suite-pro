@@ -1009,6 +1009,7 @@
             <span style="{{ d.dotStyle }}"></span>
             <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ d.brand }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ d.creator }} · {{ d.period }}</div></div>
             <span style="{{ d.roiChipStyle }}">ROI {{ d.roi }}</span>
+            <span onclick="{{ d.del }}" title="Supprimer le debrief" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:8px; cursor:pointer; color:var(--faint); font:600 13px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
             <span style="flex-shrink:0; color:var(--faint); font:600 14px 'Inter',sans-serif">›</span>
           </div>
         </sc-for>

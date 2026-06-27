@@ -228,7 +228,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','rosterData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','rosterData','deletedDebriefs','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -281,10 +281,16 @@ class Component extends DCLogic {
     if (this.state.contactsSeedV !== V){
       this.setState({ contactsData: this.contactRaw.slice(), contactsSeedV: V });
     }
-    // self-heal: a stale index-based deletedRoster (from before the roster was
-    // persisted) could hide EVERY creator and leave the roster permanently empty
-    // ("0 représentés"). If everything is hidden, clear it so the roster reappears.
-    try{ const dr=this.state.deletedRoster||{}; const total=this.rosterRaw.length; if(total>0){ const hidden=this.rosterRaw.filter((_,i)=>dr[i]).length; if(hidden>=total) this.setState({ deletedRoster:{} }); } }catch(e){}
+    // ROSTER = persisted array (single source of truth). Migrate any old
+    // index-based deletions (deletedRoster) into the array ONCE: actually remove
+    // those creators, snapshot to rosterData, then drop the fragile index map.
+    // This makes deletions durable and prevents deleted creators from reappearing.
+    try{
+      const dr=this.state.deletedRoster||{};
+      const set=new Set(Object.keys(dr).filter(k=>dr[k]).map(Number));
+      if(set.size){ this.rosterRaw=this.rosterRaw.filter((_,i)=>!set.has(i)); this.setState({ rosterData:this.rosterRaw.slice(), deletedRoster:{} }); }
+      else if(!Array.isArray(this.state.rosterData) || !this.state.rosterData.length){ this.setState({ rosterData:this.rosterRaw.slice() }); }
+    }catch(e){}
   }
   // effective contact list — fall back to the bundled seed when the stored list
   // is missing OR empty (an empty [] must never hide the seeded contacts)
@@ -545,8 +551,9 @@ class Component extends DCLogic {
     const _mkDebrief = (o,i)=>({ brand:o.brand, creator:o.creator, period:o.period, deliverables:o.deliverables, budget:o.budget, revenue:o.revenue, roi:o.roi, summary:o.summary,
       dotStyle:dotS(o.tone,false), roiChipStyle:"font:600 9px 'Inter',sans-serif;letter-spacing:.5px;color:"+this.toneHex(o.tone,dark)+";background:"+this.toneHex(o.tone,dark)+"18;padding:5px 11px;border-radius:20px;white-space:nowrap;",
       kpis:o.kpis, highlights:o.highlights,
-      open:(()=>{const k=i;return ()=>this.setState({debriefOpen:k});})() });
-    const debriefList = this.debriefRaw.map(_mkDebrief);
+      open:(()=>{const k=i;return ()=>this.setState({debriefOpen:k});})(),
+      del:(()=>{const k=i,nm=o.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer le debrief « '+nm+' » ?'))return; this.setState(s=>({ deletedDebriefs:Object.assign({}, s.deletedDebriefs||{}, {[k]:true}), debriefOpen:(s.debriefOpen===k?null:s.debriefOpen) })); };})() });
+    const debriefList = this.debriefRaw.map(_mkDebrief).filter((_,i)=>!(this.state.deletedDebriefs||{})[i]);
     const _dbOpenIdx = this.state.debriefOpen;
     let debriefOpenObj = null;
     if(_dbOpenIdx!=null && this.debriefRaw[_dbOpenIdx]){ const o=this.debriefRaw[_dbOpenIdx]; const d=_mkDebrief(o,_dbOpenIdx);
@@ -599,14 +606,14 @@ class Component extends DCLogic {
 
     // ---- roster / engagement ----
     const rf = this.state.rosterFilter||'all';
-    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.setState(s=>({ deletedRoster:Object.assign({}, s.deletedRoster||{}, {[ii]:true}), rosterDetail:(s.rosterDetail===ii?null:s.rosterDetail) })); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
+    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.rosterRaw=this.rosterRaw.filter((_,j)=>j!==ii); this.setState({ rosterData:this.rosterRaw.slice(), rosterDetail:null }); toast('Créateur retiré ✓'); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
     const q = (this.state.topSearch||'').trim().toLowerCase();
     const _match = (...parts) => !q || parts.join(' ').toLowerCase().includes(q);
     const roster = rosterAll.filter(c=> rf==='all'?true:(rf==='ugc'?c.isUgc:!c.isUgc)).filter(c=> _match(c.name,c.handle,c.niche));
     const rosterTab=(k,label)=>({ label, style:'padding:7px 13px;border-radius:9px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(rf===k?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({rosterFilter:kk, rosterDetail:null});})() });
     const rosterTabs=[rosterTab('all','TOUS'),rosterTab('influence','INFLUENCE'),rosterTab('ugc','UGC')];
     const rosterCount = roster.length+' '+(rf==='ugc'?'UGC':(rf==='influence'?'influence':'représentés'));
-    const engagement = this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i}) => { const base=Math.round(parseFloat(c.er)); const spark=this.bars([40,55,48,62,58,72,66,80,76,90].map(v=>v*(0.7+base/12)).map(v=>Math.min(100,v)), this.toneHex(c.tone,dark), 3); return { name:c.name, er:c.er, reach:c.reach, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,30), spark, trend:(c.trend>0?'+':'')+c.trend+' pt', trendColor: c.trend>=0?greenText:redish, del:(()=>{const ii=i,nm=c.name,cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Retirer '+nm+' du roster ? La ligne disparaîtra de l\'engagement.'))return; this.setState(s=>({ deletedRoster:Object.assign({}, s.deletedRoster||{}, {[ii]:true}), rosterDetail:(s.rosterDetail===ii?null:s.rosterDetail) })); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } };})() }; });
+    const engagement = this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i}) => { const base=Math.round(parseFloat(c.er)); const spark=this.bars([40,55,48,62,58,72,66,80,76,90].map(v=>v*(0.7+base/12)).map(v=>Math.min(100,v)), this.toneHex(c.tone,dark), 3); return { name:c.name, er:c.er, reach:c.reach, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,30), spark, trend:(c.trend>0?'+':'')+c.trend+' pt', trendColor: c.trend>=0?greenText:redish, del:(()=>{const ii=i,nm=c.name,cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Retirer '+nm+' du roster ? La ligne disparaîtra de l\'engagement.'))return; this.rosterRaw=this.rosterRaw.filter((_,j)=>j!==ii); this.setState({ rosterData:this.rosterRaw.slice(), rosterDetail:null }); toast('Créateur retiré ✓'); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } };})() }; });
 
     const topCreators = this.rosterRaw.slice(0,4).map((c,i)=>({ name:c.name, ca:c.ca, rank:String(i+1).padStart(2,'0'), dotStyle:dotS(c.tone, c.status==='live'), open:goRoster }));
     const _aq = (this.state.activitySearch||'').trim().toLowerCase();
