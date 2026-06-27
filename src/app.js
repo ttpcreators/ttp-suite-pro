@@ -119,7 +119,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','threadMsgs','msgsData']; }
+  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData']; }
   // override setState so every data change is mirrored to localStorage
   setState(update, cb){ super.setState(update, ()=>{ try{ this._persist(); }catch(e){} if(cb) cb(); }); }
   // keys synced to Supabase (cross-device). Roster lives in the `creators`
@@ -440,27 +440,35 @@ class Component extends DCLogic {
     const prospectCols = stages.map(stg => { const cards=(this.state.prospectData||this.prospectRaw).filter(p=>p.stage===stg).map(p=>({ brand:p.brand, contact:p.contact, value:p.value, dotStyle:dotS(p.tone,false), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer '+p.brand+' du pipeline ?'))return; this.setState(s=>({ prospectData:(s.prospectData||this.prospectRaw).filter(x=>x!==p) })); }, edit:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const nb=window.prompt('Marque :', p.brand); if(nb==null)return; const nv=window.prompt('Montant estimé :', p.value); if(nv==null)return; this.setState(s=>({ prospectData:(s.prospectData||this.prospectRaw).map(x=> x===p ? Object.assign({},x,{brand:(nb.trim()||x.brand), value:(nv.trim()||x.value)}) : x) })); } })); return { title:stg, count:cards.length, cards }; });
 
     // generic module
-    // ---- Checklist collaboration (talent manager) ----
+    // ---- Checklist PAR COLLABORATION (talent manager) ----
     const _clDone=this.state.checklistDone||{}, _clHid=this.state.checklistHidden||{}, _clCus=this.state.checklistCustom||{};
     const _whoStyle=(who)=>{ const t=(who==='Créateur')?'indigo':'signal'; const hex=this.toneHex(t,dark); return "font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 9px;border-radius:20px;white-space:nowrap;color:"+hex+";background:"+hex+"18;"; };
-    let _clTot=0,_clOk=0;
-    const checklistPhases = this.checklistTemplate.map((ph,pi)=>{
-      const all = ph.items.concat(_clCus[pi]||[]);
-      const items = all.map(it=>({it,id:pi+'|'+it.t})).filter(x=>!_clHid[x.id]).map(x=>{ const done=!!_clDone[x.id]; _clTot++; if(done)_clOk++; return {
+    const _collabSeed=[ {brand:'Sephora',creator:'CAMILLE ORSINI',tone:'indigo'}, {brand:'Nike',creator:'MALO FONTAINE',tone:'signal'}, {brand:'Logitech',creator:'THÉO RIVIÈRE',tone:'cyan'}, {brand:'Dior Beauty',creator:'CAMILLE ORSINI',tone:'indigo'} ];
+    const _collabs = this.state.collabs || _collabSeed;
+    const collabOpen = this.state.openCollab || null;
+    const _stepsForCollab=(cid)=>{ let tot=0,ok=0; const phases=this.checklistTemplate.map((ph,pi)=>{ const ckey=cid+'#'+pi; const all=ph.items.concat(_clCus[ckey]||[]); const items=all.map(it=>({it,id:cid+'#'+pi+'|'+it.t})).filter(x=>!_clHid[x.id]).map(x=>{ const done=!!_clDone[x.id]; tot++; if(done)ok++; return {
         text:x.it.t, who:x.it.who, whoStyle:_whoStyle(x.it.who), done, check:done?'✓':'',
         boxStyle:'width:18px;height:18px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 10px \'Inter\',sans-serif;'+(done?'background:var(--signal);color:var(--onsignal);':'border:1.5px solid var(--faint);color:transparent;'),
         textStyle:"flex:1;font:500 13px 'Inter',sans-serif;"+(done?'color:var(--faint);text-decoration:line-through;':'color:var(--text);'),
         toggle:(()=>{const k=x.id;return ()=>this.setState(s=>({checklistDone:Object.assign({},s.checklistDone,{[k]:!(s.checklistDone&&s.checklistDone[k])})}));})(),
         del:(()=>{const k=x.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState(s=>({checklistHidden:Object.assign({},s.checklistHidden,{[k]:true})})); };})()
-      };});
-      const ok=items.filter(i=>i.done).length; const pct=items.length?Math.round(ok/items.length*100):0;
-      return { phase:ph.phase, progress:ok+'/'+items.length, pct, barStyle:'width:'+pct+'%;height:100%;border-radius:5px;background:var(--signal);', items,
-        add:(()=>{const p=pi;return ()=>{ const t=window.prompt('Nouvelle étape :',''); if(t==null||!t.trim())return; const who=window.confirm('Étape côté CRÉATEUR ?  (OK = Créateur · Annuler = Agence)')?'Créateur':'Agence'; this.setState(s=>{ const cc=Object.assign({},s.checklistCustom); cc[p]=(cc[p]||[]).concat([{t:t.trim(),who}]); return {checklistCustom:cc}; }); };})() };
-    });
-    const checklistPct = _clTot?Math.round(_clOk/_clTot*100):0;
-    const checklistProgress = _clOk+' / '+_clTot+' étapes';
-    const checklistBar = 'width:'+checklistPct+'%;height:100%;border-radius:6px;background:var(--signal);';
-    const resetChecklist = ()=>{ if(!window.confirm('Réinitialiser toute la checklist de collaboration ?'))return; this.setState({checklistDone:{}, checklistHidden:{}, checklistCustom:{}}); };
+      };}); const pok=items.filter(i=>i.done).length; const ppct=items.length?Math.round(pok/items.length*100):0; return { phase:ph.phase, progress:pok+'/'+items.length, pct:ppct, barStyle:'width:'+ppct+'%;height:100%;border-radius:5px;background:var(--signal);', items,
+        add:(()=>{const key=ckey;return ()=>{ const t=window.prompt('Nouvelle étape :',''); if(t==null||!t.trim())return; const who=window.confirm('Étape côté CRÉATEUR ?  (OK = Créateur · Annuler = Agence)')?'Créateur':'Agence'; this.setState(s=>{ const cc=Object.assign({},s.checklistCustom); cc[key]=(cc[key]||[]).concat([{t:t.trim(),who}]); return {checklistCustom:cc}; }); };})() }; }); return {phases,ok,tot}; };
+    const collabList = _collabs.map((c,idx)=>{ const cid=c.brand+' × '+(c.creator||''); const r=_stepsForCollab(cid); const pct=r.tot?Math.round(r.ok/r.tot*100):0; const fn=(c.creator||'').split(' ')[0]; const fnc=fn?fn.charAt(0)+fn.slice(1).toLowerCase():''; return {
+      id:cid, label:c.brand+(fnc?' × '+fnc:''), initials:this.creatorPhoto(c.creator)?'':this.initials(c.creator||c.brand), avatarStyle:this.avatarFor(c.creator,c.tone||'cyan',dark,40), progress:r.ok+' / '+r.tot+' étapes', pctLabel:pct+'%', barStyle:'width:'+pct+'%;height:100%;border-radius:5px;background:'+(pct===100?'var(--signal)':'var(--indigo)')+';',
+      open:(()=>{const k=cid;return ()=>this.setState({openCollab:k});})(),
+      del:(()=>{const i=idx,nm=c.brand;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer la collaboration '+nm+' ?'))return; this.setState(s=>{ const base=(s.collabs||_collabSeed).slice(); base.splice(i,1); return {collabs:base}; }); };})() }; });
+    const _openR = collabOpen ? _stepsForCollab(collabOpen) : {phases:[],ok:0,tot:0};
+    const checklistPhases = _openR.phases;
+    const _opPct = _openR.tot?Math.round(_openR.ok/_openR.tot*100):0;
+    const checklistPct = _opPct+'%';
+    const checklistProgress = _openR.ok+' / '+_openR.tot+' étapes';
+    const checklistBar = 'width:'+_opPct+'%;height:100%;border-radius:6px;background:var(--signal);';
+    const checklistInDeal = !!collabOpen;
+    const openCollabLabel = collabOpen || '';
+    const backToCollabs = ()=>this.setState({openCollab:null});
+    const addCollab = ()=>{ const brand=window.prompt('Marque :',''); if(brand==null||!brand.trim())return; const creator=(window.prompt('Créateur (nom complet) :','')||'').trim().toUpperCase(); this.setState(s=>({ collabs:(s.collabs||_collabSeed).concat([{brand:brand.trim(),creator,tone:'indigo'}]), openCollab:brand.trim()+' × '+creator })); };
+    const resetChecklist = ()=>{ if(!collabOpen)return; if(!window.confirm('Réinitialiser la checklist de cette collaboration ?'))return; const pref=collabOpen+'#'; this.setState(s=>{ const nd=Object.assign({},s.checklistDone), nh=Object.assign({},s.checklistHidden), nc=Object.assign({},s.checklistCustom); Object.keys(nd).forEach(k=>{if(k.indexOf(pref)===0)delete nd[k];}); Object.keys(nh).forEach(k=>{if(k.indexOf(pref)===0)delete nh[k];}); Object.keys(nc).forEach(k=>{if(k.indexOf(pref)===0)delete nc[k];}); return {checklistDone:nd,checklistHidden:nh,checklistCustom:nc}; }); };
     const mod = (this.modules[this.state.view]) ? (() => { const view=this.state.view; const m=this.modules[view]; const baseRows=(this.state.moduleRows&&this.state.moduleRows[view])||m.rows; return Object.assign({}, m, { rows: baseRows.map(r=>({ a:r.a, b:r.b, c:r.c, dotStyle:dotS(r.tone,false), chipStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);padding:5px 10px;border-radius:20px;background:var(--rowhover);white-space:nowrap;", del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer cet élément ?'))return; this.setState(s=>{ const mr=Object.assign({}, s.moduleRows); mr[view]=baseRows.filter(x=>x!==r); return { moduleRows:mr }; }); }, edit:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const na=window.prompt('Titre :', r.a); if(na==null)return; const nb=window.prompt('Sous-titre :', r.b); if(nb==null)return; this.setState(s=>{ const mr=Object.assign({}, s.moduleRows); mr[view]=baseRows.map(x=> x===r ? Object.assign({},x,{a:(na.trim()||x.a), b:(nb.trim()||x.b)}) : x); return { moduleRows:mr }; }); } })) }); })() : { title:'', section:'', sub:'', action:'', rows:[] };
     const vTemplatesMsg = this.state.view==='templates';
     const msgChannel = this.state.msgChannel || 'tous';
@@ -761,7 +769,7 @@ class Component extends DCLogic {
       vFacturation:this.state.view==='facturation', vObjectifs:this.state.view==='objectifs', vContacts:this.state.view==='contacts',
       vPlanning:this.state.view==='planning', vProspection:this.state.view==='prospection',
       vModule: !!this.modules[this.state.view] && this.state.view!=='idees' && this.state.view!=='checklist',
-      vChecklist: this.state.view==='checklist', checklistPhases, checklistPct:checklistPct+'%', checklistProgress, checklistBar, resetChecklist,
+      vChecklist: this.state.view==='checklist', checklistPhases, checklistPct, checklistProgress, checklistBar, resetChecklist, collabList, checklistInDeal, checklistList:!checklistInDeal, openCollabLabel, backToCollabs, addCollab,
       pAccueil:this.state.portalTab==='accueil', pBriefs:this.state.portalTab==='briefs', pPlanning:this.state.portalTab==='planning', pStats:this.state.portalTab==='stats', pProfil:this.state.portalTab==='profil',
       goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}), goPDocuments:()=>this.setState({portalTab:'documents'}),
       portalBottomNav,
