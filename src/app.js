@@ -1148,7 +1148,7 @@ class Component extends DCLogic {
       goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}), goPDocuments:()=>this.setState({portalTab:'documents'}),
       portalBottomNav,
       goRoster, goFacturation, goObjectifs, goContacts, goPlanning, goBriefs, goTodo, goProspection, goEngagement, goRosterUgc,
-      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
+      topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, contactsCount:String(this._contacts().length), objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, briefFilterTabs, pTodoFilterTabs,
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MD', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       weekdays: ['LUN','MAR','MER','JEU','VEN','SAM','DIM'],
