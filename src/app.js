@@ -885,8 +885,9 @@ class Component extends DCLogic {
       rememberCheck: this.state.rememberMe ? '✓' : '',
       toggleRemember: ()=>this.setState(s=>({rememberMe:!s.rememberMe})),
       forgotPwd: ()=>{ try{ toast('Contacte ton agence pour réinitialiser ton mot de passe.'); }catch(_){} },
-      loginLinkAgency: "font:600 10px 'Inter',sans-serif; letter-spacing:.6px; cursor:pointer; transition:color .15s; color:"+((this.state.loginTab||'agency')==='agency'?'#fff':'rgba(255,255,255,.40)'),
-      loginLinkCreator: "font:600 10px 'Inter',sans-serif; letter-spacing:.6px; cursor:pointer; transition:color .15s; color:"+((this.state.loginTab||'agency')==='creator'?'#fff':'rgba(255,255,255,.40)'),
+      loginSegAgencyStyle: "flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 0; border-radius:11px; font:600 12px 'Inter',sans-serif; letter-spacing:.2px; cursor:pointer; transition:all .15s; "+((this.state.loginTab||'agency')==='agency'?'background:#fff; color:#0A0A0B;':'color:rgba(255,255,255,.5);'),
+      loginSegCreatorStyle: "flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 0; border-radius:11px; font:600 12px 'Inter',sans-serif; letter-spacing:.2px; cursor:pointer; transition:all .15s; "+((this.state.loginTab||'agency')==='creator'?'background:#fff; color:#0A0A0B;':'color:rgba(255,255,255,.5);'),
+      loginCtaLabel: (this.state.loginTab||'agency')==='agency' ? 'Se connecter à l’espace agence' : 'Se connecter à mon espace',
       loginHint: (this.state.loginTab||'agency')==='agency' ? 'Démo agence — agence@ttp.com · ttp2026' : 'Démo créateur — prénom@ttp.com · mot de passe = prénom (ex : camille / camille)',
       doLogin: () => {
         const tab=this.state.loginTab||'agency';
