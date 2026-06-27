@@ -114,7 +114,32 @@ class Component extends DCLogic {
   dots(n, pct, fill, empty){ const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:8px;height:8px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
+  // keys that hold real data (not transient UI) — these survive a refresh
+  _persistKeys(){ return ['theme','deletedRoster','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','photos','briefVal','briefNotes','customObjs','threadMsgs','msgsData']; }
+  // override setState so every data change is mirrored to localStorage
+  setState(update, cb){ super.setState(update, ()=>{ try{ this._persist(); }catch(e){} if(cb) cb(); }); }
+  _persist(){
+    if (typeof localStorage === 'undefined') return;
+    // debounce: rapid setStates (e.g. typing) shouldn't each serialize to disk
+    clearTimeout(this._persistT);
+    this._persistT = setTimeout(()=>{
+      const out = {};
+      this._persistKeys().forEach(k=>{ const v=this.state[k]; if (v!==undefined && v!==null) out[k]=v; });
+      try { localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }
+      catch(e){ try{ delete out.photos; localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }catch(_){} }
+    }, 350);
+  }
+  _restore(){
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('ttp_state_v1');
+      if (!raw) return;
+      const o = JSON.parse(raw);
+      if (o && typeof o === 'object') { this._restoring = true; this.setState(o); this._restoring = false; }
+    } catch(e){ console.warn('[persist] restore failed', e); }
+  }
   componentDidMount(){
+    try { this._restore(); } catch(e){ console.warn('[persist] restore', e); }
     try {
       if (window.supabase && window.__SB_URL__ && window.__SB_KEY__) {
         this._sb = window.supabase.createClient(window.__SB_URL__, window.__SB_KEY__);
@@ -296,7 +321,8 @@ class Component extends DCLogic {
     const engagement = this.rosterRaw.map(c => { const base=Math.round(parseFloat(c.er)); const spark=this.bars([40,55,48,62,58,72,66,80,76,90].map(v=>v*(0.7+base/12)).map(v=>Math.min(100,v)), this.toneHex(c.tone,dark), 3); return { name:c.name, er:c.er, reach:c.reach, initials:this.initials(c.name), avatarStyle:this.avatarStyle(c.tone,dark,30), spark, trend:(c.trend>0?'+':'')+c.trend+' pt', trendColor: c.trend>=0?greenText:redish }; });
 
     const topCreators = this.rosterRaw.slice(0,4).map((c,i)=>({ name:c.name, ca:c.ca, rank:String(i+1).padStart(2,'0'), dotStyle:dotS(c.tone, c.status==='live'), open:goRoster }));
-    const pipeline = this.pipeRaw.map(p=>({ label:p.label, amount:p.amount, dotStyle:dotS(p.tone,false) }));
+    const _aq = (this.state.activitySearch||'').trim().toLowerCase();
+    const pipeline = this.pipeRaw.filter(p=> !_aq || (p.label+' '+p.amount).toLowerCase().includes(_aq)).map(p=>({ label:p.label, amount:p.amount, dotStyle:dotS(p.tone,false) }));
     const _invDoc = (v,stl)=>{ const html='<!doctype html><html><head><meta charset="utf-8"><title>Facture '+v.ref+'</title></head><body style="font-family:Inter,Arial,sans-serif;max-width:620px;margin:48px auto;color:#181D25;padding:0 24px"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-size:22px;font-weight:700">TTP Agency</div><div style="color:#9AA6B4;font-size:12px;margin-top:4px">Trust the Process</div></div><div style="text-align:right"><div style="font-size:15px;font-weight:600">FACTURE</div><div style="color:#9AA6B4;font-size:13px;margin-top:4px">#'+v.ref+'</div></div></div><hr style="border:none;border-top:1px solid #EAECEF;margin:28px 0"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr><td style="color:#9AA6B4;padding:8px 0">Client</td><td style="text-align:right;font-weight:600">'+v.party+'</td></tr><tr><td style="color:#9AA6B4;padding:8px 0">Échéance</td><td style="text-align:right">'+v.date+'</td></tr><tr><td style="color:#9AA6B4;padding:8px 0">Statut</td><td style="text-align:right">'+stl+'</td></tr></table><hr style="border:none;border-top:1px solid #EAECEF;margin:20px 0"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:600">Total</div><div style="font-size:24px;font-weight:700">'+v.amount+'</div></div><p style="margin-top:48px;color:#9AA6B4;font-size:11px">Document généré par TTP Suite — démonstration.</p></body></html>'; return 'data:text/html;charset=utf-8,'+encodeURIComponent(html); };
     const invoices = (this.state.invoiceData||this.invoiceRaw).filter(v=> _match(v.ref,v.party,v.amount)).map(v=>{ const st=this.invStatus(v.status); const url=_invDoc(v,st.label); const filename='facture-'+v.ref+'.html'; return { ref:v.ref, party:v.party, amount:v.amount, date:v.date, statusLabel:st.label, dotStyle:dotS(st.tone,false), chipStyle:this.chip(), url, filename, _hit:_match(v.ref,v.party,v.amount), open:(()=>{const u=url,fn=filename,rf=v.ref;return ()=>this.setState({previewDoc:{name:'Facture '+rf,url:u,filename:fn,isImage:false}});})(), share:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); const txt='Facture '+v.ref+' — '+v.party+' — '+v.amount+' (échéance '+v.date+')'; if(navigator.share){navigator.share({title:'Facture '+v.ref, text:txt}).catch(()=>{});}else if(navigator.clipboard){navigator.clipboard.writeText(txt); this.setState({copied:'inv'+v.ref}); setTimeout(()=>this.setState(s=>s.copied==='inv'+v.ref?{copied:null}:{}),1500);}else{alert(txt);} }, shareLabel:(this.state.copied==='inv'+v.ref?'COPIÉ ✓':'PARTAGER'), del:(e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer la facture '+v.ref+' ?'))return; this.setState(s=>({ invoiceData:(s.invoiceData||this.invoiceRaw).filter(x=>x!==v) })); } }; });
     const cbase = this.state.contactsData || this.contactRaw;
@@ -504,6 +530,7 @@ class Component extends DCLogic {
       themeVars, themeGlyph: dark ? '☀' : '☾',
       toastMsg:this.state.toast||'', hasToast:!!this.state.toast,
       topSearch:this.state.topSearch||'', onTopSearch:(e)=>this.setState({topSearch:e.target.value}),
+      activitySearch:this.state.activitySearch||'', onActivitySearch:(e)=>this.setState({activitySearch:e.target.value}),
       calLabel, prevMonth, nextMonth,
       addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,
       genDevis:()=>toast('Devis généré ✓'), genMediaPdf:()=>toast('Media kit PDF généré ✓'), sendCanva:()=>toast('Envoyé vers Canva ✓'),

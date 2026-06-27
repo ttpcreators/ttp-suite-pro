@@ -18,9 +18,25 @@ données + authentification, **par tranches**.
 - Login agence (Marc) + un compte de connexion par créateur.
 - Row Level Security : chaque créateur ne voit/édite que ses données.
 
-## Tranche 3+ — étendre aux autres entités
+## Persistance actuelle — localStorage (déjà active)
 
-Briefs, contrats, événements/planning, todos, messages, factures…
+En attendant la persistance Supabase complète, **toutes** les modifications
+(ajouts, suppressions, édits) des factures, contacts, prospects, todos, briefs,
+idées, événements, modules + le thème sont **enregistrées dans le navigateur
+(`localStorage`, clé `ttp_state_v1`)**. Conséquence directe : ce qui est
+supprimé reste supprimé après un rafraîchissement (sur le même appareil).
+
+Le Roster, lui, est persisté côté **Supabase** (table `creators`) : suppressions
+et ajouts y sont définitifs et partagés entre appareils.
+
+## Tranche 3+ — étendre Supabase aux autres entités
+
+- `migrations/0002_app_data.sql` : crée les tables `invoices`, `contacts`,
+  `prospects`, `todos`, `briefs`, `ideas`, `events`, `module_rows` (RLS anon
+  ouvert, comme la tranche 1). Applique-la dans le **SQL Editor** pour préparer
+  la persistance **partagée entre l'ordinateur et le téléphone**. L'étape
+  suivante est de brancher l'app sur ces tables (load au montage + insert/delete),
+  sur le modèle déjà en place pour `creators` dans `src/app.js`.
 
 ---
 
