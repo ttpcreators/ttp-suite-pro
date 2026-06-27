@@ -293,7 +293,7 @@
     .dc-backdrop { display:block; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:250; opacity:0; pointer-events:none; transition:opacity .26s; }
     .dc-shell.nav-open .dc-backdrop { opacity:1; pointer-events:auto; }
     .dc-main { border-radius:0 !important; max-height:none !important; min-height:100vh; }
-    .dc-content { padding:8px 14px 92px !important; overflow-x:auto; }
+    .dc-content { padding:8px 14px 92px !important; }
     /* compact top bar: single-line search, hide user name/role text, keep avatar */
     .dc-topbar { gap:8px !important; padding:10px 14px 2px !important; }
     .dc-search { max-width:none !important; padding:10px 13px !important; }
@@ -309,6 +309,8 @@
        — small data rows (pricing 2fr 1fr 1fr, etc.) stay as compact rows. */
     #dc-root [style*="grid-template-columns: 1fr 1fr;"],
     #dc-root [style*="grid-template-columns: 1.1fr 1fr;"],
+    #dc-root [style*="grid-template-columns: 1.1fr 1fr 1fr;"],
+    #dc-root [style*="grid-template-columns: 1fr 1fr 1fr;"],
     #dc-root [style*="grid-template-columns: 1.3fr 1fr;"],
     #dc-root [style*="grid-template-columns: 1fr 1.15fr;"],
     #dc-root [style*="grid-template-columns: repeat(2,"],
@@ -320,6 +322,8 @@
        so wide inner content can't force the column past the viewport */
     #dc-root [style*="grid-template-columns: repeat(12,"] > *,
     #dc-root [style*="grid-template-columns: 1fr 1fr;"] > *,
+    #dc-root [style*="grid-template-columns: 1fr 1fr 1fr;"] > *,
+    #dc-root [style*="grid-template-columns: 1.1fr 1fr 1fr;"] > *,
     #dc-root [style*="grid-template-columns: repeat(2,"] > *,
     #dc-root [style*="grid-template-columns: repeat(3,"] > *,
     #dc-root [style*="grid-template-columns: repeat(4,"] > *,
@@ -333,11 +337,29 @@
     #dc-root [style*="font: 500 34px"],
     #dc-root [style*="font: 500 32px"],
     #dc-root [style*="font: 500 30px"] { font-size:22px !important; }
-    /* wide data tables keep their columns but the content area scrolls horizontally */
-    #dc-root [style*="grid-template-columns: 2.4fr"],
-    #dc-root [style*="grid-template-columns: 1fr 2.2fr"],
-    #dc-root [style*="grid-template-columns: 2fr 0.9fr 1fr 2fr"],
-    #dc-root [style*="grid-template-columns: repeat(7,"] { min-width:560px; }
+    /* page headers (title + action cluster): let the actions wrap under the title
+       instead of being clipped on the right */
+    #dc-root [style*="justify-content: space-between"][style*="margin-bottom: 22px"] { flex-wrap:wrap !important; gap:12px 10px; }
+    /* ---- DATA TABLES -> stacked cards on mobile ----
+       Each data row (.m-row) becomes a card; the header row (.m-head) is hidden
+       and every value cell shows its column name from data-l (no horizontal scroll). */
+    #dc-root .m-head { display:none !important; }
+    #dc-root .m-row { display:block !important; min-width:0 !important; padding:13px 15px !important;
+      border:1px solid var(--hair); border-radius:14px; margin:0 0 10px; background:var(--surface); }
+    #dc-root .m-row > * { min-width:0 !important; grid-column:auto !important; }
+    /* first cell (avatar + name) sits on top */
+    #dc-root .m-row > :first-child { padding-bottom:6px; }
+    /* value cells: label (data-l) on the left, value on the right */
+    #dc-root .m-row > [data-l] { display:flex !important; justify-content:space-between !important;
+      align-items:center; gap:12px; width:auto !important; height:auto !important;
+      text-align:left !important; padding:9px 0 !important;
+      border-top:1px solid var(--hair); font:600 13px 'Inter',sans-serif !important; }
+    #dc-root .m-row > [data-l]::before { content:attr(data-l); color:var(--faint);
+      font:600 9px 'Inter',sans-serif; letter-spacing:.8px; flex-shrink:0; }
+    /* ---- wide non-table grids (the month calendar) -> contained horizontal scroll
+       so only the calendar scrolls sideways, never the whole page ---- */
+    #dc-root .m-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    #dc-root .m-scroll [style*="grid-template-columns: repeat(7,"] { min-width:520px; }
   }
 </style>
 </helmet>
@@ -572,16 +594,16 @@
       </div>
       </sc-if>
       <div style="background:var(--surface); border-radius:20px; padding:8px 8px 6px">
-        <div style="display:grid; grid-template-columns:2.4fr 1fr 0.9fr 0.8fr 1.1fr 0.9fr 30px; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>CRÉATEUR</span><span>NICHE</span><span style="text-align:right">ABONNÉS</span><span style="text-align:right">ER</span><span style="text-align:right">CA · MOIS</span><span style="text-align:right">STATUT</span><span></span></div>
+        <div class="m-head" style="display:grid; grid-template-columns:2.4fr 1fr 0.9fr 0.8fr 1.1fr 0.9fr 30px; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>CRÉATEUR</span><span>NICHE</span><span style="text-align:right">ABONNÉS</span><span style="text-align:right">ER</span><span style="text-align:right">CA · MOIS</span><span style="text-align:right">STATUT</span><span></span></div>
         <sc-for list="{{ roster }}" as="c" hint-placeholder-count="8">
-          <div onclick="{{ c.open }}" style="display:grid; grid-template-columns:2.4fr 1fr 0.9fr 0.8fr 1.1fr 0.9fr 30px; gap:12px; align-items:center; padding:11px 16px; border-radius:12px; cursor:pointer" style-hover="background:var(--rowhover)">
+          <div onclick="{{ c.open }}" class="m-row" style="display:grid; grid-template-columns:2.4fr 1fr 0.9fr 0.8fr 1.1fr 0.9fr 30px; gap:12px; align-items:center; padding:11px 16px; border-radius:12px; cursor:pointer" style-hover="background:var(--rowhover)">
             <div style="display:flex; align-items:center; gap:11px; min-width:0"><div style="{{ c.avatarStyle }}">{{ c.initials }}</div><div style="min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); letter-spacing:.3px">{{ c.name }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:1px">{{ c.handle }}</div></div></div>
-            <span style="font:400 12px 'Inter',sans-serif; color:var(--muted)">{{ c.niche }}</span>
-            <span style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.followers }}</span>
-            <span style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.er }}</span>
-            <span style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.ca }}</span>
-            <span style="display:flex; align-items:center; gap:5px; justify-content:flex-end"><span style="{{ c.dotStyle }}"></span><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--muted)">{{ c.statusLabel }}</span></span>
-            <span onclick="{{ c.del }}" title="Retirer du roster" style="display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:8px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif; justify-self:end" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
+            <span data-l="NICHE" style="font:400 12px 'Inter',sans-serif; color:var(--muted)">{{ c.niche }}</span>
+            <span data-l="ABONNÉS" style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.followers }}</span>
+            <span data-l="ER" style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.er }}</span>
+            <span data-l="CA · MOIS" style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.ca }}</span>
+            <span data-l="STATUT" style="display:flex; align-items:center; gap:5px; justify-content:flex-end"><span style="{{ c.dotStyle }}"></span><span style="font:600 8px 'Inter',sans-serif; letter-spacing:.6px; color:var(--muted)">{{ c.statusLabel }}</span></span>
+            <span onclick="{{ c.del }}" data-l="RETIRER" title="Retirer du roster" style="display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:8px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif; justify-self:end" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
           </div>
         </sc-for>
       </div>
@@ -642,14 +664,14 @@
         <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">MEILLEUR ER</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">9,4%</div><div style="font:600 10px 'Inter',sans-serif; color:var(--muted); margin-top:5px">SACHA DELAUNAY</div></div>
       </div>
       <div style="background:var(--surface); border-radius:20px; padding:8px 8px 6px">
-        <div style="display:grid; grid-template-columns:2fr 0.9fr 1fr 2fr 0.7fr; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>CRÉATEUR</span><span style="text-align:right">ER</span><span style="text-align:right">REACH</span><span>TENDANCE</span><span style="text-align:right">△</span></div>
+        <div class="m-head" style="display:grid; grid-template-columns:2fr 0.9fr 1fr 2fr 0.7fr; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>CRÉATEUR</span><span style="text-align:right">ER</span><span style="text-align:right">REACH</span><span>TENDANCE</span><span style="text-align:right">△</span></div>
         <sc-for list="{{ engagement }}" as="c" hint-placeholder-count="8">
-          <div style="display:grid; grid-template-columns:2fr 0.9fr 1fr 2fr 0.7fr; gap:12px; align-items:center; padding:11px 16px; border-radius:12px" style-hover="background:var(--rowhover)">
+          <div class="m-row" style="display:grid; grid-template-columns:2fr 0.9fr 1fr 2fr 0.7fr; gap:12px; align-items:center; padding:11px 16px; border-radius:12px" style-hover="background:var(--rowhover)">
             <div style="display:flex; align-items:center; gap:10px; min-width:0"><div style="{{ c.avatarStyle }}">{{ c.initials }}</div><span style="font:600 12px 'Inter',sans-serif; color:var(--text); letter-spacing:.3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ c.name }}</span></div>
-            <span style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.er }}</span>
-            <span style="font:500 12px 'Inter',sans-serif; color:var(--muted); text-align:right">{{ c.reach }}</span>
-            <span style="display:flex; align-items:flex-end; gap:2px; height:24px"><sc-for list="{{ c.spark }}" as="s" hint-placeholder-count="10"><span style="{{ s.style }}"></span></sc-for></span>
-            <span style="font:600 11px 'Inter',sans-serif; text-align:right; color:{{ c.trendColor }}">{{ c.trend }}</span>
+            <span data-l="ER" style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.er }}</span>
+            <span data-l="REACH" style="font:500 12px 'Inter',sans-serif; color:var(--muted); text-align:right">{{ c.reach }}</span>
+            <span data-l="TENDANCE" style="display:flex; align-items:flex-end; gap:2px; height:24px"><sc-for list="{{ c.spark }}" as="s" hint-placeholder-count="10"><span style="{{ s.style }}"></span></sc-for></span>
+            <span data-l="△" style="font:600 11px 'Inter',sans-serif; text-align:right; color:{{ c.trendColor }}">{{ c.trend }}</span>
           </div>
         </sc-for>
       </div>
@@ -791,9 +813,9 @@
         <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">EN RETARD</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">18 000 €</div><div style="font:600 10px 'Inter',sans-serif; color:var(--indigo); margin-top:5px">à relancer</div></div>
       </div>
       <div style="background:var(--surface); border-radius:20px; padding:8px 8px 6px">
-        <div style="display:grid; grid-template-columns:1fr 2.2fr 1.3fr 1fr 1.2fr 1.5fr; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>RÉF.</span><span>MARQUE × CRÉATEUR</span><span style="text-align:right">MONTANT</span><span style="text-align:center">ÉCHÉANCE</span><span style="text-align:right">STATUT</span><span style="text-align:right">ACTIONS</span></div>
+        <div class="m-head" style="display:grid; grid-template-columns:1fr 2.2fr 1.3fr 1fr 1.2fr 1.5fr; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>RÉF.</span><span>MARQUE × CRÉATEUR</span><span style="text-align:right">MONTANT</span><span style="text-align:center">ÉCHÉANCE</span><span style="text-align:right">STATUT</span><span style="text-align:right">ACTIONS</span></div>
         <sc-for list="{{ invoices }}" as="v" hint-placeholder-count="6">
-          <div style="display:grid; grid-template-columns:1fr 2.2fr 1.3fr 1fr 1.2fr 1.5fr; gap:12px; align-items:center; padding:13px 16px; border-radius:12px" style-hover="background:var(--rowhover)"><span style="font:500 11px 'Inter',sans-serif; color:var(--faint)">#{{ v.ref }}</span><span style="font:500 12px 'Inter',sans-serif; color:var(--text)">{{ v.party }}</span><span style="font:600 13px 'Inter',sans-serif; color:var(--text); text-align:right">{{ v.amount }}</span><span style="font:500 11px 'Inter',sans-serif; color:var(--muted); text-align:center">{{ v.date }}</span><span style="display:flex; justify-content:flex-end"><span style="{{ v.chipStyle }}"><span style="{{ v.dotStyle }}"></span>{{ v.statusLabel }}</span></span><span style="display:flex; align-items:center; justify-content:flex-end; gap:4px"><span onclick="{{ v.open }}" title="Aperçu de la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--muted); font:600 12px 'Inter',sans-serif; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:var(--text)">◉</span><a href="{{ v.url }}" download="{{ v.filename }}" title="Télécharger la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--muted); font:600 13px 'Inter',sans-serif; text-decoration:none; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:var(--text)">↓</a><span onclick="{{ v.share }}" title="Partager la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--muted); font:600 12px 'Inter',sans-serif; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:var(--text)">⤴</span><span onclick="{{ v.del }}" title="Supprimer la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:#E5484D">✕</span></span></div>
+          <div class="m-row" style="display:grid; grid-template-columns:1fr 2.2fr 1.3fr 1fr 1.2fr 1.5fr; gap:12px; align-items:center; padding:13px 16px; border-radius:12px" style-hover="background:var(--rowhover)"><span style="font:500 11px 'Inter',sans-serif; color:var(--faint)">#{{ v.ref }}</span><span data-l="MARQUE × CRÉATEUR" style="font:500 12px 'Inter',sans-serif; color:var(--text)">{{ v.party }}</span><span data-l="MONTANT" style="font:600 13px 'Inter',sans-serif; color:var(--text); text-align:right">{{ v.amount }}</span><span data-l="ÉCHÉANCE" style="font:500 11px 'Inter',sans-serif; color:var(--muted); text-align:center">{{ v.date }}</span><span data-l="STATUT" style="display:flex; justify-content:flex-end"><span style="{{ v.chipStyle }}"><span style="{{ v.dotStyle }}"></span>{{ v.statusLabel }}</span></span><span data-l="ACTIONS" style="display:flex; align-items:center; justify-content:flex-end; gap:4px"><span onclick="{{ v.open }}" title="Aperçu de la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--muted); font:600 12px 'Inter',sans-serif; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:var(--text)">◉</span><a href="{{ v.url }}" download="{{ v.filename }}" title="Télécharger la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--muted); font:600 13px 'Inter',sans-serif; text-decoration:none; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:var(--text)">↓</a><span onclick="{{ v.share }}" title="Partager la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--muted); font:600 12px 'Inter',sans-serif; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:var(--text)">⤴</span><span onclick="{{ v.del }}" title="Supprimer la facture" style="width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif; border:1px solid var(--hair)" style-hover="background:var(--rowhover); color:#E5484D">✕</span></span></div>
         </sc-for>
       </div>
       <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:16px; margin-top:16px">
@@ -931,7 +953,7 @@
       </div>
       </sc-if>
 
-      <div style="background:var(--surface); border-radius:20px; padding:18px 18px 10px">
+      <div class="m-scroll" style="background:var(--surface); border-radius:20px; padding:18px 18px 10px">
         <div style="display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin-bottom:8px"><sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); text-align:center; padding:4px 0">{{ w }}</div></sc-for></div>
         <div style="display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px"><sc-for list="{{ calendarCells }}" as="c" hint-placeholder-count="35">
           <div onclick="{{ c.select }}" style="{{ c.cellStyle }}">
@@ -1101,7 +1123,7 @@
 
   <!-- ===== CREATOR PORTAL ===== -->
   <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}">
-  <div style="width:236px; flex-shrink:0; padding:8px 10px 16px 18px; display:flex; flex-direction:column; min-height:0">
+  <div class="dc-sidebar" style="width:236px; flex-shrink:0; padding:8px 10px 16px 18px; display:flex; flex-direction:column; min-height:0">
     <div style="display:flex; align-items:center; gap:11px; padding:14px 8px 18px">
       <label style="position:relative; cursor:pointer; flex-shrink:0"><div style="{{ me.avatarStyle }}">{{ me.avatarInner }}</div><span style="position:absolute; bottom:-3px; right:-3px; width:16px; height:16px; border-radius:50%; background:var(--text); color:var(--bg); display:flex; align-items:center; justify-content:center; font:700 9px 'Inter',sans-serif; border:2px solid var(--panel)">+</span><input type="file" accept="image/*" onchange="{{ onPhotoMe }}" style="display:none"></label>
       <div style="min-width:0"><div style="font:700 14px 'Inter',sans-serif; letter-spacing:.2px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ me.name }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:1px">{{ me.handle }}</div></div>
@@ -1114,8 +1136,16 @@
     <div onclick="{{ backToAgency }}" style="display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; cursor:pointer; color:var(--muted)" style-hover="background:var(--rowhover)"><span style="font:600 13px 'Inter',sans-serif">←</span><span style="font:500 12px 'Inter',sans-serif">Espace agence</span></div>
   </div>
 
+  <!-- portal mobile: backdrop + bottom bar -->
+  <div onclick="{{ closeMobileNav }}" class="dc-backdrop"></div>
+  <div class="dc-bottombar">
+    <sc-for list="{{ portalBottomNav }}" as="b" hint-placeholder-count="5">
+      <div onclick="{{ b.tap }}" style="{{ b.style }}"><span style="font:600 18px 'Inter',sans-serif; line-height:1; display:flex; align-items:center; justify-content:center; height:20px">{{ b.icon }}{{ b.iconTxt }}</span><span>{{ b.label }}</span></div>
+    </sc-for>
+  </div>
+
   <div class="dc-main" style="flex:1; min-width:0; background:var(--panel); border-radius:22px; display:flex; flex-direction:column; max-height:calc(100vh - 28px); overflow:hidden">
-    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; flex-shrink:0">
+    <div class="dc-topbar" style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; flex-shrink:0">
       <div style="display:flex; align-items:center; gap:6px; padding:9px 13px; border-radius:13px; background:var(--surface); font:600 10px 'Inter',sans-serif; color:var(--text)"><span style="width:7px; height:7px; border-radius:50%; background:var(--signal); animation:ttp-pulse 1.6s infinite"></span>JEU 26 JUIN</div>
       <div style="display:flex; align-items:center; gap:10px"><div style="position:relative"><div onclick="{{ toggleNotif }}" style="width:40px; height:40px; border-radius:13px; background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); position:relative" style-hover="background:var(--rowhover)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><sc-if value="{{ hasNotif }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:6px; right:7px; min-width:15px; height:15px; padding:0 4px; border-radius:8px; background:var(--signal); color:var(--onsignal); font:700 8px 'Inter',sans-serif; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface)">{{ notifCount }}</span></sc-if></div><sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute; top:48px; right:0; width:320px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:0 18px 50px -16px rgba(0,0,0,.3); padding:8px; z-index:80"><div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px"><span style="font:600 12px 'Inter',sans-serif; color:var(--text)">Notifications</span><span onclick="{{ closeNotif }}" style="font:600 9px 'Inter',sans-serif; color:var(--signaltext); cursor:pointer">Fermer</span></div><sc-for list="{{ notifications }}" as="n" hint-placeholder-count="4"><div style="display:flex; gap:11px; align-items:flex-start; padding:11px 12px; border-radius:11px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="{{ n.iconStyle }}">{{ n.icon }}</span><div style="flex:1; min-width:0"><div style="font:500 12px 'Inter',sans-serif; color:var(--text); line-height:1.4">{{ n.title }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ n.time }}</div></div></div></sc-for></div></sc-if></div><div onclick="{{ toggleTheme }}" style="width:40px; height:40px; border-radius:13px; background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; font:600 14px 'Inter',sans-serif; color:var(--text)" style-hover="background:var(--rowhover)">{{ themeGlyph }}</div></div>
     </div>
@@ -1148,7 +1178,7 @@
           <div onclick="{{ goPPlanning }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">◷</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Planning</span></div>
           <div onclick="{{ goPStats }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">✦</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Stats</span></div>
           <div onclick="{{ goPProfil }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">◎</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Profil</span></div>
-          <div onclick="{{ goPProfil }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">▤</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Documents</span></div>
+          <div onclick="{{ goPDocuments }}" style="background:var(--panel); border-radius:14px; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer" style-hover="background:var(--rowhover)"><span style="font:600 18px 'Inter',sans-serif; color:var(--text)">▤</span><span style="font:600 10px 'Inter',sans-serif; color:var(--muted)">Documents</span></div>
         </div>
       </div>
       <div style="background:var(--surface); border-radius:20px; padding:22px; margin-top:16px">
@@ -1462,7 +1492,7 @@ class Component extends DCLogic {
     return React.createElement('svg',{width:17,height:17,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, d.map((p,i)=>React.createElement('path',{key:i,d:p})));
   }
   navItem(key, icon, label){ const active=this.state.view===key; const col=active?'var(--bg)':'var(--muted)'; const _bc={roster:this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).length, briefs:(this.state.briefItems||this.briefRaw).length, todo:(this.state.todoItems||this.todoRaw).length, messages:2, idees:(this.state.ideasData||this.ideasRaw).filter(x=>x&&x.source==='creator').length}; const _b=_bc[key]||0; return { icon:this.icon(key), label, active, hasBadge:_b>0, badge:String(_b), badgeStyle:'min-width:18px;height:17px;padding:0 5px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(active?'background:var(--bg);color:var(--text);':'background:var(--rowhover);color:var(--muted);'), itemStyle:'display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({view:key, rosterDetail:null, mobileNav:false}) }; }
-  pNavItem(key, icon, label){ const active=this.state.portalTab===key; const col=active?'var(--bg)':'var(--muted)'; return { icon:this.icon(key), label, itemStyle:'display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({portalTab:key}) }; }
+  pNavItem(key, icon, label){ const active=this.state.portalTab===key; const col=active?'var(--bg)':'var(--muted)'; return { icon:this.icon(key), label, itemStyle:'display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({portalTab:key, mobileNav:false}) }; }
   invStatus(s){ return ({ payee:{label:'PAYÉE',tone:'signal'}, attente:{label:'EN ATTENTE',tone:'indigo'}, retard:{label:'EN RETARD',tone:'indigo'}, brouillon:{label:'BROUILLON',tone:'cyan'} })[s] || {label:'BROUILLON',tone:'cyan'}; }
   briefStatus(s){ return ({ valider:{label:'À VALIDER',tone:'indigo'}, cours:{label:'EN COURS',tone:'cyan'}, attente:{label:'EN ATTENTE',tone:'signal'} })[s] || {label:'EN COURS',tone:'cyan'}; }
   chip(label, dark){ return "display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;border:1px solid var(--hair);font:600 8px 'Inter',sans-serif;letter-spacing:.6px;color:var(--muted);white-space:nowrap;"; }
@@ -1519,6 +1549,8 @@ class Component extends DCLogic {
     const _bbStyle = (key) => "flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:"+(this.state.view===key?'var(--text)':'var(--faint)')+";font:600 9px 'Inter',sans-serif";
     const _bbMk = (key,label,extra) => ({ icon:this.icon(key), iconTxt:'', label, style:_bbStyle(key), tap:()=>this.setState(Object.assign({view:key, mobileNav:false}, extra||{})) });
     const bottomNav = [ _bbMk('apercu','Accueil'), _bbMk('roster','Roster',{rosterDetail:null}), _bbMk('messages','Messages'), _bbMk('planning','Planning'), { icon:'', iconTxt:'☰', label:'Menu', style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:var(--faint);font:600 9px 'Inter',sans-serif", tap:openMobileNav } ];
+    const _pbMk = (key,label) => ({ icon:this.icon(key), iconTxt:'', label, style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:"+(this.state.portalTab===key?'var(--text)':'var(--faint)')+";font:600 9px 'Inter',sans-serif", tap:()=>this.setState({portalTab:key, mobileNav:false}) });
+    const portalBottomNav = [ _pbMk('accueil','Accueil'), _pbMk('briefs','Briefs'), _pbMk('planning','Planning'), _pbMk('messages','Messages'), { icon:'', iconTxt:'☰', label:'Menu', style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:var(--faint);font:600 9px 'Inter',sans-serif", tap:openMobileNav } ];
     const themeVars = dark
       ? '--bg:#000000;--panel:#0B0B0C;--surface:#161616;--text:#F2F3F6;--muted:#A8B0BA;--faint:#74808C;--hair:#242424;--rowhover:#1A1A1A;--signal:#70FC8E;--signaltext:#70FC8E;--signalsoft:#15301E;--indigo:#5B82F8;--amber:#5B82F8;--cyan:#9AA6B4;--onsignal:#10141A;'
       : '--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25;';
@@ -1889,7 +1921,8 @@ class Component extends DCLogic {
       vPlanning:this.state.view==='planning', vProspection:this.state.view==='prospection',
       vModule: !!this.modules[this.state.view] && this.state.view!=='idees',
       pAccueil:this.state.portalTab==='accueil', pBriefs:this.state.portalTab==='briefs', pPlanning:this.state.portalTab==='planning', pStats:this.state.portalTab==='stats', pProfil:this.state.portalTab==='profil',
-      goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}),
+      goPStats:()=>this.setState({portalTab:'stats'}), goPBriefs:()=>this.setState({portalTab:'briefs'}), goPPlanning:()=>this.setState({portalTab:'planning'}), goPProfil:()=>this.setState({portalTab:'profil'}), goPDocuments:()=>this.setState({portalTab:'documents'}),
+      portalBottomNav,
       goRoster, goFacturation, goObjectifs, goContacts, goPlanning, goBriefs, goTodo, goProspection, goEngagement, goRosterUgc,
       topCreators, pipeline, roster, rosterTabs, rosterCount, engagement, invoices, contacts, contactsViewTabs, contactsGrid, contactsList, objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators,
