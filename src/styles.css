@@ -32,7 +32,7 @@
     /* bottom tab bar */
     /* floating pill bottom nav — icon only, active item highlighted */
     .dc-bottombar { display:inline-flex !important; gap:2px; position:fixed; left:50%; right:auto; transform:translateX(-50%);
-      bottom:calc(14px + env(safe-area-inset-bottom)); z-index:200; width:auto; background:var(--text);
+      bottom:calc(24px + env(safe-area-inset-bottom)); z-index:200; width:auto; background:var(--text);
       border:none; border-radius:34px; padding:7px; box-shadow:0 12px 32px -8px rgba(0,0,0,.45); }
     .dc-bottombar .bn-item { flex:0 0 auto !important; flex-direction:row !important; width:52px; height:46px;
       border-radius:23px; padding:0 !important; gap:0 !important; display:flex !important; align-items:center;
@@ -40,7 +40,7 @@
     .dc-bottombar .bn-active { opacity:1; background:rgba(140,140,140,.30); }
     .dc-bottombar .bn-lbl { display:none !important; }
     .dc-bottombar .bn-ic { height:auto !important; }
-    .dc-toast { bottom:96px !important; }
+    .dc-toast { bottom:108px !important; }
     /* stack multi-column CARD grids to a single column.
        Selectors are EXACT (trailing ";") so "1fr 1fr;" never matches "1fr 1fr 1fr;"
        — small data rows (pricing 2fr 1fr 1fr, etc.) stay as compact rows. */
@@ -132,6 +132,17 @@
     #dc-root .m-home-quick > * span:last-child { font-size:8px !important; letter-spacing:0 !important; }
     /* creator profil coordinates: single column on phone */
     #dc-root .m-prof-grid { grid-template-columns:1fr !important; }
+    /* ---- LOGIN: stack the split-screen on phones ---- */
+    .login-wrap { flex-direction:column !important; }
+    .login-left { min-height:160px !important; flex:0 0 auto !important; }
+    .login-right { width:100% !important; min-width:0 !important; padding:24px 22px 30px !important; }
+    .login-mid { margin:22px 0 0 !important; }
+    .login-h { font-size:38px !important; margin-bottom:26px !important; }
+    .login-fields { flex-direction:column !important; gap:18px !important; }
+    .login-signin { position:static !important; width:100% !important; height:52px !important; border-radius:14px !important; margin-top:26px !important; }
+    .login-mark { left:auto !important; right:30px !important; top:34px !important; transform:none !important; }
+    .login-mark svg { width:60px !important; height:60px !important; }
+    .login-copy { display:none !important; }
   }
   /* ===================== DESKTOP ===================== */
   @media (min-width: 861px) {

@@ -698,19 +698,22 @@ class Component extends DCLogic {
       {title:'Deadline Sephora avancée', body:'Livrables au 01/07 — merci de prioriser le brief.', urgent:true, time:'09:12'},
       {title:'Nouvelle grille tarifaire Q3', body:'Tarifs reels +8% applicables dès juillet.', urgent:false, time:'Hier'},
     ].map(a=>({ title:a.title, body:a.body, time:a.time, cardStyle:'background:var(--surface);border-radius:16px;padding:18px;'+(a.urgent?'border:1px solid '+this.toneHex('indigo',dark)+';':'border:1px solid var(--hair);'), badgeStyle:'display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font:600 8px \'Inter\',sans-serif;letter-spacing:.6px;'+(a.urgent?'background:'+this.toneHex('indigo',dark)+';color:#fff;':'background:var(--rowhover);color:var(--muted);'), badgeLabel:a.urgent?'⚡ URGENT · PUSH':'INFO' }));
-    const threads = [
-      {campaign:'Sephora — Collection été', last:'Marc : on valide les concepts ?', time:'10:24', unread:2, read:false, tone:'indigo'},
-      {campaign:'Dior Beauty — Gifting', last:'Toi : reçu, je m\'en occupe', time:'Hier', unread:0, read:true, tone:'cyan'},
-      {campaign:'Annonce agence', last:'Réunion créateurs vendredi 15h', time:'Lun', unread:0, read:true, tone:'signal'},
-    ].map((t,i)=>({ campaign:t.campaign, last:t.last, time:t.time, unread:t.unread>0?String(t.unread):'', hasUnread:t.unread>0, read:t.read, dotStyle:dotS(t.tone,false), open:(()=>{const ii=i;return ()=>this.setState({openThread:ii});})() }));
     const _ot = this.state.openThread; const _base = this.state.threadMsgs || this.msgsRaw;
-    const convMsgs = _ot!=null ? (_base[_ot]||[]).map(m=>({ text:m.text, rowStyle:'display:flex;margin-bottom:10px;'+(m.from==='me'?'justify-content:flex-end;':'justify-content:flex-start;'), bubbleStyle:'max-width:75%;padding:11px 15px;border-radius:16px;font:400 13px \'Inter\',sans-serif;line-height:1.5;'+(m.from==='me'?'background:var(--signal);color:var(--onsignal);border-bottom-right-radius:5px;':'background:var(--surface);color:var(--text);border:1px solid var(--hair);border-bottom-left-radius:5px;') })) : [];
-    const convTitle = _ot!=null ? ['Sephora — Collection été','Dior Beauty — Gifting','Annonce agence'][_ot] : '';
-    // ===== AGENCY INBOX (shared store) =====
+    // Shared message store keyed by thread. aMeta maps each thread -> (creator, campaign);
+    // key 2 is the agency broadcast shown to every creator. The AGENCY sees every
+    // thread (one per creator); a CREATOR sees only their own threads + the broadcast.
     const aMeta = { 0:{creator:'CAMILLE ORSINI', campaign:'Sephora — Collection été', tone:'indigo'}, 1:{creator:'CAMILLE ORSINI', campaign:'Dior Beauty — Gifting', tone:'cyan'}, 3:{creator:'THÉO RIVIÈRE', campaign:'Logitech — Sponso', tone:'indigo'}, 4:{creator:'JADE NGUYEN', campaign:'Sephora UGC', tone:'signal'}, 5:{creator:'INÈS KABORÉ', campaign:"L'Oréal — Soin", tone:'cyan'} };
+    const aMetaAll = Object.assign({ 2:{creator:'__all__', campaign:'Annonce agence', tone:'signal'} }, aMeta);
+    const _bubble=(mine)=> 'max-width:75%;padding:11px 15px;border-radius:16px;font:400 13px \'Inter\',sans-serif;line-height:1.5;'+(mine?'background:var(--signal);color:var(--onsignal);border-bottom-right-radius:5px;':'background:var(--surface);color:var(--text);border:1px solid var(--hair);border-bottom-left-radius:5px;');
+    // ---- CREATOR PORTAL : only this creator's threads (+ the agency broadcast) ----
+    const _myThreadKeys = Object.keys(aMetaAll).map(Number).sort((a,b)=>a-b).filter(k=> aMetaAll[k].creator===cr.name || aMetaAll[k].creator==='__all__');
+    const threads = _myThreadKeys.map(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; let u=0; for(let j=ms.length-1;j>=0;j--){ if(ms[j].from==='agency') u++; else break; } const last= lm ? (lm.from==='me'?'Toi : ':'Agence : ')+lm.text : '—'; return { campaign:aMetaAll[k].campaign, last, time:'', unread:u>0?String(u):'', hasUnread:u>0, read:u===0, dotStyle:dotS(aMetaAll[k].tone,false), open:(()=>{const kk=k;return ()=>this.setState({openThread:kk});})() }; });
+    const convMsgs = _ot!=null ? (_base[_ot]||[]).map(m=>({ text:m.text, rowStyle:'display:flex;margin-bottom:10px;'+(m.from==='me'?'justify-content:flex-end;':'justify-content:flex-start;'), bubbleStyle:_bubble(m.from==='me') })) : [];
+    const convTitle = (_ot!=null && aMetaAll[_ot]) ? aMetaAll[_ot].campaign : '';
+    // ---- AGENCY INBOX : every creator's thread ----
     const agencyThreads = [0,1,3,4,5].map(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; const w=aMeta[k].creator.split(' ')[0]; const lcap=w.charAt(0)+w.slice(1).toLowerCase(); const last= lm ? (lm.from==='agency'?'Vous : ':lcap+' : ')+lm.text : '—'; return { creator:aMeta[k].creator, campaign:aMeta[k].campaign, initials:this.creatorPhoto(aMeta[k].creator)?'':this.initials(aMeta[k].creator), avatarStyle:this.avatarFor(aMeta[k].creator,aMeta[k].tone,dark,38), last, hasUnread:(!!lm && lm.from==='me'), open:(()=>{const kk=k;return ()=>this.setState({openAThread:kk});})() }; });
     const _at = this.state.openAThread;
-    const aConvMsgs = _at!=null ? (_base[_at]||[]).map(m=>({ text:m.text, rowStyle:'display:flex;margin-bottom:10px;'+(m.from==='agency'?'justify-content:flex-end;':'justify-content:flex-start;'), bubbleStyle:'max-width:75%;padding:11px 15px;border-radius:16px;font:400 13px \'Inter\',sans-serif;line-height:1.5;'+(m.from==='agency'?'background:var(--signal);color:var(--onsignal);border-bottom-right-radius:5px;':'background:var(--surface);color:var(--text);border:1px solid var(--hair);border-bottom-left-radius:5px;') })) : [];
+    const aConvMsgs = _at!=null ? (_base[_at]||[]).map(m=>({ text:m.text, rowStyle:'display:flex;margin-bottom:10px;'+(m.from==='agency'?'justify-content:flex-end;':'justify-content:flex-start;'), bubbleStyle:_bubble(m.from==='agency') })) : [];
     const aConvWho = _at!=null ? aMeta[_at].creator : '';
     const aConvTitle = _at!=null ? aMeta[_at].campaign : '';
     const aConvInitials = _at!=null ? this.initials(aMeta[_at].creator) : '';
@@ -734,12 +737,22 @@ class Component extends DCLogic {
     const alertsCount = alerts.length;
 
     // ---- NOTIFICATIONS (derived from live data, dismissable + persistent) ----
+    // Scope: the AGENCY space receives everything; a logged-in CREATOR receives
+    // ONLY notifications that concern them (their briefs, RDV, to-dos, messages).
     const _ntRaw = [];
-    (this.state.ideasData||this.ideasRaw).forEach((x,i)=>{ if(x && x.source==='creator') _ntRaw.push({ id:'nt:idea:'+(x.text||i), icon:'◆', tone:'signal', title:(x.creator?x.creator.split(' ')[0]+' a proposé une idée':'Nouvelle idée proposée'), time:x.text }); });
-    briefItems.forEach(b=>{ if(b.status==='valider' && !((this.state.briefDone||{})[b.brand])) _ntRaw.push({ id:'nt:brief:'+b.brand, icon:'✎', tone:'indigo', title:'Brief à valider — '+b.brand, time:(b.who||'créateur à attribuer')+' · échéance '+b.due }); });
-    (this.state.invoiceData||this.invoiceRaw).forEach(v=>{ if(v.status==='retard') _ntRaw.push({ id:'nt:inv:'+v.ref, icon:'€', tone:'indigo', title:'Facture en retard — '+v.party, time:'#'+v.ref+' · '+v.amount }); });
-    (this.state.prospectData||this.prospectRaw).forEach(p=>{ if(p.stage==='Négociation') _ntRaw.push({ id:'nt:deal:'+p.brand, icon:'⌖', tone:'cyan', title:'Deal en négociation — '+p.brand, time:(p.contact||'')+' · '+p.value }); });
-    this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).forEach(c=>{ if(c.status==='pause') _ntRaw.push({ id:'nt:crea:'+c.name, icon:'◵', tone:'cyan', title:c.name.split(' ')[0]+' est en pause', time:'À relancer · sans activité' }); });
+    const _inCreator = this.state.space==='creator' && this.state.creatorId!=null;
+    if(_inCreator){
+      myBriefsArr.forEach(b=>{ if(!((this.state.briefDone||{})[b.brand])) _ntRaw.push({ id:'ntc:'+cr.name+':brief:'+b.brand, icon:'✎', tone:'indigo', title:'Brief à préparer — '+b.brand, time:'Échéance '+b.due }); });
+      myEvents.slice(0,3).forEach(e=>{ _ntRaw.push({ id:'ntc:'+cr.name+':ev:'+e.title+':'+e.day, icon:'◷', tone:'cyan', title:'RDV : '+e.title, time:e.time+' · '+e.day+' juin' }); });
+      myTodosArr.forEach(x=>{ if(!((this.state.doneSet||{})[x.i])) _ntRaw.push({ id:'ntc:'+cr.name+':todo:'+x.i, icon:'☑', tone:'signal', title:'À faire : '+x.t.text, time:x.t.due||'' }); });
+      Object.keys(aMeta).map(Number).filter(k=>aMeta[k].creator===cr.name).forEach(k=>{ const ms=_base[k]||[]; const lm=ms[ms.length-1]; if(lm && lm.from==='agency') _ntRaw.push({ id:'ntc:'+cr.name+':msg:'+k+':'+ms.length, icon:'✉', tone:'indigo', title:'Message de ton agence', time:aMeta[k].campaign }); });
+    } else {
+      (this.state.ideasData||this.ideasRaw).forEach((x,i)=>{ if(x && x.source==='creator') _ntRaw.push({ id:'nt:idea:'+(x.text||i), icon:'◆', tone:'signal', title:(x.creator?x.creator.split(' ')[0]+' a proposé une idée':'Nouvelle idée proposée'), time:x.text }); });
+      briefItems.forEach(b=>{ if(b.status==='valider' && !((this.state.briefDone||{})[b.brand])) _ntRaw.push({ id:'nt:brief:'+b.brand, icon:'✎', tone:'indigo', title:'Brief à valider — '+b.brand, time:(b.who||'créateur à attribuer')+' · échéance '+b.due }); });
+      (this.state.invoiceData||this.invoiceRaw).forEach(v=>{ if(v.status==='retard') _ntRaw.push({ id:'nt:inv:'+v.ref, icon:'€', tone:'indigo', title:'Facture en retard — '+v.party, time:'#'+v.ref+' · '+v.amount }); });
+      (this.state.prospectData||this.prospectRaw).forEach(p=>{ if(p.stage==='Négociation') _ntRaw.push({ id:'nt:deal:'+p.brand, icon:'⌖', tone:'cyan', title:'Deal en négociation — '+p.brand, time:(p.contact||'')+' · '+p.value }); });
+      this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).forEach(c=>{ if(c.status==='pause') _ntRaw.push({ id:'nt:crea:'+c.name, icon:'◵', tone:'cyan', title:c.name.split(' ')[0]+' est en pause', time:'À relancer · sans activité' }); });
+    }
     const _ntDismissed = this.state.dismissedNotifs||{};
     const _ntVisible = _ntRaw.filter(n=> !_ntDismissed[n.id]);
     const notifications = _ntVisible.map(n=>({ icon:n.icon, title:n.title, time:n.time, iconStyle:'width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 12px \'Inter\',sans-serif;background:'+this.toneHex(n.tone,dark)+'18;color:'+this.toneHex(n.tone,dark)+';', dismiss:(()=>{const id=n.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); this.setState(s=>({dismissedNotifs:Object.assign({},s.dismissedNotifs,{[id]:true})})); };})() }));
@@ -865,6 +878,15 @@ class Component extends DCLogic {
       onLoginEmail: (e)=>{ const v=e.target.value; this.setState({loginEmail:v}); },
       onLoginPwd: (e)=>{ const v=e.target.value; this.setState({loginPwd:v}); },
       loginError: this.state.loginError||'', hasLoginError: !!this.state.loginError,
+      loginPwdType: this.state.loginPwdShow ? 'text' : 'password',
+      togglePwdShow: ()=>this.setState(s=>({loginPwdShow:!s.loginPwdShow})),
+      rememberMe: !!this.state.rememberMe,
+      rememberBoxStyle: 'width:16px;height:16px;border-radius:50%;border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;color:#0A0A0B;flex-shrink:0;'+(this.state.rememberMe?'background:#fff;border-color:#fff;':''),
+      rememberCheck: this.state.rememberMe ? '✓' : '',
+      toggleRemember: ()=>this.setState(s=>({rememberMe:!s.rememberMe})),
+      forgotPwd: ()=>{ try{ toast('Contacte ton agence pour réinitialiser ton mot de passe.'); }catch(_){} },
+      loginLinkAgency: "font:600 10px 'Inter',sans-serif; letter-spacing:.6px; cursor:pointer; transition:color .15s; color:"+((this.state.loginTab||'agency')==='agency'?'#fff':'rgba(255,255,255,.40)'),
+      loginLinkCreator: "font:600 10px 'Inter',sans-serif; letter-spacing:.6px; cursor:pointer; transition:color .15s; color:"+((this.state.loginTab||'agency')==='creator'?'#fff':'rgba(255,255,255,.40)'),
       loginHint: (this.state.loginTab||'agency')==='agency' ? 'Démo agence — agence@ttp.com · ttp2026' : 'Démo créateur — prénom@ttp.com · mot de passe = prénom (ex : camille / camille)',
       doLogin: () => {
         const tab=this.state.loginTab||'agency';

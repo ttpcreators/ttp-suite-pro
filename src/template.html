@@ -12,27 +12,59 @@
 
   <!-- ================= LOGIN ================= -->
   <sc-if value="{{ notAuthed }}" hint-placeholder-val="{{ true }}">
-  <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; min-height:calc(100vh - 28px)">
-    <div style="width:56px; height:56px; border-radius:16px; background:#14181E; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div>
-    <div style="font:600 27px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text); margin-top:18px">TTP Suite</div>
-    <div style="font:400 13px 'Inter',sans-serif; color:var(--muted); margin-top:6px; text-align:center">Connecte-toi pour accéder à ton espace</div>
-    <div style="width:100%; max-width:360px; margin-top:26px; background:var(--surface); border:1px solid var(--hair); border-radius:20px; padding:8px">
-      <div style="display:flex; background:var(--panel); border-radius:12px; padding:3px; margin:6px 6px 6px">
-        <div onclick="{{ setLoginAgency }}" style="{{ loginTabAgencyStyle }}">Agence</div>
-        <div onclick="{{ setLoginCreator }}" style="{{ loginTabCreatorStyle }}">Créateur</div>
+  <div class="login-wrap" style="flex:1; display:flex; background:#0A0A0B; color:#fff; min-height:calc(100vh - 28px); border-radius:22px; overflow:hidden">
+    <!-- LEFT : brand + minimalist mark -->
+    <div class="login-left" style="flex:1; position:relative; overflow:hidden; min-height:280px">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none">
+        <line x1="32" y1="0" x2="32" y2="100" stroke="rgba(255,255,255,.07)" stroke-width="0.25"/>
+        <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(255,255,255,.07)" stroke-width="0.25"/>
+        <line x1="0" y1="0" x2="100" y2="100" stroke="rgba(255,255,255,.045)" stroke-width="0.25"/>
+        <line x1="0" y1="100" x2="100" y2="0" stroke="rgba(255,255,255,.045)" stroke-width="0.25"/>
+      </svg>
+      <div style="position:absolute; top:30px; left:34px; display:flex; align-items:center; gap:11px; z-index:2"><div style="width:30px; height:30px; border-radius:8px; background:#14181E; overflow:hidden; display:flex; align-items:center; justify-content:center"><img src="assets/cover.png" alt="TTP" style="width:100%; height:100%; object-fit:cover"></div><span style="font:700 15px 'Inter',sans-serif; letter-spacing:.3px">TTP <span style="font-weight:400; opacity:.45">Agency</span></span></div>
+      <div class="login-mark" style="position:absolute; left:32%; top:50%; transform:translate(-50%,-50%); z-index:2">
+        <svg width="118" height="118" viewBox="0 0 120 120" fill="none" stroke="#fff" stroke-width="2.4">
+          <line x1="60" y1="52" x2="60" y2="9"/><line x1="60" y1="68" x2="60" y2="111"/>
+          <line x1="52" y1="60" x2="9" y2="60"/><line x1="68" y1="60" x2="111" y2="60"/>
+          <line x1="65.6" y1="54.4" x2="86.9" y2="33.1"/><line x1="54.4" y1="54.4" x2="33.1" y2="33.1"/>
+          <line x1="65.6" y1="65.6" x2="86.9" y2="86.9"/><line x1="54.4" y1="65.6" x2="33.1" y2="86.9"/>
+        </svg>
       </div>
-      <div style="padding:8px 12px 12px">
-        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:.7px; color:var(--faint); margin:8px 0 6px">EMAIL</div>
-        <input value="{{ loginEmail }}" oninput="{{ onLoginEmail }}" type="email" autocomplete="username" placeholder="{{ loginEmailPh }}" style="width:100%; padding:12px 13px; border-radius:12px; border:1px solid var(--hair); background:var(--bg); color:var(--text); font:500 13px 'Inter',sans-serif; outline:none">
-        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:.7px; color:var(--faint); margin:14px 0 6px">MOT DE PASSE</div>
-        <input value="{{ loginPwd }}" oninput="{{ onLoginPwd }}" type="password" autocomplete="current-password" placeholder="••••••••" style="width:100%; padding:12px 13px; border-radius:12px; border:1px solid var(--hair); background:var(--bg); color:var(--text); font:500 13px 'Inter',sans-serif; outline:none">
-        <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
-          <div style="font:500 11px 'Inter',sans-serif; color:#E5484D; margin-top:12px">{{ loginError }}</div>
-        </sc-if>
-        <div onclick="{{ doLogin }}" style="margin-top:18px; text-align:center; padding:13px; border-radius:12px; background:var(--text); color:var(--bg); font:600 12px 'Inter',sans-serif; letter-spacing:.3px; cursor:pointer" style-hover="opacity:.85">Se connecter</div>
-      </div>
+      <div class="login-copy" style="position:absolute; bottom:26px; left:34px; font:400 10px 'Inter',sans-serif; color:rgba(255,255,255,.4); z-index:2">© TTP Agency 2026. Tous droits réservés.</div>
     </div>
-    <div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:18px; text-align:center; line-height:1.6; max-width:340px">{{ loginHint }}</div>
+    <!-- RIGHT : form -->
+    <div class="login-right" style="width:46%; min-width:330px; position:relative; display:flex; flex-direction:column; padding:30px 42px 42px; background:radial-gradient(130% 90% at 82% 14%, #1c1c20 0%, #121214 58%, #0e0e10 100%)">
+      <div style="display:flex; justify-content:flex-end; gap:20px; align-items:center">
+        <span onclick="{{ setLoginAgency }}" style="{{ loginLinkAgency }}">Agence</span>
+        <span style="color:rgba(255,255,255,.2)">·</span>
+        <span onclick="{{ setLoginCreator }}" style="{{ loginLinkCreator }}">Créateur</span>
+      </div>
+      <div class="login-mid" style="margin:auto 0">
+        <div class="login-h" style="font:300 52px 'Inter',sans-serif; letter-spacing:-1.5px; margin-bottom:34px">Connexion</div>
+        <div class="login-fields" style="display:flex; gap:30px">
+          <div style="flex:1; min-width:0">
+            <div style="font:500 11px 'Inter',sans-serif; color:rgba(255,255,255,.55); margin-bottom:9px">Email</div>
+            <input value="{{ loginEmail }}" oninput="{{ onLoginEmail }}" type="email" autocomplete="username" placeholder="{{ loginEmailPh }}" style="width:100%; padding:8px 0; border:none; border-bottom:1px solid rgba(255,255,255,.22); background:transparent; color:#fff; font:500 14px 'Inter',sans-serif; outline:none">
+          </div>
+          <div style="flex:1; min-width:0">
+            <div style="font:500 11px 'Inter',sans-serif; color:rgba(255,255,255,.55); margin-bottom:9px">Mot de passe</div>
+            <div style="position:relative">
+              <input value="{{ loginPwd }}" oninput="{{ onLoginPwd }}" type="{{ loginPwdType }}" autocomplete="current-password" placeholder="••••••••" style="width:100%; padding:8px 26px 8px 0; border:none; border-bottom:1px solid rgba(255,255,255,.22); background:transparent; color:#fff; font:500 14px 'Inter',sans-serif; outline:none">
+              <span onclick="{{ togglePwdShow }}" style="position:absolute; right:0; top:6px; cursor:pointer; color:rgba(255,255,255,.45); font:500 13px 'Inter',sans-serif" title="Afficher / masquer">◉</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px">
+          <div onclick="{{ toggleRemember }}" style="display:flex; align-items:center; gap:9px; cursor:pointer"><span style="{{ rememberBoxStyle }}">{{ rememberCheck }}</span><span style="font:400 12px 'Inter',sans-serif; color:rgba(255,255,255,.6)">Se souvenir de moi</span></div>
+          <span onclick="{{ forgotPwd }}" style="font:400 12px 'Inter',sans-serif; color:rgba(255,255,255,.45); cursor:pointer">Mot de passe oublié ?</span>
+        </div>
+        <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
+          <div style="font:500 11px 'Inter',sans-serif; color:#FF6B6B; margin-top:16px">{{ loginError }}</div>
+        </sc-if>
+        <div style="font:400 10px 'Inter',sans-serif; color:rgba(255,255,255,.32); margin-top:18px; line-height:1.6; max-width:380px">{{ loginHint }}</div>
+      </div>
+      <div onclick="{{ doLogin }}" class="login-signin" style="position:absolute; bottom:36px; right:42px; width:88px; height:88px; border-radius:50%; background:#fff; color:#0A0A0B; display:flex; align-items:center; justify-content:center; font:600 9px 'Inter',sans-serif; letter-spacing:1.4px; cursor:pointer; transition:transform .15s" style-hover="transform:scale(1.06)">SIGN IN</div>
+    </div>
   </div>
   </sc-if>
 
