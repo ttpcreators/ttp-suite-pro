@@ -124,7 +124,9 @@
     #dc-root .cal-ev span:first-child { width:7px !important; height:7px !important; }
     /* ---- creator home: paired square stat blocks (2 per line) + quick access on one line ---- */
     #dc-root .m-home-stats { grid-template-columns:1fr 1fr !important; gap:12px !important; }
-    #dc-root .m-home-stats > * { aspect-ratio:1 / 1; display:flex !important; flex-direction:column; justify-content:center; min-width:0 !important; grid-column:auto !important; }
+    #dc-root .m-home-stats > * { display:flex !important; flex-direction:column; min-width:0 !important; grid-column:auto !important; padding:15px !important; }
+    #dc-root .m-home-stats > * > :first-child { font-size:8px !important; }
+    #dc-root .m-home-stats > * > :nth-child(2) { font-size:22px !important; margin-top:6px !important; }
     #dc-root .m-home-quick { grid-template-columns:repeat(5,1fr) !important; gap:7px !important; }
     #dc-root .m-home-quick > * { padding:13px 4px !important; min-width:0 !important; grid-column:auto !important; }
     #dc-root .m-home-quick > * span:last-child { font-size:8px !important; letter-spacing:0 !important; }
