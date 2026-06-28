@@ -31,6 +31,7 @@ create table if not exists public.creators (
   status text default 'actif', tone text default 'cyan', trend int default 0,
   ville text, phone text, email text, address text, siren text, birth text,
   exclu boolean default false, commission text,
+  stats jsonb,
   created_at timestamptz default now()
 );
 -- colonnes coordonnées ajoutées si la table existait sans elles (sans risque)
@@ -42,6 +43,7 @@ alter table public.creators add column if not exists siren text;
 alter table public.creators add column if not exists birth text;
 alter table public.creators add column if not exists exclu boolean default false;
 alter table public.creators add column if not exists commission text;
+alter table public.creators add column if not exists stats jsonb;
 
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),

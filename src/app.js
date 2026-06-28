@@ -361,7 +361,7 @@ class Component extends DCLogic {
     // copy can't bring the old data back.
     try{ this._applySeeds(); }catch(e){}
   }
-  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend }; }
+  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null }; }
   // re-hydrate the in-memory roster from the persisted state (localStorage / cloud
   // blob). Without this, a refresh resets rosterRaw to the bundled seed and any
   // creator the user added is lost. rosterData is the durable source of truth.
@@ -898,6 +898,13 @@ class Component extends DCLogic {
     };
     const mePhoto = this.creatorPhoto(cr.name);
     me.avatarInner = mePhoto ? '' : me.initials;
+    // Stats détaillées poussées par l'agence (calculateur d'engagement) → portail.
+    const _myStats = cr && cr.stats ? cr.stats : null;
+    const _sfmt = (n)=>String(Math.round(Number(n)||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    const myStatsHasDetail = !!(_myStats && _myStats.metrics && _myStats.metrics.length);
+    const myStatsRows = myStatsHasDetail
+      ? [{label:_myStats.baseLabel, value:_sfmt(_myStats.base)}].concat(_myStats.metrics.map(m=>({label:m.label, value:_sfmt(m.value)})))
+      : [];
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
     const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); };
@@ -949,6 +956,21 @@ class Component extends DCLogic {
     const engPlatforms = Object.keys(platCfg).map(k=>({ label:platCfg[k].label, style:'padding:9px 14px;border-radius:11px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(k===pl?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState(Object.assign({engPlatform:kk}, engReset));})() }));
     const engChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], dotStyle:dotS(c.tone,false), style:'display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(i===eci?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const ii=i;return ()=>this.setState(Object.assign({engCreator:ii}, engReset));})() }));
     engChips.push({ name:'+ Autre', dotStyle:'width:7px;height:7px;border-radius:50%;background:var(--faint);', style:'display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(engCustom?'background:var(--text);color:var(--bg);':'border:1px dashed var(--hair);color:var(--muted);'), pick:()=>this.setState(Object.assign({engCreator:'autre'}, engReset)) });
+    // Enregistrer les stats saisies sur la fiche du créateur → visibles sur SON portail.
+    const engSaveLabel = engCustom ? 'ENREGISTRER' : ('✓ ENREGISTRER POUR '+(ecr?ecr.name.split(' ')[0]:'…'));
+    const engSaveHint = engCustom ? 'Choisis un créateur du roster pour enregistrer' : 'Envoyé sur le portail du créateur';
+    const engSave = ()=>{
+      if(engCustom || !ecr){ toast('Sélectionne un créateur du roster'); return; }
+      if(!(baseVal>0) || !(interSum>0)){ toast('Renseigne d’abord les chiffres'); return; }
+      const erStr = erCalc.toFixed(1).replace('.',',')+'%';
+      const statsObj = { platform:pl, platformLabel:cfg.label, base:baseVal, baseLabel:cfg.denom, metrics:cfg.metrics.map((lab,i)=>({label:lab, value:mVals[i]})), er:erStr, verdict:engVerdict, formula:cfg.formula, detail:engCalcDetail, savedAt:new Date().toLocaleDateString('fr-FR') };
+      this.rosterRaw[eci] = Object.assign({}, this.rosterRaw[eci], { er:erStr, stats:statsObj });
+      this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true });
+      const row=this.rosterRaw[eci];
+      if(this._sb && row && row.id){ try{ this._sb.from('creators').update({ er:erStr, stats:statsObj }).eq('id', row.id).then(({error})=>{ if(error) console.warn('[eng] save', error.message); }); }catch(_){} }
+      try{ this._persistNow(); }catch(_){}
+      toast('Stats enregistrées et envoyées à '+ecr.name.split(' ')[0]+' ✓');
+    };
     // ===== PRICING CALCULATOR =====
     const fmtEur = (n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
     const pCustom = this.state.priceCreator==='autre';
@@ -1371,6 +1393,7 @@ class Component extends DCLogic {
       ctExclStyle:'display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:11px;cursor:pointer;font:600 11px \'Inter\',sans-serif;'+(this.state.ctExcl?'background:var(--signalsoft);color:var(--signaltext);':'border:1px solid var(--hair);color:var(--muted);'),
       onCtBrand:(e)=>{const v=e.target.value;this.setState({ctBrand:v});}, onCtValue:(e)=>{const v=e.target.value;this.setState({ctValue:v});}, onCtCommission:(e)=>{const v=e.target.value;this.setState({ctCommission:v});}, onCtDuration:(e)=>{const v=e.target.value;this.setState({ctDuration:v});}, onCtDeliverables:(e)=>{const v=e.target.value;this.setState({ctDeliverables:v});}, toggleCtExcl:()=>this.setState(s=>({ctExcl:!s.ctExcl})),
       engChips, engPlatforms, engInputs, engFormula:cfg.formula, engCalcDetail, engPlatformLabel:cfg.label, engEr:erCalc.toFixed(1).replace('.',',')+'%', engVerdict, engVerdictStyle:"padding:5px 11px;border-radius:20px;font:600 9px 'Inter',sans-serif;background:"+this.toneHex(evTone,dark)+";color:"+(evTone==='signal'?'#10141A':'#FFFFFF')+";",
+      engSave, engSaveLabel, engSaveHint, engSaveDisabled:engCustom,
       priceChips, priceFormatSteppers, priceLines, priceHasLines:priceLines.length>0,
       priceSubtotalV:fmtEur(pSubtotal), priceTotalV:fmtEur(pTotal), priceMinV:fmtEur(pMin),
       priceCustom:pCustom, priceFollowersV:this.state.priceFollowers||'', onPriceFollowers:(e)=>{const v=e.target.value;this.setState({priceFollowers:v});}, priceERV:this.state.priceER||'', onPriceER:(e)=>{const v=e.target.value;this.setState({priceER:v});}, priceCustomNameV:this.state.priceCustomName||'', onPriceCustomName:(e)=>{const v=e.target.value;this.setState({priceCustomName:v});},
@@ -1507,6 +1530,7 @@ class Component extends DCLogic {
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
+      myStatsHasDetail, myStatsRows, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
       cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',
