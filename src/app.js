@@ -503,11 +503,13 @@ class Component extends DCLogic {
   async _loadTodos(){
     const rows = await this._dbList('todos'); if(rows===null) return;
     const map=(r)=>({ id:r.id, text:r.text, desc:r.descr||'', tag:r.tag||'', due:r.due||'—', creator:r.creator||null, priority:r.priority||'moyenne', source:r.source||'agency', done:!!r.done });
-    if(rows.length){ this._todosTable=true; this._markSeeded('todos'); this.setState({ todoItems: rows.map(map) }); return; }
+    // En mode table, le statut "terminé" vit dans la colonne `done` ; l'ancien
+    // doneSet par index n'a plus de sens et fausserait le filtrage → on le purge.
+    if(rows.length){ this._todosTable=true; this._markSeeded('todos'); this.setState({ todoItems: rows.map(map), doneSet:{} }); return; }
     const seed=this.todoRaw.map((t,i)=>({ text:t.text, descr:t.desc||'', tag:t.tag, due:t.due, creator:t.creator||null, priority:t.priority||'moyenne', source:t.source||'agency', sort_order:i }));
     const r=await this._seedTable('todos','todos',seed);
-    if(r.status==='seeded'){ this._todosTable=true; this.setState({ todoItems:r.data.map(map) }); }
-    else if(r.status==='skip'){ this._todosTable=true; this.setState({ todoItems:[] }); }
+    if(r.status==='seeded'){ this._todosTable=true; this.setState({ todoItems:r.data.map(map), doneSet:{} }); }
+    else if(r.status==='skip'){ this._todosTable=true; this.setState({ todoItems:[], doneSet:{} }); }
   }
   async _loadBriefs(){
     const rows = await this._dbList('briefs'); if(rows===null) return;
@@ -695,7 +697,10 @@ class Component extends DCLogic {
     };
     const todoItems = this.state.todoItems || this.todoRaw;
     const todoFilter = this.state.todoFilter || 'todo';
-    const _allTodos = todoItems.map((t,i)=>{ const o=mkTodo(t,i); o._done=!!done[i]; return o; });
+    // _done doit suivre la MÊME logique que mkTodo : en mode table = t.done,
+    // sinon doneSet[i]. (Sinon un vieux doneSet par index marque à tort les
+    // nouvelles tâches comme terminées.)
+    const _allTodos = todoItems.map((t,i)=>{ const o=mkTodo(t,i); o._done=!!o.done; return o; });
     const todos = _allTodos.filter(x=> todoFilter==='all' ? true : (todoFilter==='done' ? x._done : !x._done));
     const todoFilterTabs = [['todo','À faire'],['done','Terminées'],['all','Toutes']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(todoFilter===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({todoFilter:k});})() }));
     const ntPr = this.state.ntPriority||'moyenne';
