@@ -8,6 +8,9 @@ class Component extends DCLogic {
   // Anciens créateurs de démonstration livrés avec l'app — purgés une seule fois du
   // cache local (voir _applySeeds) pour que personne ne les voie réapparaître.
   _demoCreatorNames = ['CAMILLE ORSINI','THÉO RIVIÈRE','LÉNA MARCHAND','INÈS KABORÉ','MALO FONTAINE','JADE NGUYEN','SACHA DELAUNAY','NOÉ BERGER'];
+  // Contacts (fictifs) des prospects de démonstration — sert à ne purger QUE ces
+  // lignes du pipeline, en préservant les vrais prospects ajoutés par l'agence.
+  _demoProspectContacts = ['Marc Petit','RP — à trouver','Aïcha Benali','Julien Mercier','Camille Roux','Tom Vasseur'];
   pipeRaw = [];
   todoRaw = [];
   ideasRaw = [];
@@ -146,7 +149,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','docs','customBanks','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab','demoWiped']; }
+  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','docs','customBanks','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab','demoWiped','demoProspWiped']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -248,6 +251,17 @@ class Component extends DCLogic {
         if(Array.isArray(this.state.events)) upd.events=this.state.events.filter(e=>!isDemo(e&&e.who));
         if(Array.isArray(this.state.debriefData)) upd.debriefData=this.state.debriefData.filter(d=>!isDemo(d&&d.creator));
         this.setState(upd);
+      }
+    }catch(e){}
+    // Purge UNIQUE des prospects de démonstration (HelloFresh, Nike, Sephora…) du
+    // cache local : on ne retire QUE les lignes dont le contact est un faux contact
+    // de démo — les vrais prospects ajoutés par l'agence sont conservés.
+    try{
+      if(!this.state.demoProspWiped){
+        const DC=new Set(this._demoProspectContacts||[]);
+        const upd2={ demoProspWiped:true };
+        if(Array.isArray(this.state.prospectData)) upd2.prospectData=this.state.prospectData.filter(p=>!DC.has(String((p&&p.contact)||'').trim()));
+        this.setState(upd2);
       }
     }catch(e){}
   }

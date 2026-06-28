@@ -15,4 +15,10 @@ begin
   delete from public.ideas    where creator = any(demo);
   delete from public.events   where who = any(demo);
   delete from public.messages where creator = any(demo);
+  -- Prospects de démo (pipeline) : repérés par leurs faux contacts.
+  delete from public.prospects
+   where contact = any(array[
+     'Marc Petit','RP — à trouver','Aïcha Benali',
+     'Julien Mercier','Camille Roux','Tom Vasseur'
+   ]);
 end $$;
