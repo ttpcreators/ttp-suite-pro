@@ -552,7 +552,7 @@ class Component extends DCLogic {
     const d=M[name]||['M5 12h14'];
     return React.createElement('svg',{width:17,height:17,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}}, d.map((p,i)=>React.createElement('path',{key:i,d:p})));
   }
-  navItem(key, icon, label){ const active=this.state.view===key; const col=active?'var(--bg)':'var(--muted)'; const _bc={roster:this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).length, briefs:(this.state.briefItems||this.briefRaw).filter(b=>!((this.state.briefDone||{})[b.brand])).length, todo:(this.state.todoItems||this.todoRaw).filter((t,i)=> this._todosTable ? !t.done : !((this.state.doneSet||{})[i])).length, messages:2, idees:(this.state.ideasData||this.ideasRaw).filter(x=>x&&x.source==='creator').length}; const _b=_bc[key]||0; return { icon:this.icon(key), label, active, hasBadge:_b>0, badge:String(_b), badgeStyle:'min-width:18px;height:17px;padding:0 5px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(active?'background:var(--bg);color:var(--text);':'background:var(--rowhover);color:var(--muted);'), itemStyle:'display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({view:key, rosterDetail:null, mobileNav:false}) }; }
+  navItem(key, icon, label){ const active=this.state.view===key; const col=active?'var(--bg)':'var(--muted)'; const _bc={roster:this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).length, briefs:(this.state.briefItems||this.briefRaw).filter(b=>!((this.state.briefDone||{})[b.brand])).length, todo:(this.state.todoItems||this.todoRaw).filter((t,i)=> this._todosTable ? !t.done : !((this.state.doneSet||{})[i])).length, messages:0, idees:(this.state.ideasData||this.ideasRaw).filter(x=>x&&x.source==='creator').length}; const _b=_bc[key]||0; return { icon:this.icon(key), label, active, hasBadge:_b>0, badge:String(_b), badgeStyle:'min-width:18px;height:17px;padding:0 5px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(active?'background:var(--bg);color:var(--text);':'background:var(--rowhover);color:var(--muted);'), itemStyle:'display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({view:key, rosterDetail:null, mobileNav:false}) }; }
   pNavItem(key, icon, label){ const active=this.state.portalTab===key; const col=active?'var(--bg)':'var(--muted)'; return { icon:this.icon(key), label, itemStyle:'display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:13px;cursor:pointer;margin-bottom:3px;'+(active?'background:var(--text);':''), iconStyle:"font:600 14px 'Inter',sans-serif;color:"+col, labelStyle:"flex:1;font:500 13px 'Inter',sans-serif;color:"+col, go:()=>this.setState({portalTab:key, mobileNav:false}) }; }
   invStatus(s){ return ({ payee:{label:'PAYÉE',tone:'signal'}, attente:{label:'EN ATTENTE',tone:'indigo'}, retard:{label:'EN RETARD',tone:'indigo'}, brouillon:{label:'BROUILLON',tone:'cyan'} })[s] || {label:'BROUILLON',tone:'cyan'}; }
   briefStatus(s){ return ({ valider:{label:'À VALIDER',tone:'indigo'}, cours:{label:'EN COURS',tone:'cyan'}, attente:{label:'EN ATTENTE',tone:'signal'} })[s] || {label:'EN COURS',tone:'cyan'}; }
@@ -886,19 +886,21 @@ class Component extends DCLogic {
     const ci = this.state.creatorId;
     const cr = ((ci != null) ? this.rosterRaw[ci] : this.rosterRaw[0]) || _EMPTY_CR;
     const myEvents = events.filter(e => e.who === cr.name);
-    const myAgenda = (myEvents.length ? myEvents : events.slice(0,3)).map(e => { const d=eventDeco(e); return { day:e.day, time:e.time, title:e.title, dotStyle:d.dotStyle, dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);' }; });
+    // N'affiche QUE les events du créateur (jamais ceux des autres en repli).
+    const myAgenda = myEvents.map(e => { const d=eventDeco(e); return { day:e.day, time:e.time, title:e.title, dotStyle:d.dotStyle, dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);' }; });
     const pTodoFilter = this.state.pTodoFilter || 'todo';
     const pTodoFilterTabs = [['todo','À faire'],['done','Terminées'],['all','Toutes']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(pTodoFilter===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({pTodoFilter:k});})() }));
     const myTodosArr = todoItems.map((t,i)=>({t,i})).filter(x => x.t.creator === cr.name);
     const myTodos = myTodosArr.map(x => mkTodo(x.t, x.i)).filter(tm=> pTodoFilter==='all' ? true : (pTodoFilter==='done' ? tm.done : !tm.done));
     const myBriefsArr = briefItems.filter(b => b.who === cr.name);
-    const myBriefs = (myBriefsArr.length ? myBriefsArr : briefItems.slice(0,2)).map(mkBrief).filter(_briefMatch);
+    // Uniquement les briefs du créateur (pas de repli sur ceux des autres).
+    const myBriefs = myBriefsArr.map(mkBrief).filter(_briefMatch);
     const nextEv = myAgenda[0] || {};
     const me = {
       name: cr.name, first: (s=>s.charAt(0)+s.slice(1).toLowerCase())(cr.name.split(' ')[0]), initials: this.initials(cr.name), handle: cr.handle, niche: cr.niche, plat: cr.plat,
       followers: cr.followers, er: cr.er, reach: cr.reach, ca: cr.ca,
-      briefsCount: String(myBriefsArr.length || 2), todoCount: String(myTodosArr.length || 3),
-      nextRdv: nextEv.title || 'Shoot Galeries Lafayette', nextRdvMeta: (nextEv.time||'10:00')+' · Lyon',
+      briefsCount: String(myBriefsArr.length), todoCount: String(myTodosArr.length),
+      nextRdv: nextEv.title || 'Aucun RDV à venir', nextRdvMeta: nextEv.title ? ((nextEv.time?nextEv.time+' · ':'')+'Jour '+(nextEv.day||'—')) : '—', hasNextRdv: !!nextEv.title,
       avatarStyle: this.avatarFor(cr.name, cr.tone, dark, 40), bigAvatarStyle: this.avatarFor(cr.name, cr.tone, dark, 72),
     };
     const mePhoto = this.creatorPhoto(cr.name);
@@ -976,6 +978,17 @@ class Component extends DCLogic {
       try{ this._persistNow(); }catch(_){}
       toast('Stats enregistrées et envoyées à '+ecr.name.split(' ')[0]+' ✓');
     };
+    // ===== ENGAGEMENT — synthèse réelle (cartes ER moyen / Reach / Meilleur ER) =====
+    const _erNum = (s)=>parseFloat(String(s||'').replace(',','.'))||0;
+    const _reachNum = (s)=>{ const m=String(s||'').trim().match(/([\d.,]+)\s*([MK])?/i); if(!m) return 0; let n=parseFloat(m[1].replace(/\s/g,'').replace(',','.'))||0; const u=(m[2]||'').toUpperCase(); if(u==='M')n*=1e6; else if(u==='K')n*=1e3; return n; };
+    const _rosterStats = this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]);
+    const _ers = _rosterStats.map(c=>_erNum(c.er)).filter(n=>n>0);
+    const engAvgEr = _ers.length ? (_ers.reduce((a,b)=>a+b,0)/_ers.length).toFixed(1).replace('.',',')+'%' : '—';
+    const _reachSum = _rosterStats.reduce((a,c)=>a+_reachNum(c.reach),0);
+    const engReachCumul = _reachSum>=1e6 ? (_reachSum/1e6).toFixed(1).replace('.',',')+' M' : (_reachSum>=1e3 ? Math.round(_reachSum/1e3)+' K' : (_reachSum?String(_reachSum):'—'));
+    let _bestEr=null; _rosterStats.forEach(c=>{ const n=_erNum(c.er); if(n>0 && (!_bestEr || n>_bestEr.n)) _bestEr={n, name:c.name, er:c.er}; });
+    const engBestEr = _bestEr ? _bestEr.er : '—';
+    const engBestErName = _bestEr ? _bestEr.name : '—';
     // ===== PRICING CALCULATOR =====
     const fmtEur = (n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
     const pCustom = this.state.priceCreator==='autre';
@@ -1139,10 +1152,17 @@ class Component extends DCLogic {
     const newMsgCreators = this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>({ name:c.name, niche:c.niche, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,38), pick:(()=>{const nm=c.name, key='dm:'+c.name, tn=c.tone;return ()=>{ this.setState(s=>{ const cc=(s.customConvos||[]).slice(); if(!cc.some(x=>x.key===key)) cc.push({key, creator:nm, tone:tn}); const dc=Object.assign({},s.deletedConvos); delete dc[key]; return { customConvos:cc, deletedConvos:dc, openAThread:key, aNewMsg:false }; }); };})() }));
     const bannerPhoto = (this.state.photos||{}).banner || '';
     const bannerStyle = 'height:118px;border-radius:18px;position:relative;overflow:hidden;'+(bannerPhoto?'background-image:url('+bannerPhoto+');background-size:cover;background-position:center;':'background:'+this.toneHex(cr.tone,dark)+';');
-    me.bio = 'Créateur '+cr.niche.toLowerCase()+' basé en France. Contenus premium, ton authentique et publication régulière.';
-    me.valeurs = 'Authenticité · Qualité · Régularité';
-    me.audience = 'France · 18–34 ans · 65% femmes';
-    me.langue = 'Français';
+    // Profil créateur — UNIQUEMENT des données réelles (coordonnées saisies par
+    // l'agence/le créateur). Plus de bio/valeurs/audience inventées.
+    const _meInfo = Object.assign({}, this.rosterInfoRaw[cr.name]||{}, (this.state.rosterInfo&&this.state.rosterInfo[cr.name])||{});
+    me.commission = _meInfo.commission || '—';
+    me.exclu = !!_meInfo.exclu;
+    me.excluLabel = _meInfo.exclu ? 'Exclusif' : 'Non exclusif';
+    me.instagram = _meInfo.instagram || (/instagram/i.test(cr.plat||'')?cr.handle:'') || '—';
+    me.tiktok = _meInfo.tiktok || (/tiktok/i.test(cr.plat||'')?cr.handle:'') || '—';
+    me.hasProfilDocs = (myDocs && myDocs.length>0);
+    me.noProfilDocs = !(myDocs && myDocs.length>0);
+    me.profilDocs = myDocs || [];
 
     // ---- ALERTES : dérivées des données réelles (factures, briefs, créateurs,
     // prospects) + objectif. Chaque alerte a un id stable -> suppression persistée. ----
@@ -1204,6 +1224,20 @@ class Component extends DCLogic {
     const fUrssaf = Math.round(finEncaisse*0.10);
     const fIS = Math.round(finMarge*0.25);
     const fProvTotal = fTvaNet + fUrssaf + fIS;
+    // ===== OBJECTIFS — cartes de synthèse (réelles, dérivées objectifs + pipeline) =====
+    const _objCaReal = _objArr.reduce((a,o)=>a+_eur(o.ca),0);
+    const _objCaTarget = _objArr.reduce((a,o)=>a+_eur(o.target),0);
+    const objCaPct = _objCaTarget>0 ? Math.round(_objCaReal/_objCaTarget*100) : 0;
+    const objCaSub = _objCaTarget>0 ? (_fmtE(_objCaReal)+' / '+_fmtE(_objCaTarget)) : 'aucun objectif défini';
+    const objCaBarStyle = 'width:'+Math.max(0,Math.min(100,objCaPct))+'%;height:100%;background:var(--signal);border-radius:5px;';
+    const _prospAllO = this.state.prospectData||this.prospectRaw||[];
+    const _signedO = _prospAllO.filter(p=>/sign/i.test(p.stage||''));
+    const objDealsSigned = String(_signedO.length);
+    const objDealsSub = _prospAllO.length ? ('/ '+_prospAllO.length+' au pipeline') : 'pipeline vide';
+    const objDealsBarStyle = 'width:'+(_prospAllO.length?Math.round(_signedO.length/_prospAllO.length*100):0)+'%;height:100%;background:var(--indigo);border-radius:5px;';
+    const objMargeVal = String(finCommission)+'%';
+    const objMargeSub = finMarge>0 ? (_fmtE(finMarge)+' encaissés') : 'commission agence';
+    const objMargeBarStyle = 'width:'+Math.max(0,Math.min(100,finCommission))+'%;height:100%;background:var(--cyan);border-radius:5px;';
     // ===== DASHBOARD ACTIVITY — biggest live deal + first overdue invoice + growth =====
     const _activeInv = _invAll.filter(v=>v.status==='attente'||v.status==='payee');
     const _bigDeal = _activeInv.slice().sort((a,b)=>_eur(b.amount)-_eur(a.amount))[0] || _invAll[0] || {amount:'—',party:'—'};
@@ -1399,6 +1433,7 @@ class Component extends DCLogic {
       onCtBrand:(e)=>{const v=e.target.value;this.setState({ctBrand:v});}, onCtValue:(e)=>{const v=e.target.value;this.setState({ctValue:v});}, onCtCommission:(e)=>{const v=e.target.value;this.setState({ctCommission:v});}, onCtDuration:(e)=>{const v=e.target.value;this.setState({ctDuration:v});}, onCtDeliverables:(e)=>{const v=e.target.value;this.setState({ctDeliverables:v});}, toggleCtExcl:()=>this.setState(s=>({ctExcl:!s.ctExcl})),
       engChips, engPlatforms, engInputs, engFormula:cfg.formula, engCalcDetail, engPlatformLabel:cfg.label, engEr:erCalc.toFixed(1).replace('.',',')+'%', engVerdict, engVerdictStyle:"padding:5px 11px;border-radius:20px;font:600 9px 'Inter',sans-serif;background:"+this.toneHex(evTone,dark)+";color:"+(evTone==='signal'?'#10141A':'#FFFFFF')+";",
       engSave, engSaveLabel, engSaveHint, engSaveDisabled:engCustom,
+      engAvgEr, engReachCumul, engBestEr, engBestErName,
       priceChips, priceFormatSteppers, priceLines, priceHasLines:priceLines.length>0,
       priceSubtotalV:fmtEur(pSubtotal), priceTotalV:fmtEur(pTotal), priceMinV:fmtEur(pMin),
       priceCustom:pCustom, priceFollowersV:this.state.priceFollowers||'', onPriceFollowers:(e)=>{const v=e.target.value;this.setState({priceFollowers:v});}, priceERV:this.state.priceER||'', onPriceER:(e)=>{const v=e.target.value;this.setState({priceER:v});}, priceCustomNameV:this.state.priceCustomName||'', onPriceCustomName:(e)=>{const v=e.target.value;this.setState({priceCustomName:v});},
@@ -1535,7 +1570,7 @@ class Component extends DCLogic {
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
-      myStatsHasDetail, myStatsRows, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
+      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
       cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',
@@ -1560,6 +1595,7 @@ class Component extends DCLogic {
       incomeValue: _fmtE(finEncaisse*_perF[_per]),
       paidValue: _fmtE(finReverse*_perF[_per]),
       objMonthlyPct: finObjPct+'%', margePct: String(finCommission),
+      objCaPct:objCaPct+'%', objCaSub, objCaBarStyle, objDealsSigned, objDealsSub, objDealsBarStyle, objMargeVal, objMargeSub, objMargeBarStyle,
       caHeadline: _fmtE(finEncaisse+finAttente), caCumul: _fmtE(finTotalFacture),
       finAttenteValue: _fmtE(finAttente), finRetardValue: _fmtE(finRetard), finEncaisseValue: _fmtE(finEncaisse),
       finAttenteCount: String(_cntInv('attente'))+' facture'+(_cntInv('attente')>1?'s':''),
