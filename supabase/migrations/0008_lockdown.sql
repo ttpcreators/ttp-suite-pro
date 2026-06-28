@@ -6,12 +6,15 @@
 -- dans le HTML). Cette migration ferme ça, en cohérence avec l'isolation 0006 :
 --   • anonyme           → AUCUN accès
 --   • agence            → accès total
---   • créateur connecté → uniquement SA fiche (table creators) ; pas d'accès aux
---                         données agence (contacts / factures / prospects / blob)
+--   • créateur connecté → uniquement SA fiche (table creators)
 --
--- ⚠️ À exécuter dans Supabase → SQL Editor APRÈS 0006 (les fonctions is_agency()
---    et my_creator() doivent exister, et le compte agence doit avoir le rôle
---    'agency'). Ordre sûr : on (ré)affirme le rôle agence d'abord → pas de lock-out.
+-- IMPORTANT : on supprime DYNAMIQUEMENT *toutes* les policies existantes sur ces
+-- tables (y compris d'anciennes policies permissives `to public` créées par les
+-- assistants Supabase) avant d'en recréer de strictes — sinon une vieille policy
+-- ouverte laisse l'accès anonyme actif malgré le RLS.
+--
+-- ⚠️ À exécuter dans Supabase → SQL Editor APRÈS 0006 (fonctions is_agency() /
+--    my_creator() requises). Ordre sûr : on (ré)affirme le rôle agence d'abord.
 
 -- 0) Filet de sécurité : (ré)affirme le rôle agence avant d'activer le verrou.
 insert into public.profiles (user_id, role)
@@ -19,34 +22,35 @@ insert into public.profiles (user_id, role)
    where email in ('partnerships@ttpcreators.pro','marcbouraoui@gmail.com','agence@ttp.com')
   on conflict (user_id) do update set role = 'agency';
 
--- 1) CREATORS : agence = tout ; créateur = uniquement sa propre fiche.
-alter table public.creators enable row level security;
-drop policy if exists creators_anon_all   on public.creators;
-drop policy if exists creators_anon_read   on public.creators;
-drop policy if exists creators_anon_write  on public.creators;
-drop policy if exists creators_auth_all    on public.creators;
-drop policy if exists creators_scoped      on public.creators;
+-- 1) Purge de TOUTES les policies existantes sur les 5 tables concernées.
+do $$
+declare r record;
+begin
+  for r in
+    select policyname, tablename from pg_policies
+     where schemaname = 'public'
+       and tablename in ('creators','contacts','invoices','prospects','module_rows')
+  loop
+    execute format('drop policy if exists %I on public.%I;', r.policyname, r.tablename);
+  end loop;
+end $$;
+
+-- 2) RLS activé partout + policies strictes.
+alter table public.creators    enable row level security;
+alter table public.contacts    enable row level security;
+alter table public.invoices    enable row level security;
+alter table public.prospects   enable row level security;
+alter table public.module_rows enable row level security;
+
+-- CREATORS : agence = tout ; créateur = sa propre fiche.
 create policy creators_scoped on public.creators for all to authenticated
   using (public.is_agency() or name = public.my_creator())
   with check (public.is_agency() or name = public.my_creator());
 
--- 2) Données AGENCE pures (contacts, factures, prospects, blob d'état) :
---    réservées aux comptes agence. Anonyme et créateurs n'y ont pas accès.
-do $$
-declare t text;
-begin
-  foreach t in array array['contacts','invoices','prospects','module_rows']
-  loop
-    execute format('alter table public.%I enable row level security;', t);
-    execute format('drop policy if exists %I on public.%I;', t||'_anon_all',  t);
-    execute format('drop policy if exists %I on public.%I;', t||'_anon_read', t);
-    execute format('drop policy if exists %I on public.%I;', t||'_anon_write',t);
-    execute format('drop policy if exists %I on public.%I;', t||'_auth_all',  t);
-    execute format('drop policy if exists %I on public.%I;', t||'_agency',    t);
-    execute format($f$create policy %I on public.%I for all to authenticated
-      using (public.is_agency()) with check (public.is_agency());$f$, t||'_agency', t);
-  end loop;
-end $$;
+-- Données AGENCE pures : réservées aux comptes agence.
+create policy contacts_agency    on public.contacts    for all to authenticated using (public.is_agency()) with check (public.is_agency());
+create policy invoices_agency    on public.invoices    for all to authenticated using (public.is_agency()) with check (public.is_agency());
+create policy prospects_agency   on public.prospects   for all to authenticated using (public.is_agency()) with check (public.is_agency());
+create policy module_rows_agency on public.module_rows for all to authenticated using (public.is_agency()) with check (public.is_agency());
 
--- 3) Vérif rapide (doit renvoyer 0 ligne en anonyme) :
---    select * from public.creators;   -- en étant déconnecté → vide
+-- 3) Vérif (déconnecté → doit renvoyer 0 ligne) :  select * from public.creators;
