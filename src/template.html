@@ -1240,8 +1240,11 @@
       </sc-if>
       <sc-if value="{{ myStatsHasHistory }}" hint-placeholder-val="{{ false }}">
       <div style="background:var(--surface); border-radius:20px; padding:22px; margin-bottom:16px">
-        <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:12px">Historique de mes taux</div>
-        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ myStatsHistory }}" as="h" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:64px; flex-shrink:0; font:600 12px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:6px">Historique de mes taux · par mois</div>
+        <sc-for list="{{ myStatsHistoryMonths }}" as="g" hint-placeholder-count="2">
+        <div style="font:600 11px 'Inter',sans-serif; color:var(--text); margin:12px 0 8px">{{ g.month }}</div>
+        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ g.entries }}" as="h" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:64px; flex-shrink:0; font:600 12px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        </sc-for>
       </div>
       </sc-if>
       <sc-if value="{{ myStatsNone }}" hint-placeholder-val="{{ false }}">
@@ -1373,9 +1376,12 @@
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px"><sc-for list="{{ engDetail.rows }}" as="r" hint-placeholder-count="4"><div style="flex:1; min-width:110px; background:var(--panel); border-radius:12px; padding:12px 14px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">{{ r.label }}</div><div style="font:700 16px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ r.value }}</div></div></sc-for></div>
         </sc-if>
         <sc-if value="{{ engDetail.noStats }}" hint-placeholder-val="{{ false }}"><div style="background:var(--panel); border-radius:14px; padding:28px; text-align:center; font:400 12px 'Inter',sans-serif; color:var(--faint); margin-bottom:18px">Aucune mesure enregistrée pour ce créateur. Renseigne les chiffres dans le calculateur puis « Enregistrer ».</div></sc-if>
-        <div style="font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin-bottom:10px">HISTORIQUE DES MESURES</div>
+        <div style="font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin-bottom:10px">HISTORIQUE DES MESURES · PAR MOIS</div>
         <sc-if value="{{ engDetail.hasHistory }}" hint-placeholder-val="{{ true }}">
-        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ engDetail.history }}" as="h" hint-placeholder-count="4"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:70px; flex-shrink:0; font:600 11px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ h.detail }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        <sc-for list="{{ engDetail.historyMonths }}" as="g" hint-placeholder-count="2">
+        <div style="font:600 11px 'Inter',sans-serif; color:var(--text); margin:14px 0 8px">{{ g.month }}</div>
+        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ g.entries }}" as="h" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:70px; flex-shrink:0; font:600 11px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ h.detail }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        </sc-for>
         </sc-if>
         <sc-if value="{{ engDetail.noStats }}" hint-placeholder-val="{{ false }}"><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">L'historique apparaîtra ici à chaque mesure enregistrée.</div></sc-if>
       </div>

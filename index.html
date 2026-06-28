@@ -1675,8 +1675,11 @@
       </sc-if>
       <sc-if value="{{ myStatsHasHistory }}" hint-placeholder-val="{{ false }}">
       <div style="background:var(--surface); border-radius:20px; padding:22px; margin-bottom:16px">
-        <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:12px">Historique de mes taux</div>
-        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ myStatsHistory }}" as="h" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:64px; flex-shrink:0; font:600 12px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:6px">Historique de mes taux · par mois</div>
+        <sc-for list="{{ myStatsHistoryMonths }}" as="g" hint-placeholder-count="2">
+        <div style="font:600 11px 'Inter',sans-serif; color:var(--text); margin:12px 0 8px">{{ g.month }}</div>
+        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ g.entries }}" as="h" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:64px; flex-shrink:0; font:600 12px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        </sc-for>
       </div>
       </sc-if>
       <sc-if value="{{ myStatsNone }}" hint-placeholder-val="{{ false }}">
@@ -1808,9 +1811,12 @@
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px"><sc-for list="{{ engDetail.rows }}" as="r" hint-placeholder-count="4"><div style="flex:1; min-width:110px; background:var(--panel); border-radius:12px; padding:12px 14px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">{{ r.label }}</div><div style="font:700 16px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ r.value }}</div></div></sc-for></div>
         </sc-if>
         <sc-if value="{{ engDetail.noStats }}" hint-placeholder-val="{{ false }}"><div style="background:var(--panel); border-radius:14px; padding:28px; text-align:center; font:400 12px 'Inter',sans-serif; color:var(--faint); margin-bottom:18px">Aucune mesure enregistrée pour ce créateur. Renseigne les chiffres dans le calculateur puis « Enregistrer ».</div></sc-if>
-        <div style="font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin-bottom:10px">HISTORIQUE DES MESURES</div>
+        <div style="font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin-bottom:10px">HISTORIQUE DES MESURES · PAR MOIS</div>
         <sc-if value="{{ engDetail.hasHistory }}" hint-placeholder-val="{{ true }}">
-        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ engDetail.history }}" as="h" hint-placeholder-count="4"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:70px; flex-shrink:0; font:600 11px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ h.detail }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        <sc-for list="{{ engDetail.historyMonths }}" as="g" hint-placeholder-count="2">
+        <div style="font:600 11px 'Inter',sans-serif; color:var(--text); margin:14px 0 8px">{{ g.month }}</div>
+        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ g.entries }}" as="h" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:70px; flex-shrink:0; font:600 11px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ h.detail }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        </sc-for>
         </sc-if>
         <sc-if value="{{ engDetail.noStats }}" hint-placeholder-val="{{ false }}"><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">L'historique apparaîtra ici à chaque mesure enregistrée.</div></sc-if>
       </div>
@@ -2630,6 +2636,10 @@ class Component extends DCLogic {
 
     // ----- Détail engagement d'un créateur (clic sur un nom) : stats complètes + historique -----
     const _edFmtN = (n)=>String(Math.round(Number(n)||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    const _moNamesH=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const _monthLabel=(h)=>{ const s=String((h&&h.savedAt)||''); const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?((_moNamesH[(+m[2])-1]||'')+' '+m[3]):'Autres mesures'; };
+    // Groupe une liste de mesures par MOIS (l'agence fait les stats chaque mois).
+    const _groupByMonth=(list)=>{ const grp=[], idx={}; (list||[]).forEach(h=>{ const ml=_monthLabel(h); if(idx[ml]==null){ idx[ml]=grp.length; grp.push({month:ml, entries:[]}); } grp[idx[ml]].entries.push({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'', detail:h.detail||'' }); }); return grp; };
     const _edName = this.state.engDetail;
     let engDetailObj = null;
     if(_edName){ const c=this.rosterRaw.find(x=>x&&x.name===_edName);
@@ -2639,7 +2649,7 @@ class Component extends DCLogic {
           hasStats:!!(st&&st.metrics), er:(st?st.er:'—'), platform:(st?st.platformLabel:'—'), verdict:(st?st.verdict:''),
           savedAt:(st&&st.savedAt?('Mis à jour le '+st.savedAt):'Aucune mesure enregistrée'), detail:(st?st.detail:''),
           rows:(st&&st.metrics?[{label:st.baseLabel,value:_edFmtN(st.base)}].concat(st.metrics.map(m=>({label:m.label,value:_edFmtN(m.value)}))):[]),
-          history: hist.map(h=>({ date:h.savedAt||'—', platform:h.platformLabel||'', er:h.er||'—', verdict:h.verdict||'', detail:h.detail||'' })),
+          historyMonths: _groupByMonth(hist),
           hasHistory: hist.length>0, noStats:!(st&&st.metrics)
         };
       }
@@ -2770,7 +2780,7 @@ class Component extends DCLogic {
       ? [{label:_myStats.baseLabel, value:_sfmt(_myStats.base)}].concat(_myStats.metrics.map(m=>({label:m.label, value:_sfmt(m.value)})))
       : [];
     const _myStatsHist = (cr && cr.statsHistory) ? cr.statsHistory : [];
-    const myStatsHistory = _myStatsHist.map(h=>({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'—', detail:h.detail||'' }));
+    const myStatsHistoryMonths = _groupByMonth(_myStatsHist);
     const myStatsHasHistory = _myStatsHist.length>0;
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
@@ -3433,7 +3443,7 @@ class Component extends DCLogic {
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, todoCreatorTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
-      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistory, myStatsHasHistory, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
+      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistoryMonths, myStatsHasHistory, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
       cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',

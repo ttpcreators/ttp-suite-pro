@@ -802,6 +802,10 @@ class Component extends DCLogic {
 
     // ----- Détail engagement d'un créateur (clic sur un nom) : stats complètes + historique -----
     const _edFmtN = (n)=>String(Math.round(Number(n)||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    const _moNamesH=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const _monthLabel=(h)=>{ const s=String((h&&h.savedAt)||''); const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?((_moNamesH[(+m[2])-1]||'')+' '+m[3]):'Autres mesures'; };
+    // Groupe une liste de mesures par MOIS (l'agence fait les stats chaque mois).
+    const _groupByMonth=(list)=>{ const grp=[], idx={}; (list||[]).forEach(h=>{ const ml=_monthLabel(h); if(idx[ml]==null){ idx[ml]=grp.length; grp.push({month:ml, entries:[]}); } grp[idx[ml]].entries.push({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'', detail:h.detail||'' }); }); return grp; };
     const _edName = this.state.engDetail;
     let engDetailObj = null;
     if(_edName){ const c=this.rosterRaw.find(x=>x&&x.name===_edName);
@@ -811,7 +815,7 @@ class Component extends DCLogic {
           hasStats:!!(st&&st.metrics), er:(st?st.er:'—'), platform:(st?st.platformLabel:'—'), verdict:(st?st.verdict:''),
           savedAt:(st&&st.savedAt?('Mis à jour le '+st.savedAt):'Aucune mesure enregistrée'), detail:(st?st.detail:''),
           rows:(st&&st.metrics?[{label:st.baseLabel,value:_edFmtN(st.base)}].concat(st.metrics.map(m=>({label:m.label,value:_edFmtN(m.value)}))):[]),
-          history: hist.map(h=>({ date:h.savedAt||'—', platform:h.platformLabel||'', er:h.er||'—', verdict:h.verdict||'', detail:h.detail||'' })),
+          historyMonths: _groupByMonth(hist),
           hasHistory: hist.length>0, noStats:!(st&&st.metrics)
         };
       }
@@ -942,7 +946,7 @@ class Component extends DCLogic {
       ? [{label:_myStats.baseLabel, value:_sfmt(_myStats.base)}].concat(_myStats.metrics.map(m=>({label:m.label, value:_sfmt(m.value)})))
       : [];
     const _myStatsHist = (cr && cr.statsHistory) ? cr.statsHistory : [];
-    const myStatsHistory = _myStatsHist.map(h=>({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'—', detail:h.detail||'' }));
+    const myStatsHistoryMonths = _groupByMonth(_myStatsHist);
     const myStatsHasHistory = _myStatsHist.length>0;
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
@@ -1605,7 +1609,7 @@ class Component extends DCLogic {
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, todoCreatorTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
-      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistory, myStatsHasHistory, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
+      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistoryMonths, myStatsHasHistory, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
       cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',
