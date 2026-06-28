@@ -215,8 +215,11 @@ create policy briefs_scoped on public.briefs for all to authenticated
   using (public.is_agency() or creator = public.my_creator()) with check (public.is_agency() or creator = public.my_creator());
 create policy ideas_scoped  on public.ideas  for all to authenticated
   using (public.is_agency() or creator = public.my_creator()) with check (public.is_agency() or creator = public.my_creator());
+-- events : un événement peut concerner plusieurs créateurs (who = "Nom A, Nom B").
+-- Le créateur le voit si son nom figure dans la liste.
 create policy events_scoped on public.events for all to authenticated
-  using (public.is_agency() or who = public.my_creator()) with check (public.is_agency() or who = public.my_creator());
+  using (public.is_agency() or public.my_creator() = any(string_to_array(coalesce(who,''), ', ')))
+  with check (public.is_agency() or public.my_creator() = any(string_to_array(coalesce(who,''), ', ')));
 
 -- MESSAGES : agence = tout ; créateur = les siens + annonces globales (creator NULL)
 create policy messages_scoped on public.messages for all to authenticated

@@ -1223,8 +1223,9 @@
         </div>
         <div style="display:flex; gap:8px; margin-top:16px; align-items:center; flex-wrap:wrap">
           <sc-for list="{{ eventTypes }}" as="t" hint-placeholder-count="5"><div onclick="{{ t.pick }}" style="{{ t.chipStyle }}"><span style="{{ t.dotStyle }}"></span>{{ t.label }}</div></sc-for>
-          <div onclick="{{ addEvent }}" style="margin-left:auto; padding:11px 20px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">AJOUTER</div>
         </div>
+        <div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin:16px 0 8px">CRÉATEUR(S) CONCERNÉ(S) — {{ neWhoLabel }}</div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap"><sc-for list="{{ neWhoChips }}" as="w" hint-placeholder-count="6"><div onclick="{{ w.pick }}" style="{{ w.style }}">{{ w.check }}{{ w.name }}</div></sc-for><div onclick="{{ addEvent }}" style="margin-left:auto; padding:11px 20px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">AJOUTER</div></div>
       </div>
       </sc-if>
 
@@ -2752,7 +2753,9 @@ class Component extends DCLogic {
     // ---- creator portal (me) ----
     const ci = this.state.creatorId;
     const cr = this._meCreator() || _EMPTY_CR;
-    const myEvents = events.filter(e => e.who === cr.name);
+    // un événement peut concerner plusieurs créateurs (who = "Nom A, Nom B").
+    const _eventConcerns=(e,nm)=> !!nm && String((e&&e.who)||'').split(',').map(s=>s.trim()).indexOf(nm)>=0;
+    const myEvents = events.filter(e => _eventConcerns(e, cr.name));
     // N'affiche QUE les events du créateur (jamais ceux des autres en repli).
     const myAgenda = myEvents.map(e => { const d=eventDeco(e); return { day:e.day, time:e.time, title:e.title, dotStyle:d.dotStyle, dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);' }; });
     const pTodoFilter = this.state.pTodoFilter || 'todo';
@@ -3460,7 +3463,9 @@ class Component extends DCLogic {
       onNETitle: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{title:v})})); },
       onNEDay: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{day:v})})); },
       onNETime: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{time:v})})); },
-      addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const item={day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:null}; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, item], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'} }); if(this._eventsTable){ this._dbInsert('events',{day:item.day,time:item.time,title:item.title,type:item.type,who:item.who,sort_order:cur.length}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
+      neWhoChips: this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>{ const sel=(this.state.neWho||[]).indexOf(c.name)>=0; return { name:c.name.split(' ')[0], full:c.name, style:'display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(sel?'background:var(--text);color:var(--bg);':'background:var(--surface);border:1px solid var(--hair);color:var(--muted);'), check:sel?'✓ ':'', pick:(()=>{const nm=c.name;return ()=>this.setState(s=>{ const w=(s.neWho||[]).slice(); const j=w.indexOf(nm); if(j>=0) w.splice(j,1); else w.push(nm); return {neWho:w}; });})() }; }),
+      neWhoLabel: (this.state.neWho&&this.state.neWho.length) ? (this.state.neWho.length+' créateur'+(this.state.neWho.length>1?'s':'')+' concerné'+(this.state.neWho.length>1?'s':'')) : 'Aucun créateur sélectionné (événement agence)',
+      addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const who=((this.state.neWho||[]).join(', '))||null; const item={day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:who}; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, item], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'}, neWho:[] }); if(this._eventsTable){ this._dbInsert('events',{day:item.day,time:item.time,title:item.title,type:item.type,who:item.who,sort_order:cur.length}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
       addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const crr=(this.state.creatorId!=null?this.rosterRaw[this.state.creatorId]:null)||this.rosterRaw[0]; const cr2=crr?crr.name:null; const day=ne.date?Number(String(ne.date).split('-')[2]):(Number(ne.day)||26); const item={day:day||26, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, item], showEventForm:false, ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'} }); if(this._eventsTable){ this._dbInsert('events',{day:item.day,time:item.time,title:item.title,type:item.type,who:item.who,sort_order:cur.length}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
       incomeDots: this.dots(126, _incomeFill, sig, empty, 11),
       paidDots: this.dots(126, Math.max(8,Math.min(100,Math.round(finReverse/(finEncaisse||1)*100))), sig, empty, 11),
