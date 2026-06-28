@@ -694,7 +694,8 @@ class Component extends DCLogic {
         boxStyle: 'width:16px;height:16px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(isDone?'background:var(--signal);color:var(--onsignal);':'border:1.5px solid var(--faint);color:transparent;'),
         textStyle: "flex:1;font:400 13px 'Inter',sans-serif;"+(isDone?'color:var(--faint);text-decoration:line-through;':'color:var(--text);'),
         tagStyle: "font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);padding:3px 8px;border-radius:6px;background:var(--rowhover);",
-        toggle: () => { if(_todoTableMode){ const nv=!t.done; if(t.id) this._dbUpdate('todos', t.id, {done:nv}); this.setState(s=>({ todoItems:(s.todoItems||this.todoRaw).map(x=> x===t ? Object.assign({},x,{done:nv}) : x) })); } else { const nv=!(this.state.doneSet && this.state.doneSet[i]); this.setState(s => ({ doneSet: Object.assign({}, s.doneSet, { [i]: nv }) })); } },
+        open: (e) => { if(e&&e.stopPropagation)e.stopPropagation(); this.setState({ todoOpen:t }); },
+        toggle: (e) => { if(e&&e.stopPropagation)e.stopPropagation(); if(_todoTableMode){ const nv=!t.done; if(t.id) this._dbUpdate('todos', t.id, {done:nv}); this.setState(s=>({ todoItems:(s.todoItems||this.todoRaw).map(x=> x===t ? Object.assign({},x,{done:nv}) : x) })); } else { const nv=!(this.state.doneSet && this.state.doneSet[i]); this.setState(s => ({ doneSet: Object.assign({}, s.doneSet, { [i]: nv }) })); } },
         del: (e) => { if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Supprimer cette tâche ?'))return; if(this._todosTable && t.id) this._dbDelete('todos', t.id); this.setState(s=>{ const items=(s.todoItems||this.todoRaw).slice(); items.splice(i,1); const od=s.doneSet||{}; const nd={}; Object.keys(od).forEach(kk=>{ const k=+kk; if(k<i) nd[k]=od[k]; else if(k>i) nd[k-1]=od[k]; }); return { todoItems:items, doneSet:nd }; }); },
         edit: (e) => { if(e&&e.stopPropagation)e.stopPropagation(); const nv=window.prompt('Modifier la tâche :', t.text); if(nv==null)return; const v=nv.trim(); if(!v)return; if(this._todosTable && t.id) this._dbUpdate('todos', t.id, {text:v}); this.setState(s=>{ const arr=(s.todoItems||this.todoRaw).slice(); arr[i]=Object.assign({},arr[i],{text:v}); return { todoItems:arr }; }); },
       };
@@ -710,6 +711,14 @@ class Component extends DCLogic {
     const _todosByStatus = _allTodos.filter(x=> todoFilter==='all' ? true : (todoFilter==='done' ? x._done : !x._done));
     const todos = _todosByStatus.filter(x=> todoCreatorFilter==null ? true : (todoCreatorFilter==='__agency__' ? !x.creator : x.creator===todoCreatorFilter));
     const todoFilterTabs = [['todo','À faire'],['done','Terminées'],['all','Toutes']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(todoFilter===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({todoFilter:k});})() }));
+    // Détail d'une tâche (clic sur la ligne) : titre + description + méta + actions.
+    const _toItem = this.state.todoOpen;
+    let todoDetail=null;
+    if(_toItem){ const _i=todoItems.indexOf(_toItem); const o=_i>=0?mkTodo(_toItem,_i):null;
+      if(o){ todoDetail={ text:o.text, hasDesc:o.hasDesc, noDesc:!o.hasDesc, desc:o.desc||'', creatorLabel:o.creatorLabel, fromCreator:o.fromCreator, hasPriority:o.hasPriority, priorityLabel:o.priorityLabel, priorityStyle:o.priorityStyle, due:o.due||'—', done:o.done, statusLabel:o.done?'Terminée':'À faire', toggleLabel:o.done?'Rouvrir':'Marquer terminée', toggle:()=>{ o.toggle(); this.setState(s=>({ todoOpen: s.todoOpen })); }, edit:(e)=>{ o.edit(e); }, del:(e)=>{ o.del(e); this.setState({todoOpen:null}); } }; }
+    }
+    const todoDetailOpen = todoDetail!=null;
+    const closeTodoDetail = ()=>this.setState({todoOpen:null});
     // puces de filtre créateur : Tous · Agence · chaque créateur (avec compteur "à faire")
     const _todoCount=(val)=> _allTodos.filter(x=> !x._done && (val==null?true:(val==='__agency__'?!x.creator:x.creator===val))).length;
     const _mkTodoCF=(label,val)=>({ label, count:_todoCount(val), style:'display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;white-space:nowrap;'+(todoCreatorFilter===val?'background:var(--text);color:var(--bg);':'background:var(--surface);border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const v=val;return ()=>this.setState({todoCreatorFilter:v});})() });
@@ -1616,7 +1625,7 @@ class Component extends DCLogic {
       relanceTitle: _firstRetard ? ('Relancer '+String(_firstRetard.party||'').split(' × ')[0]) : 'Aucune relance',
       relanceSub: _firstRetard ? ('Facture en retard · '+_firstRetard.date) : 'Tout est à jour',
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
-      prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, todoCreatorTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
+      prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, todoCreatorTabs, todoDetailOpen, todoDetail, closeTodoDetail, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
       myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistoryMonths, myStatsHasHistory, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
