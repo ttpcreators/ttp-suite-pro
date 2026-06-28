@@ -2017,7 +2017,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','docs','customBanks','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -2478,12 +2478,14 @@ class Component extends DCLogic {
     const events = this.state.events || this.eventsRaw;
     const eventDeco = (e) => { const t=this.eventTypeMap[e.type]||this.eventTypeMap.call; return { dotStyle:'width:6px;height:6px;border-radius:50%;flex-shrink:0;background:'+this.toneHex(t.tone,dark)+';', chipStyle:"display:flex;align-items:center;gap:5px;min-width:0;max-width:100%;overflow:hidden;font:600 9px 'Inter',sans-serif;color:var(--text);background:var(--rowhover);border-radius:6px;padding:3px 6px;", label:(e.time?e.time+' ':'')+e.title, time:e.time, title:e.title, tone:t.tone }; };
     const _moNames=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const calOffset = this.state.calOffset||0;            // 0 = Juin 2026 (mois des données)
-    const _calD = new Date(2026, 5 + calOffset, 1);
+    const _now = new Date();                              // date réelle du jour
+    const _todayY=_now.getFullYear(), _todayMo=_now.getMonth(), _todayDay=_now.getDate();
+    const calOffset = this.state.calOffset||0;            // 0 = mois courant réel
+    const _calD = new Date(_todayY, _todayMo + calOffset, 1);
     const _calY = _calD.getFullYear(), _calM = _calD.getMonth();
     const calLabel = _moNames[_calM] + ' ' + _calY;
     const _daysIn = new Date(_calY, _calM + 1, 0).getDate();
-    const _showEv = calOffset === 0;                       // les évènements n'existent que pour Juin
+    const _showEv = calOffset === 0;                       // évènements rattachés au mois courant
     const prevMonth = () => this.setState(s=>({ calOffset:(s.calOffset||0)-1 }));
     const nextMonth = () => this.setState(s=>({ calOffset:(s.calOffset||0)+1 }));
     const firstDow = _calD.getDay(); // 0 Sun
@@ -2494,7 +2496,7 @@ class Component extends DCLogic {
       const day = i - lead + 1;
       const has = day >= 1 && day <= _daysIn;
       const dayEvents = (has && _showEv) ? events.filter(e => Number(e.day) === day).map(eventDeco) : [];
-      const isToday = _showEv && day === 26;
+      const isToday = _showEv && day === _todayDay;
       const _sel = _showEv && has && day === this.state.planSelDay;
       cells.push({
         day: has ? day : '', hasDay: has, isToday,
@@ -2503,7 +2505,7 @@ class Component extends DCLogic {
         moreLabel: '+' + (dayEvents.length - 2),
         cellStyle: 'min-height:88px;min-width:0;overflow:hidden;border-radius:12px;padding:8px;cursor:'+(has?'pointer':'default')+';'+(has?('background:'+(isToday?'var(--signalsoft)':'var(--panel)')+';'):'background:transparent;')+(_sel?'border:2px solid var(--text);':(isToday?'border:1px solid var(--signal);':'border:2px solid transparent;')),
         numStyle: 'font:600 12px \'Inter\',sans-serif;color:'+(isToday?'var(--signaltext)':'var(--text)')+';',
-        select: (has && _showEv) ? (()=>{ const _d=day; return () => this.setState(s => ({ planSelDay:_d, showEventForm:false, ne: Object.assign({}, s.ne, { day:_d, date:'2026-06-'+String(_d).padStart(2,'0') }) })); })() : (has ? (()=>{ const _d=day; return ()=>this.setState(s=>({ showEventForm:true, ne:Object.assign({},s.ne,{day:_d, date:String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(_d).padStart(2,'0')}) })); })() : (()=>{})),
+        select: (has && _showEv) ? (()=>{ const _d=day, _ds=String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(_d).padStart(2,'0'); return () => this.setState(s => ({ planSelDay:_d, showEventForm:false, ne: Object.assign({}, s.ne, { day:_d, date:_ds }) })); })() : (has ? (()=>{ const _d=day; return ()=>this.setState(s=>({ showEventForm:true, ne:Object.assign({},s.ne,{day:_d, date:String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(_d).padStart(2,'0')}) })); })() : (()=>{})),
         selected: _showEv && day===this.state.planSelDay,
       });
     }
@@ -2713,18 +2715,18 @@ class Component extends DCLogic {
     if(oc!=null){ const k=(this._contacts())[oc]; const cp=(key,val)=>()=>{ try{ navigator.clipboard && navigator.clipboard.writeText(val); }catch(e){} this.setState({copied:key}); setTimeout(()=>this.setState(s=> s.copied===key?{copied:null}:{}),1500); }; openContactObj={ brand:k.brand, person:k.person, role:k.role, email:k.email, phone:k.phone, last:k.last, deals:k.deals, initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,52), copyEmail:cp('email',k.email), copyPhone:cp('phone',k.phone), emailLabel:this.state.copied==='email'?'COPIÉ ✓':'COPIER', phoneLabel:this.state.copied==='phone'?'COPIÉ ✓':'COPIER' }; }
     // ===== PLANNING UPCOMING =====
     const dowFr = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
-    const _mkAgendaRow = (e)=>{ const d=eventDeco(e); const tp=this.eventTypeMap[e.type]||this.eventTypeMap.call; return { day:e.day, dow:dowFr[new Date(2026,5,Number(e.day)).getDay()], time:e.time, title:e.title, who:e.who||'', dotStyle:d.dotStyle, typeLabel:tp.label, tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);padding:4px 9px;border-radius:6px;background:var(--rowhover);", dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);', del:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); if(!window.confirm('Supprimer cet événement ?'))return; if(this._eventsTable && e.id) this._dbDelete('events', e.id); this.setState(s=>({ events:(s.events||this.eventsRaw).filter(x=>x!==e) })); } }; };
-    const upcoming = events.filter(e=>Number(e.day)>=26).sort((a,b)=>a.day-b.day).slice(0,6).map(_mkAgendaRow);
+    const _mkAgendaRow = (e)=>{ const d=eventDeco(e); const tp=this.eventTypeMap[e.type]||this.eventTypeMap.call; return { day:e.day, dow:dowFr[new Date(_calY,_calM,Number(e.day)).getDay()], time:e.time, title:e.title, who:e.who||'', dotStyle:d.dotStyle, typeLabel:tp.label, tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);padding:4px 9px;border-radius:6px;background:var(--rowhover);", dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);', del:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); if(!window.confirm('Supprimer cet événement ?'))return; if(this._eventsTable && e.id) this._dbDelete('events', e.id); this.setState(s=>({ events:(s.events||this.eventsRaw).filter(x=>x!==e) })); } }; };
+    const upcoming = events.filter(e=>Number(e.day)>=_todayDay).sort((a,b)=>a.day-b.day).slice(0,6).map(_mkAgendaRow);
     // ===== PLANNING: day detail (click a date to see its events) =====
     const _moNamesFull = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
     const _dowFull = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
     const planSelDay = this.state.planSelDay;
     const planDayOpen = planSelDay!=null;
     let planDayLabel='', planDayEvents=[];
-    if(planDayOpen){ const jsd=new Date(2026,5,Number(planSelDay)); planDayLabel=_dowFull[jsd.getDay()]+' '+planSelDay+' juin 2026'; planDayEvents=events.filter(e=>Number(e.day)===Number(planSelDay)).sort((a,b)=>String(a.time).localeCompare(String(b.time))).map(_mkAgendaRow); }
+    if(planDayOpen){ const jsd=new Date(_calY,_calM,Number(planSelDay)); planDayLabel=_dowFull[jsd.getDay()]+' '+planSelDay+' '+_moNamesFull[_calM]+' '+_calY; planDayEvents=events.filter(e=>Number(e.day)===Number(planSelDay)).sort((a,b)=>String(a.time).localeCompare(String(b.time))).map(_mkAgendaRow); }
     const planDayHasEvents = planDayEvents.length>0;
     const closePlanDay = ()=>this.setState({planSelDay:null});
-    const addEventForDay = ()=>this.setState(s=>({ showEventForm:true, ne:Object.assign({},s.ne,{ day:planSelDay, date:'2026-06-'+String(planSelDay).padStart(2,'0') }) }));
+    const addEventForDay = ()=>this.setState(s=>({ showEventForm:true, ne:Object.assign({},s.ne,{ day:planSelDay, date:String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(planSelDay).padStart(2,'0') }) }));
 
     // ===== CONTRACT GENERATOR =====
     const ctt = this.state.ctType || 'marque';
@@ -3243,7 +3245,7 @@ class Component extends DCLogic {
       openEventForm: () => this.setState({ showEventForm:true }),
       closeEventForm: () => this.setState({ showEventForm:false }),
       neTitle: this.state.ne.title, neDay: String(this.state.ne.day), neTime: this.state.ne.time,
-      neDate: this.state.ne.date || ('2026-06-'+String(this.state.ne.day||26).padStart(2,'0')),
+      neDate: this.state.ne.date || (String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(this.state.ne.day||_todayDay).padStart(2,'0')),
       onNEDate: (e)=>{ const v=e.target.value; const d=v?(Number(v.slice(8,10))||26):26; this.setState(s=>({ne:Object.assign({},s.ne,{date:v, day:d})})); },
       onNETitle: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{title:v})})); },
       onNEDay: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{day:v})})); },
