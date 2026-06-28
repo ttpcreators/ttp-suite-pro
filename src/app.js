@@ -805,14 +805,14 @@ class Component extends DCLogic {
     const _moNamesH=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const _monthLabel=(h)=>{ const s=String((h&&h.savedAt)||''); const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?((_moNamesH[(+m[2])-1]||'')+' '+m[3]):'Autres mesures'; };
     // Groupe une liste de mesures par MOIS (l'agence fait les stats chaque mois).
-    const _groupByMonth=(list)=>{ const grp=[], idx={}; (list||[]).forEach(h=>{ const ml=_monthLabel(h); if(idx[ml]==null){ idx[ml]=grp.length; grp.push({month:ml, entries:[]}); } grp[idx[ml]].entries.push({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'', detail:h.detail||'' }); }); return grp; };
+    const _groupByMonth=(list)=>{ const grp=[], idx={}; (list||[]).forEach(h=>{ const ml=_monthLabel(h); if(idx[ml]==null){ idx[ml]=grp.length; grp.push({month:ml, entries:[]}); } grp[idx[ml]].entries.push({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'', detail:h.detail||'', followers:(h.followers?(h.followers+' abonnés'):'') }); }); return grp; };
     const _edName = this.state.engDetail;
     let engDetailObj = null;
     if(_edName){ const c=this.rosterRaw.find(x=>x&&x.name===_edName);
       if(c){ const st=c.stats||null; const hist=(c.statsHistory||[]);
         engDetailObj = {
           name:c.name, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,40),
-          hasStats:!!(st&&st.metrics), er:(st?st.er:'—'), platform:(st?st.platformLabel:'—'), verdict:(st?st.verdict:''),
+          hasStats:!!(st&&st.metrics), er:(st?st.er:'—'), platform:(st?st.platformLabel:'—'), verdict:(st?st.verdict:''), followers:((st&&st.followers)?st.followers:((c.followers&&c.followers!=='0')?c.followers:'—')),
           savedAt:(st&&st.savedAt?('Mis à jour le '+st.savedAt):'Aucune mesure enregistrée'), detail:(st?st.detail:''),
           rows:(st&&st.metrics?[{label:st.baseLabel,value:_edFmtN(st.base)}].concat(st.metrics.map(m=>({label:m.label,value:_edFmtN(m.value)}))):[]),
           historyMonths: _groupByMonth(hist),
@@ -982,7 +982,7 @@ class Component extends DCLogic {
     const baseDefault = engCustom ? 0 : (cfg.viewBase ? Math.round(fnum[eci]*0.35) : fnum[eci]);
     const totalInter = baseDefault*ecErf/100;
     const metricDefaults = cfg.ratios.map(r=>Math.round(totalInter*r));
-    const engReset = { engBase:'', engM0:'', engM1:'', engM2:'', engM3:'' };
+    const engReset = { engBase:'', engM0:'', engM1:'', engM2:'', engM3:'', engFollowers:'' };
     // Les champs partent VIDES (à 0) : on saisit soi-même. Les chiffres du roster
     // ne servent que d'indication (placeholder), ils ne pré-remplissent rien.
     const baseVal = (this.state.engBase!==''&&this.state.engBase!=null) ? Number(this.state.engBase)||0 : 0;
@@ -1008,13 +1008,19 @@ class Component extends DCLogic {
       if(engCustom || !ecr){ toast('Sélectionne un créateur du roster'); return; }
       if(!(baseVal>0) || !(interSum>0)){ toast('Renseigne d’abord les chiffres'); return; }
       const erStr = erCalc.toFixed(1).replace('.',',')+'%';
-      const statsObj = { platform:pl, platformLabel:cfg.label, base:baseVal, baseLabel:cfg.denom, metrics:cfg.metrics.map((lab,i)=>({label:lab, value:mVals[i]})), er:erStr, verdict:engVerdict, formula:cfg.formula, detail:engCalcDetail, savedAt:new Date().toLocaleDateString('fr-FR'), savedAtTs:Date.now() };
+      // Abonnés (suivi) : enregistré avec la mesure mais N'entre PAS dans le calcul d'ER.
+      const _folRaw=String(this.state.engFollowers||'').replace(/[^0-9]/g,''); const _folN=_folRaw?Number(_folRaw):null;
+      const _fmtFol=(n)=> n>=1e6?((n/1e6).toFixed(1).replace(/\.0$/,'').replace('.',',')+'M') : (n>=1e3?(Math.round(n/1e3)+'K') : String(n));
+      const folStr=_folN!=null?_fmtFol(_folN):null;
+      const statsObj = { platform:pl, platformLabel:cfg.label, base:baseVal, baseLabel:cfg.denom, metrics:cfg.metrics.map((lab,i)=>({label:lab, value:mVals[i]})), er:erStr, verdict:engVerdict, formula:cfg.formula, detail:engCalcDetail, followers:folStr, followersN:_folN, savedAt:new Date().toLocaleDateString('fr-FR'), savedAtTs:Date.now() };
       const _prevHist = (this.rosterRaw[eci]&&this.rosterRaw[eci].statsHistory)||[];
       const _newHist = [statsObj].concat(_prevHist).slice(0,30);   // garde l'historique (30 dernières mesures)
-      this.rosterRaw[eci] = Object.assign({}, this.rosterRaw[eci], { er:erStr, stats:statsObj, statsHistory:_newHist });
+      const _patch = { er:erStr, stats:statsObj, statsHistory:_newHist };
+      if(folStr) _patch.followers = folStr;   // met aussi à jour le nombre d'abonnés affiché
+      this.rosterRaw[eci] = Object.assign({}, this.rosterRaw[eci], _patch);
       this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true });
       const row=this.rosterRaw[eci];
-      if(this._sb && row && row.id){ try{ this._sb.from('creators').update({ er:erStr, stats:statsObj, stats_history:_newHist }).eq('id', row.id).then(({error})=>{ if(error) console.warn('[eng] save', error.message); }); }catch(_){} }
+      if(this._sb && row && row.id){ const _dbp={ er:erStr, stats:statsObj, stats_history:_newHist }; if(folStr) _dbp.followers=folStr; try{ this._sb.from('creators').update(_dbp).eq('id', row.id).then(({error})=>{ if(error) console.warn('[eng] save', error.message); }); }catch(_){} }
       try{ this._persistNow(); }catch(_){}
       toast('Stats enregistrées et envoyées à '+ecr.name.split(' ')[0]+' ✓');
     };
@@ -1473,6 +1479,7 @@ class Component extends DCLogic {
       onCtBrand:(e)=>{const v=e.target.value;this.setState({ctBrand:v});}, onCtValue:(e)=>{const v=e.target.value;this.setState({ctValue:v});}, onCtCommission:(e)=>{const v=e.target.value;this.setState({ctCommission:v});}, onCtDuration:(e)=>{const v=e.target.value;this.setState({ctDuration:v});}, onCtDeliverables:(e)=>{const v=e.target.value;this.setState({ctDeliverables:v});}, toggleCtExcl:()=>this.setState(s=>({ctExcl:!s.ctExcl})),
       engChips, engPlatforms, engInputs, engFormula:cfg.formula, engCalcDetail, engPlatformLabel:cfg.label, engEr:erCalc.toFixed(1).replace('.',',')+'%', engVerdict, engVerdictStyle:"padding:5px 11px;border-radius:20px;font:600 9px 'Inter',sans-serif;background:"+this.toneHex(evTone,dark)+";color:"+(evTone==='signal'?'#10141A':'#FFFFFF')+";",
       engSave, engSaveLabel, engSaveHint, engSaveDisabled:engCustom,
+      engFollowers: this.state.engFollowers||'', onEngFollowers:(e)=>{ const v=e.target.value; this.setState({engFollowers:v}); },
       engAvgEr, engReachCumul, engBestEr, engBestErName,
       engDetailOpen, engDetail:engDetailObj, closeEngDetail,
       priceChips, priceFormatSteppers, priceLines, priceHasLines:priceLines.length>0,
