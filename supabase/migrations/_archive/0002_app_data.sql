@@ -1,3 +1,10 @@
+-- ##########################################################################
+-- ##  ⛔️ NE PAS EXÉCUTER — ARCHIVE HISTORIQUE UNIQUEMENT.                  ##
+-- ##  Ce script recrée des policies « to anon using(true) » qui ROUVRENT   ##
+-- ##  l'accès anonyme à toute la base. Pour (re)configurer la base, lance  ##
+-- ##  UNIQUEMENT ../../SETUP.sql (voir supabase/README.md).                ##
+-- ##########################################################################
+
 -- TTP Suite — migration 0002 : tables de données applicatives (persistance cross-device)
 --
 -- Contexte : aujourd'hui l'app persiste les ajouts/suppressions/édits via localStorage

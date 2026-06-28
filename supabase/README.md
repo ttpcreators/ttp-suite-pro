@@ -1,71 +1,46 @@
-# Intégration Supabase — TTP Suite
+# TTP Suite — Base de données (Supabase)
 
-Migration de l'app d'un prototype (données en dur) vers une vraie base de
-données + authentification, **par tranches**.
+## 👉 Un seul fichier à utiliser : `SETUP.sql`
 
-## Tranche 1 — Roster en données réelles (en cours)
+Pour (re)mettre la base dans le bon état — schéma **et** sécurité — il suffit de :
 
-- `migrations/0001_creators.sql` : crée la table `creators` et la remplit avec
-  les 8 créateurs initiaux (issus de `rosterRaw` / `rosterInfoRaw`).
-- L'app lira le Roster depuis cette table ; ajout / suppression persistés en base.
+1. Ouvrir **Supabase → SQL Editor**
+2. Coller **tout** le contenu de [`SETUP.sql`](./SETUP.sql) dans un onglet vide
+3. Cliquer **Run** → « Success. No rows returned »
+4. Se reconnecter à l'app avec le compte agence **partnerships@ttpcreators.pro**
 
-> ⚠️ Les politiques RLS de cette tranche sont **temporaires et permissives**
-> (lecture + écriture anonymes) pour démarrer sans auth. Elles seront
-> resserrées à la tranche 2.
+`SETUP.sql` est **idempotent** : on peut le relancer autant de fois que nécessaire,
+il ne casse rien et ne supprime aucune donnée. Il crée les tables manquantes, les
+fonctions, le trigger d'inscription, le rôle agence, puis remet la sécurité finale.
 
-## Tranche 2 — Auth (à venir)
+### Modèle de sécurité
 
-- Login agence (Marc) + un compte de connexion par créateur.
-- Row Level Security : chaque créateur ne voit/édite que ses données.
+| Qui | Accès |
+|-----|-------|
+| Anonyme (non connecté) | **aucun** |
+| Agence (`role = 'agency'`) | **tout** |
+| Créateur connecté | **uniquement ses propres données** |
 
-## Persistance actuelle — localStorage (déjà active)
+## ⚠️ Ne relance JAMAIS les anciennes migrations
 
-En attendant la persistance Supabase complète, **toutes** les modifications
-(ajouts, suppressions, édits) des factures, contacts, prospects, todos, briefs,
-idées, événements, modules + le thème sont **enregistrées dans le navigateur
-(`localStorage`, clé `ttp_state_v1`)**. Conséquence directe : ce qui est
-supprimé reste supprimé après un rafraîchissement (sur le même appareil).
+Les fichiers `migrations/_archive/0001…0009` sont gardés pour l'historique
+uniquement. **Ne les exécute plus.** En particulier `0002_app_data.sql` recrée
+des politiques `to anon using(true)` qui **rouvrent l'accès anonyme** à la base.
 
-Le Roster, lui, est persisté côté **Supabase** (table `creators`) : suppressions
-et ajouts y sont définitifs et partagés entre appareils.
+Si un jour tu dois repartir de zéro ou réparer la sécurité : lance simplement
+`SETUP.sql`.
 
-## Persistance cross-device — ACTIVE (via Supabase)
+## La clé publique
 
-Depuis la migration `0002_app_data.sql`, l'app synchronise **automatiquement**
-tout l'état (factures, contacts, prospects, todos, briefs, idées, événements,
-modules, thème…) avec Supabase, en plus de localStorage :
-- au démarrage, l'app charge l'instantané depuis Supabase (donc tes données te
-  suivent entre l'ordinateur et le téléphone) ;
-- à chaque modification, l'instantané est ré-écrit (anti-rebond 350 ms).
+La clé `publishable` (anon) vit dans le HTML : c'est **normal et sans risque**,
+la sécurité repose entièrement sur le RLS ci-dessus. Ne jamais exposer la clé
+`service_role` côté client.
 
-Détail d'implémentation : l'instantané JSON est stocké dans la table
-`module_rows` sur une ligne réservée `module = '__app_state__'` (colonne `a`).
-Cela réutilise les tables de `0002` sans SQL supplémentaire. Le Roster, lui,
-reste dans la table `creators`. Les photos restent locales à l'appareil.
+## Vérifier que l'anonyme est bien bloqué
 
-> Si Supabase est injoignable, l'app retombe proprement sur localStorage.
+En étant **déconnecté**, ces requêtes doivent renvoyer 0 ligne :
 
-## Tranche 3+ — modèle relationnel par entité (optionnel)
-
-- `migrations/0002_app_data.sql` : crée les tables `invoices`, `contacts`,
-  `prospects`, `todos`, `briefs`, `ideas`, `events`, `module_rows` (RLS anon
-  ouvert, comme la tranche 1). Applique-la dans le **SQL Editor** pour préparer
-  la persistance **partagée entre l'ordinateur et le téléphone**. L'étape
-  suivante est de brancher l'app sur ces tables (load au montage + insert/delete),
-  sur le modèle déjà en place pour `creators` dans `src/app.js`.
-
----
-
-## Mise en place (à faire une fois)
-
-1. Crée un projet sur **[supabase.com](https://supabase.com)** (offre gratuite).
-2. Dans le dashboard → **SQL Editor** → colle le contenu de
-   `migrations/0001_creators.sql` → **Run**.
-3. Récupère, dans **Project Settings → API** :
-   - **Project URL** (`https://xxxx.supabase.co`)
-   - **anon public key** (sans risque côté client : la sécurité repose sur la RLS)
-4. Transmets ces deux valeurs — elles seront injectées dans l'app
-   (`window.__SUPABASE_URL__` / `window.__SUPABASE_ANON_KEY__`).
-
-La clé `anon` est **publique** par design (elle vit dans le front). Ne jamais
-exposer la clé `service_role` côté client.
+```sql
+select * from public.creators;
+select * from public.contacts;
+```
