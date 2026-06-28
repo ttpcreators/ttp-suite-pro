@@ -1214,6 +1214,9 @@ class Component extends DCLogic {
         }catch(e){ console.warn('[supabase] signup setup', e); }
       },
       calLabel, prevMonth, nextMonth,
+      todayChip: (['DIM','LUN','MAR','MER','JEU','VEN','SAM'][new Date(_todayY,_todayMo,_todayDay).getDay()])+' '+_todayDay+' '+_moNames[_todayMo].toUpperCase(),
+      todayLong: _dowFull[new Date(_todayY,_todayMo,_todayDay).getDay()]+' '+_todayDay+' '+_moNamesFull[_todayMo],
+      monthYear: _moNames[_todayMo]+' '+_todayY, monthUp:(_moNames[_todayMo]+' '+_todayY).toUpperCase(), monthShort:_moNames[_todayMo].toUpperCase(),
       addInvoice, addContact, addProspect, addModuleRow, sendEmailContact, callContact,
       showInvoiceForm:!!this.state.showInvoiceForm, openInvoiceForm:()=>this.setState({showInvoiceForm:true}), closeInvoiceForm:()=>this.setState({showInvoiceForm:false}),
       niFacBrandV:this.state.niFacBrand||'', onNiFacBrand:(e)=>{const v=e.target.value;this.setState({niFacBrand:v});},
