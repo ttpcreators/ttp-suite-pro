@@ -2039,7 +2039,7 @@ class Component extends DCLogic {
   // table, photos stay device-local (kept out of the shared blob).
   // prospectData vit dans sa propre table Supabase (étape 1 de la migration) →
   // on l'exclut du blob partagé pour ne pas le dupliquer.
-  _cloudKeys(){ const local={deletedRoster:1,rosterEdited:1,prospectData:1,contactsData:1,invoiceData:1,todoItems:1,briefItems:1,ideasData:1,events:1,threadMsgs:1,photos:1,authed:1,authRole:1,space:1,creatorId:1,portalTab:1}; return this._persistKeys().filter(k=> !local[k]); }
+  _cloudKeys(){ const local={deletedRoster:1,rosterEdited:1,rosterData:1,prospectData:1,contactsData:1,invoiceData:1,todoItems:1,briefItems:1,ideasData:1,events:1,threadMsgs:1,photos:1,authed:1,authRole:1,space:1,creatorId:1,portalTab:1}; return this._persistKeys().filter(k=> !local[k]); }
   _persist(){
     // debounce: rapid setStates (e.g. typing) shouldn't each serialize/sync
     clearTimeout(this._persistT);
@@ -2076,10 +2076,9 @@ class Component extends DCLogic {
         // LOCAL-FIRST roster: if THIS device edited the roster (add/delete), never let
         // an older cloud snapshot resurrect deleted creators or drop added ones.
         // Otherwise (no local edit) take the cloud roster so it syncs across devices.
-        if (this.state.rosterEdited){ delete o.rosterData; }
-        // entities migrated to their own tables are no longer owned by the blob:
+        // entities backed by their own tables are no longer owned by the blob:
         // strip them from an older snapshot so it can't override the table data.
-        ['prospectData','contactsData','invoiceData','todoItems','briefItems','ideasData','events','threadMsgs'].forEach(k=>{ delete o[k]; });
+        ['rosterData','prospectData','contactsData','invoiceData','todoItems','briefItems','ideasData','events','threadMsgs'].forEach(k=>{ delete o[k]; });
         this.setState(o); this._hydrateRoster(o);
       } }
     } catch(e){ console.warn('[cloud] load failed', e); }
@@ -2192,19 +2191,26 @@ class Component extends DCLogic {
   // creator the user added is lost. rosterData is the durable source of truth.
   _hydrateRoster(o){ try{ if (o && Array.isArray(o.rosterData) && o.rosterData.length){ this.rosterRaw = o.rosterData.slice(); } }catch(e){} }
   async _loadCreators(){
-    // local-first: if the user already has a persisted roster, never let the cloud
-    // `creators` table (which may be empty or locked by RLS) clobber it.
-    if (Array.isArray(this.state.rosterData) && this.state.rosterData.length) return;
-    try {
-      const { data, error } = await this._sb.from('creators').select('*').order('sort_order');
-      if (error) { console.warn('[supabase] load creators:', error.message); return; }
-      if (data && data.length) {
-        this.rosterRaw = data.map(r=>this._mapCreator(r));
-        this.rosterInfoRaw = {};
-        data.forEach((r,i)=>{ this.rosterInfoRaw[i] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
-        this.setState({ deletedRoster:{}, creatorsLoaded:true, rosterData:this.rosterRaw.slice() });
-      }
-    } catch(e){ console.warn('[supabase] load creators failed', e); }
+    // CROSS-DEVICE source of truth = la table `creators`. Quand on est authentifié,
+    // on charge TOUJOURS depuis la table (un créateur ajouté sur un autre appareil
+    // apparaît partout). rosterData ne sert que de cache local hors-ligne.
+    let data, error;
+    try { ({ data, error } = await this._sb.from('creators').select('*').order('sort_order')); }
+    catch(e){ console.warn('[supabase] load creators failed', e); return; }
+    if (error) { console.warn('[supabase] load creators:', error.message); return; }
+    if (data && data.length) {
+      this.rosterRaw = data.map(r=>this._mapCreator(r));
+      this.rosterInfoRaw = {};
+      data.forEach((r,i)=>{ this.rosterInfoRaw[i] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
+      this._markSeeded('creators');
+      this.setState({ deletedRoster:{}, creatorsLoaded:true, rosterData:this.rosterRaw.slice() });
+      return;
+    }
+    // table vide : si déjà semée (tout supprimé) on respecte le vide ; sinon on sème.
+    if (this.state.seededTables && this.state.seededTables.creators) return;
+    const seed=this.rosterRaw.map((c,i)=>({ sort_order:i, name:c.name, handle:c.handle, niche:c.niche, platform:c.plat, followers:c.followers, reach:c.reach, er:c.er, ca:c.ca, status:c.status, tone:c.tone, trend:c.trend }));
+    const r=await this._seedTable('creators','creators',seed);
+    if(r.status==='seeded'){ this.rosterRaw=r.data.map(x=>this._mapCreator(x)); this.setState({ rosterData:this.rosterRaw.slice(), creatorsLoaded:true }); }
   }
   // Charge (ou sème) toutes les entités depuis Supabase. Appelé au démarrage ET
   // après une connexion Supabase réelle — car le seed/écriture exige une session
