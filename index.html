@@ -1977,6 +1977,11 @@ class Component extends DCLogic {
   }
   _syncCloud(out){
     if (!this._sb || !this._cloudReady) return; // wait until initial cloud load knows the row id
+    // Le blob d'état partagé (__app_state__) appartient à l'AGENCE. Un créateur ne
+    // doit ni l'écrire ni l'écraser : ses données passent par les tables cloisonnées
+    // (todos/briefs/idées/events/messages) et sa fiche creators. (RLS le bloquerait
+    // de toute façon → on évite juste des 401 inutiles.)
+    if (this.state.authRole === 'creator') return;
     const cloud = {}; this._cloudKeys().forEach(k=>{ if (out[k]!==undefined) cloud[k]=out[k]; });
     let json; try { json = JSON.stringify(cloud); } catch(_){ return; }
     try {
@@ -2003,7 +2008,7 @@ class Component extends DCLogic {
         this.setState(o); this._hydrateRoster(o);
       } }
     } catch(e){ console.warn('[cloud] load failed', e); }
-    finally { this._cloudReady = true; try{ this._applySeeds(); }catch(e){} this._persistNow(); } // apply forced seeds, then flush to cloud
+    finally { this._cloudReady = true; try{ this._applySeeds(); }catch(e){} try{ this._pushRosterInfoToTable(); }catch(_){} this._persistNow(); } // apply forced seeds, then flush to cloud
   }
   // One-time forced seeds: when the bundled seed version changes, override the
   // saved (possibly stale) data once so everyone gets the new defaults. Bump the
@@ -2032,6 +2037,15 @@ class Component extends DCLogic {
         const nri={};
         Object.keys(ri).forEach(k=>{ if(/^\d+$/.test(k)){ const nm=(this.rosterRaw[+k]||{}).name; if(nm) nri[nm]=Object.assign({}, nri[nm]||{}, ri[k]); } else { nri[k]=Object.assign({}, ri[k], nri[k]||{}); } });
         this.setState({ rosterInfo:nri });
+      }
+    }catch(e){}
+    // Migration : documents indexés par POSITION → indexés par NOM de créateur.
+    try{
+      const dk=this.state.docs;
+      if(dk && Object.keys(dk).some(k=>/^\d+$/.test(k))){
+        const nd={};
+        Object.keys(dk).forEach(k=>{ if(/^\d+$/.test(k)){ const nm=(this.rosterRaw[+k]||{}).name; if(nm) nd[nm]=(nd[nm]||[]).concat(dk[k]||[]); } else { nd[k]=(nd[k]||[]).concat(dk[k]||[]); } });
+        this.setState({ docs:nd });
       }
     }catch(e){}
     // Purge UNIQUE des anciens créateurs de démonstration (Camille, Théo, Léna…)
@@ -2167,6 +2181,7 @@ class Component extends DCLogic {
       data.forEach((r)=>{ this.rosterInfoRaw[r.name] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
       this._markSeeded('creators');
       this.setState({ deletedRoster:{}, creatorsLoaded:true, rosterData:this.rosterRaw.slice() });
+      try{ this._pushRosterInfoToTable(); }catch(_){}
       return;
     }
     // table vide : si déjà semée (tout supprimé) on respecte le vide ; sinon on sème.
@@ -2178,7 +2193,69 @@ class Component extends DCLogic {
   // Charge (ou sème) toutes les entités depuis Supabase. Appelé au démarrage ET
   // après une connexion Supabase réelle — car le seed/écriture exige une session
   // authentifiée (RLS), impossible avec le client anonyme du tout premier chargement.
-  _loadAllData(){ try{ this._loadCreators(); this._loadProspects(); this._loadContacts(); this._loadInvoices(); this._loadTodos(); this._loadBriefs(); this._loadIdeas(); this._loadEvents(); this._loadMessages(); }catch(e){} }
+  _loadAllData(){ try{ this._loadCreators(); this._loadProspects(); this._loadContacts(); this._loadInvoices(); this._loadTodos(); this._loadBriefs(); this._loadIdeas(); this._loadEvents(); this._loadMessages(); this._loadDocs(); }catch(e){} }
+  // ===== DOCUMENTS (fichiers réels via Supabase Storage, repli local sinon) =====
+  // Charge la liste depuis la table `documents` + génère des URLs signées (1 h)
+  // pour la prévisualisation / le téléchargement. Indexé par NOM de créateur.
+  async _loadDocs(){
+    const rows = await this._dbList('documents');
+    if(rows===null) return; // Supabase indispo → garde le comportement local
+    this._docsTable = true;
+    const byName = {};
+    for(const r of rows){
+      let url='';
+      try{ const s=await this._sb.storage.from('documents').createSignedUrl(r.path, 3600); url=(s&&s.data&&s.data.signedUrl)||''; }catch(_){}
+      const d={ id:r.id, name:r.name, type:r.type||'autre', size:r.size||'', date:r.created_at?('ajouté '+new Date(r.created_at).toLocaleDateString('fr-FR')):'', url, path:r.path, _ts:r.created_at?Date.parse(r.created_at):0 };
+      (byName[r.creator]=byName[r.creator]||[]).push(d);
+    }
+    Object.keys(byName).forEach(k=>byName[k].sort((a,b)=>(b._ts||0)-(a._ts||0))); // récents d'abord
+    this.setState({ docs: byName });
+  }
+  // Ajoute un document pour un créateur (par NOM) : upload Storage + ligne table.
+  // Repli : si Supabase indisponible, garde l'aperçu local (URL blob de session).
+  async _addDocFor(name, file, type){
+    const fm=(b)=>b<1024?b+' o':(b<1048576?(b/1024).toFixed(0)+' Ko':(b/1048576).toFixed(1).replace('.',',')+' Mo');
+    const sizeStr=fm(file.size);
+    const entry={ name:file.name, type, date:'ajouté auj.', size:sizeStr, url:URL.createObjectURL(file) };
+    const b0=this.state.docs||this.docsRaw; const cur=Object.assign({},b0); const list=(cur[name]||[]).slice(); list.unshift(entry); cur[name]=list; this.setState({docs:cur});
+    if(!this._sb){ return; }
+    try{
+      const slug=String(name).toLowerCase().replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'agence';
+      const safe=String(file.name).replace(/[^a-zA-Z0-9._-]/g,'_');
+      const path=slug+'/'+Date.now()+'-'+safe;
+      const up=await this._sb.storage.from('documents').upload(path, file, {upsert:false, contentType:file.type||'application/octet-stream'});
+      if(up.error){ console.warn('[docs] upload:', up.error.message); toast('Upload impossible (Storage)'); return; }
+      const ins=await this._dbInsert('documents',{ creator:name, name:file.name, type, size:sizeStr, path, sort_order:0 });
+      if(ins&&ins.id){ entry.id=ins.id; entry.path=path; this._docsTable=true; try{ const s=await this._sb.storage.from('documents').createSignedUrl(path,3600); if(s&&s.data&&s.data.signedUrl) entry.url=s.data.signedUrl; }catch(_){} this.setState({}); toast('Document ajouté ✓'); }
+    }catch(e){ console.warn('[docs] add failed', e); }
+  }
+  // Supprime un document : binaire Storage + ligne table.
+  async _deleteDoc(doc){ try{ if(doc&&doc.path) await this._sb.storage.from('documents').remove([doc.path]); }catch(_){} if(doc&&doc.id) this._dbDelete('documents', doc.id); }
+  // Enregistre les coordonnées d'UN créateur dans sa ligne `creators` (colonnes
+  // dédiées) — c'est le canal cloisonné (RLS) qui permet à chaque créateur de voir
+  // SES infos et à l'agence de voir celles de tous. Appelé au « Enregistrer ».
+  async _saveCreatorInfo(name){
+    if(!this._sb || !name) return;
+    const row=(this.rosterRaw||[]).find(c=>c && c.name===name); if(!row || !row.id) return;
+    const m=Object.assign({}, this.rosterInfoRaw[name]||{}, (this.state.rosterInfo&&this.state.rosterInfo[name])||{});
+    const patch={ ville:m.ville||null, phone:m.phone||null, email:m.email||null, address:m.address||null, siren:m.siren||null, birth:m.birth||null, exclu:!!m.exclu, commission:m.commission||null };
+    try{ await this._sb.from('creators').update(patch).eq('id', row.id); }catch(e){ console.warn('[creators] save info', e); }
+  }
+  // Migration douce (agence) : recopie UNE fois les coordonnées stockées dans le
+  // blob (rosterInfo) vers les colonnes de la table `creators`, pour que chaque
+  // créateur les retrouve dans sa fiche. Non destructif : ne remplit que les
+  // champs non vides, ne remet jamais à null.
+  _pushRosterInfoToTable(){
+    if(!this._sb || this.state.authRole!=='agency' || this._riPushed) return;
+    const ri=this.state.rosterInfo||{}; const names=Object.keys(ri); if(!names.length) return;
+    this._riPushed=true;
+    names.forEach(nm=>{ const row=(this.rosterRaw||[]).find(c=>c&&c.name===nm); if(!row||!row.id) return;
+      const m=ri[nm]||{}; const patch={};
+      ['ville','phone','email','address','siren','birth','commission'].forEach(k=>{ if(m[k]!=null && String(m[k]).trim()!=='') patch[k]=m[k]; });
+      if(m.exclu!=null) patch.exclu=!!m.exclu;
+      if(Object.keys(patch).length){ try{ this._sb.from('creators').update(patch).eq('id', row.id).then(()=>{}); }catch(_){} }
+    });
+  }
   // ===== Couche d'accès aux données (scalable) — wrappers Supabase avec repli =====
   // Chaque méthode renvoie null si Supabase est indisponible / la requête échoue,
   // ce qui laisse le module concerné retomber sur le comportement local (zéro régression).
@@ -2761,20 +2838,24 @@ class Component extends DCLogic {
       const rinfoFields=[ _mkRf('Ville / Pays','ville'), _mkRf('Téléphone','phone'), _mkRf('Email','email'), _mkRf('Email pro','emailPro'), _mkRf('Adresse postale','address'), _mkRf('SIREN / SIRET','siren'), _mkRf('Date de naissance','birth'), _mkRf('Instagram (@ ou lien)','instagram'), _mkRf('TikTok (@ ou lien)','tiktok'), _mkRf('Commission TTP (%)','commission') ];
       const mkPaste = async () => { try{ const txt = await navigator.clipboard.readText(); if(!txt) return; const cur = Object.assign({}, this.rosterInfoRaw[_rdKey]||{}, (this.state.rosterInfo&&this.state.rosterInfo[_rdKey])||{}); const set=(k,v)=>{ if(v && String(v).trim()) cur[k]=String(v).trim(); }; txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>{ const m=l.match(/^([^:]{2,30}):\s*(.+)$/); if(!m) return; const key=m[1].toLowerCase(); const val=m[2]; if(/ville|pays|localit/.test(key)) set('ville',val); else if(/t[ée]l|phone|mobile|portable|num/.test(key)) set('phone',val); else if(/mail/.test(key)) set('email',val); else if(/adresse|address|rue|postal/.test(key)) set('address',val); else if(/siren|siret|tva/.test(key)) set('siren',val); else if(/naiss|date|dob/.test(key)) set('birth',val); }); const email=txt.match(/[\w.+-]+@[\w-]+\.[\w.-]+/); if(email) set('email',email[0]); const siren=txt.match(/\b\d{3}[\s.]?\d{3}[\s.]?\d{3}\b/); if(siren) set('siren',siren[0]); const phone=txt.match(/(\+?\d[\d\s().-]{8,}\d)/); if(phone){ const d=phone[0].replace(/\D/g,''); const sd=siren?siren[0].replace(/\D/g,''):''; if(d!==sd) set('phone',phone[0].trim()); } const ri=Object.assign({}, this.state.rosterInfo); ri[_rdKey]=cur; this.setState({rosterInfo:ri}); }catch(e){ alert('Autorise l\'accès au presse-papier pour coller les infos.'); } };
       const toggleExclu = () => { this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); const base=Object.assign({}, this.rosterInfoRaw[_rdKey]||{}, ri[_rdKey]||{}); base.exclu=!base.exclu; ri[_rdKey]=base; return {rosterInfo:ri}; }); };
-      rd={ name:c.name, niche:c.niche, plat:c.plat, handle:c.handle, followers:c.followers, er:c.er, ca:c.ca, reach:c.reach, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), bigAvatarStyle:this.avatarFor(c.name,c.tone,dark,64), avatarInner:this.creatorPhoto(c.name)?'':this.initials(c.name), onPhoto:mkPhoto('cre:'+c.name), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone,c.status==='live'), invoices:rinv, todos:rtd, briefs:rbf, ideas:rid, infoFields:rinfoFields, igUrl:_igUrl, tiktokUrl:_ttUrl, hasIg:!!_igUrl, hasTiktok:!!_ttUrl, paste:mkPaste, save:()=>{ try{ this._persistNow(); }catch(_){} toast('Informations enregistrées ✓'); }, exclu:!!rinfoBase.exclu, commission:rinfoBase.commission||'—', excluLabel:rinfoBase.exclu?'EXCLUSIF':'NON EXCLUSIF', excluStyle:'padding:8px 14px;border-radius:10px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(rinfoBase.exclu?'background:var(--signal);color:var(--onsignal);':'border:1px solid var(--hair);color:var(--muted);'), toggleExclu }; }
+      rd={ name:c.name, niche:c.niche, plat:c.plat, handle:c.handle, followers:c.followers, er:c.er, ca:c.ca, reach:c.reach, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), bigAvatarStyle:this.avatarFor(c.name,c.tone,dark,64), avatarInner:this.creatorPhoto(c.name)?'':this.initials(c.name), onPhoto:mkPhoto('cre:'+c.name), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone,c.status==='live'), invoices:rinv, todos:rtd, briefs:rbf, ideas:rid, infoFields:rinfoFields, igUrl:_igUrl, tiktokUrl:_ttUrl, hasIg:!!_igUrl, hasTiktok:!!_ttUrl, paste:mkPaste, save:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(c.name); }catch(_){} toast('Informations enregistrées ✓'); }, exclu:!!rinfoBase.exclu, commission:rinfoBase.commission||'—', excluLabel:rinfoBase.exclu?'EXCLUSIF':'NON EXCLUSIF', excluStyle:'padding:8px 14px;border-radius:10px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(rinfoBase.exclu?'background:var(--signal);color:var(--onsignal);':'border:1px solid var(--hair);color:var(--muted);'), toggleExclu }; }
 
     // ===== DOCUMENTS (shared store) =====
     const docTypeMeta = { brief:{label:'Brief',tone:'indigo',glyph:'✎'}, mediakit:{label:'Media kit',tone:'signal',glyph:'▦'}, facture:{label:'Facture',tone:'cyan',glyph:'⊞'}, autre:{label:'Document',tone:'indigo',glyph:'▤'} };
     const docBase = this.state.docs || this.docsRaw;
     const docCi = this.state.docCreator!=null ? this.state.docCreator : 0;
     const docTy = this.state.docType || 'brief';
-    const mkDoc = (d, ci2, idx)=>{ const tm=docTypeMeta[d.type]||docTypeMeta.autre; const url=d.url||('data:text/plain;charset=utf-8,'+encodeURIComponent('TTP — '+d.name+'\n'+tm.label+'\nDocument de démonstration TTP Suite.')); const filename=d.url?d.name:(d.name.replace(/\.[a-z0-9]+$/i,'')+'.txt'); const hex=this.toneHex(tm.tone,dark); return { name:d.name, glyph:tm.glyph, tagLabel:tm.label, meta:[d.size,d.date].filter(Boolean).join(' · '), url, filename, iconStyle:'width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 16px \'Inter\',sans-serif;background:'+hex+'22;color:'+hex+';', tagStyle:'font:600 8px \'Inter\',sans-serif;letter-spacing:.6px;padding:4px 9px;border-radius:20px;white-space:nowrap;color:'+hex+';background:'+hex+'18;', open:(()=>{const nm=d.name,u=url,fn=filename,im=(/^data:image/.test(url)||/\.(png|jpe?g|gif|webp|svg)$/i.test(d.name));return ()=>this.setState({previewDoc:{name:nm,url:u,filename:fn,isImage:im}});})(), remove:(()=>{const cc=ci2,ii=idx;return ()=>{const b=this.state.docs||this.docsRaw;const cur=Object.assign({},b);cur[cc]=(cur[cc]||[]).filter((_,j)=>j!==ii);this.setState({docs:cur});};})() }; };
+    // documents indexés par NOM de créateur (comme rosterInfo) → pas de décalage
+    // quand un créateur est ajouté/supprimé.
+    const _docName = (this.rosterRaw[docCi]||_EMPTY_CR).name;
+    const mkDoc = (d, key, idx)=>{ const tm=docTypeMeta[d.type]||docTypeMeta.autre; const url=d.url||('data:text/plain;charset=utf-8,'+encodeURIComponent('TTP — '+d.name+'\n'+tm.label+'\nDocument de démonstration TTP Suite.')); const filename=d.url?d.name:(d.name.replace(/\.[a-z0-9]+$/i,'')+'.txt'); const hex=this.toneHex(tm.tone,dark); return { name:d.name, glyph:tm.glyph, tagLabel:tm.label, meta:[d.size,d.date].filter(Boolean).join(' · '), url, filename, iconStyle:'width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:600 16px \'Inter\',sans-serif;background:'+hex+'22;color:'+hex+';', tagStyle:'font:600 8px \'Inter\',sans-serif;letter-spacing:.6px;padding:4px 9px;border-radius:20px;white-space:nowrap;color:'+hex+';background:'+hex+'18;', open:(()=>{const nm=d.name,u=url,fn=filename,im=(/^data:image/.test(url)||/\.(png|jpe?g|gif|webp|svg)$/i.test(d.name));return ()=>this.setState({previewDoc:{name:nm,url:u,filename:fn,isImage:im}});})(), remove:(()=>{const cc=key,ii=idx,doc=d;return ()=>{ if(!window.confirm('Supprimer « '+doc.name+' » ?'))return; if(this._docsTable && doc.id){ this._deleteDoc(doc); } const b=this.state.docs||this.docsRaw;const cur=Object.assign({},b);cur[cc]=(cur[cc]||[]).filter((_,j)=>j!==ii);this.setState({docs:cur}); toast('Document supprimé');};})() }; };
     const docCreatorChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;letter-spacing:.3px;'+(i===docCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({docCreator:k});})() }));
     const docTypeChips = Object.keys(docTypeMeta).map(k=>({ label:docTypeMeta[k].label, style:'padding:7px 13px;border-radius:18px;font:600 9px \'Inter\',sans-serif;letter-spacing:.4px;cursor:pointer;'+(k===docTy?'background:var(--signalsoft);color:var(--signaltext);':'background:var(--panel);color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({docType:kk});})() }));
-    const agencyDocs = (docBase[docCi]||[]).map((d,idx)=>mkDoc(d,docCi,idx));
+    const agencyDocs = (docBase[_docName]||[]).map((d,idx)=>mkDoc(d,_docName,idx));
     const docCreatorName = (this.rosterRaw[docCi]||_EMPTY_CR).name.split(' ')[0];
     const myCi = this.state.creatorId!=null?this.state.creatorId:0;
-    const myDocs = (docBase[myCi]||[]).map((d,idx)=>mkDoc(d,myCi,idx));
+    const _myDocName = (this.rosterRaw[myCi]||_EMPTY_CR).name;
+    const myDocs = (docBase[_myDocName]||[]).map((d,idx)=>mkDoc(d,_myDocName,idx));
 
     // ===== MEDIA KIT =====
     const _mkDel=this.state.deletedRoster||{};
@@ -3042,7 +3123,7 @@ class Component extends DCLogic {
       importContacts:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ const lines=String(r.result).split(/\\r?\\n/).filter(l=>l.trim()); if(!lines.length){e.target.value='';return;} const sep=lines[0].indexOf(';')>=0?';':','; const parse=(ln)=>{const out=[];let cur='',q=false;for(let i=0;i<ln.length;i++){const c=ln[i];if(q){if(c==='"'){if(ln[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else{if(c==='"')q=true;else if(c===sep){out.push(cur);cur='';}else cur+=c;}}out.push(cur);return out;}; const start=/marque|brand|contact/i.test(lines[0])?1:0; const tones=['indigo','cyan','signal']; const base=(this._contacts()).slice(); const added=[]; lines.slice(start).forEach(l=>{const c=parse(l); if(!(c[0]||c[1]))return; const row={brand:(c[0]||'\u2014').trim(),person:(c[1]||'').trim(),role:(c[2]||'').trim(),email:(c[3]||'').trim(),phone:(c[4]||'').trim(),last:(c[5]||'jamais').trim(),deals:(c[6]||'\u2014').trim(),tag:(c[7]||'Import\u00e9').trim(),tone:tones[base.length%3]}; base.push(row); added.push(row);}); this.setState({contactsData:base}); if(this._contactsTable && added.length){ try{ this._sb.from('contacts').insert(added.map(a=>({brand:a.brand,person:a.person,role:a.role,tag:a.tag,email:a.email,phone:a.phone,tone:a.tone}))).select().then(()=>{ this._loadContacts(); }); }catch(_){} } }; r.readAsText(f,'utf-8'); e.target.value=''; },
       vDocuments:this.state.view==='documents', goDocuments:()=>this.setState({view:'documents'}),
       docCreatorChips, docTypeChips, agencyDocs, agencyDocsEmpty:agencyDocs.length===0, docCreatorName,
-      onAddDoc:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const ci2=this.state.docCreator!=null?this.state.docCreator:0; const ty=this.state.docType||'brief'; const fm=(b)=>b<1024?b+' o':(b<1048576?(b/1024).toFixed(0)+' Ko':(b/1048576).toFixed(1).replace('.',',')+' Mo'); const url=URL.createObjectURL(f); const b0=this.state.docs||this.docsRaw; const cur=Object.assign({},b0); const list=(cur[ci2]||[]).slice(); list.unshift({name:f.name,type:ty,date:'ajout\u00e9 auj.',size:fm(f.size),url,external:true}); cur[ci2]=list; this.setState({docs:cur}); e.target.value=''; },
+      onAddDoc:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const ci2=this.state.docCreator!=null?this.state.docCreator:0; const nm=(this.rosterRaw[ci2]||{}).name; if(!nm){ toast('Ajoute d\'abord un cr\u00e9ateur au roster'); e.target.value=''; return; } const ty=this.state.docType||'brief'; this._addDocFor(nm, f, ty); e.target.value=''; },
       pDocuments:this.state.portalTab==='documents', myDocs, myDocsEmpty:myDocs.length===0,
       vMediaKit:this.state.view==='mediakit', goMediaKit:()=>this.setState({view:'mediakit'}), mk, mkStats, mkGeo, mkBrands, mkFormats, mkCreatorChips,
       vIdees:this.state.view==='idees', ideas, ideaOpenObj, ideaDetailOpen, ideaListMode:!ideaDetailOpen, closeIdea, myIdeas, myIdeasEmpty:myIdeas.length===0, myIdeasHas:myIdeas.length>0,
@@ -3072,7 +3153,7 @@ class Component extends DCLogic {
       showCreatorForm:!!this.state.showCreatorForm, openCreatorForm:()=>this.setState({showCreatorForm:true}), closeCreatorForm:()=>this.setState({showCreatorForm:false}),
       ncName:this.state.ncName||'', ncHandle:this.state.ncHandle||'', ncNiche:this.state.ncNiche||'', onNcName:(e)=>{const v=e.target.value;this.setState({ncName:v});}, onNcHandle:(e)=>{const v=e.target.value;this.setState({ncHandle:v});}, onNcNiche:(e)=>{const v=e.target.value;this.setState({ncNiche:v});},
       addCreator:()=>{ const nm=(this.state.ncName||'').trim(); if(!nm)return; const tones=['signal','indigo','cyan']; const nc={name:nm.toUpperCase(), handle:this.state.ncHandle||'@nouveau', niche:this.state.ncNiche||'Lifestyle', plat:'Instagram', followers:'0', reach:'0', er:'0%', ca:'0 \u20ac', status:'actif', tone:tones[this.rosterRaw.length%3], trend:0}; this.rosterRaw.push(nc); this.setState({rosterData:this.rosterRaw.slice(), rosterEdited:true, showCreatorForm:false, ncName:'', ncHandle:'', ncNiche:''}); toast('Cr\u00e9ateur ajout\u00e9 \u2713'); if(this._sb){ this._sb.from('creators').insert({sort_order:this.rosterRaw.length-1, name:nc.name, handle:nc.handle, niche:nc.niche, platform:nc.plat, followers:nc.followers, reach:nc.reach, er:nc.er, ca:nc.ca, status:nc.status, tone:nc.tone, trend:nc.trend}).select().then(({data,error})=>{ if(error){ console.warn('[supabase] insert:', error.message); return; } if(data&&data[0]){ nc.id=data[0].id; this.setState({rosterData:this.rosterRaw.slice()}); } }); } },
-      onAddDocMe:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const ci2=this.state.creatorId!=null?this.state.creatorId:0; const fm=(b)=>b<1024?b+' o':(b<1048576?(b/1024).toFixed(0)+' Ko':(b/1048576).toFixed(1).replace('.',',')+' Mo'); const url=URL.createObjectURL(f); const b0=this.state.docs||this.docsRaw; const cur=Object.assign({},b0); const list=(cur[ci2]||[]).slice(); list.unshift({name:f.name,type:'autre',date:'ajouté auj.',size:fm(f.size),url,external:true}); cur[ci2]=list; this.setState({docs:cur}); e.target.value=''; },
+      onAddDocMe:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const ci2=this.state.creatorId!=null?this.state.creatorId:0; const nm=(this.rosterRaw[ci2]||{}).name; if(!nm){ e.target.value=''; return; } this._addDocFor(nm, f, 'autre'); e.target.value=''; },
       previewOpen:!!this.state.previewDoc, previewName:this.state.previewDoc?this.state.previewDoc.name:'', previewUrl:this.state.previewDoc?this.state.previewDoc.url:'', previewIsImage:!!(this.state.previewDoc&&this.state.previewDoc.isImage), previewIsDoc:!(this.state.previewDoc&&this.state.previewDoc.isImage), closePreview:()=>this.setState({previewDoc:null}), stopProp:(e)=>{e.stopPropagation();}, previewMedia: this.state.previewDoc ? (this.state.previewDoc.isImage ? React.createElement('div',{style:{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}, React.createElement('img',{src:this.state.previewDoc.url,style:{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',borderRadius:'8px'}})) : React.createElement('iframe',{src:this.state.previewDoc.url,style:{width:'100%',height:'100%',border:'none',background:'#fff'}})) : null,
       bankFormOpen:!!this.state.showBankForm, toggleBankForm:()=>this.setState(s=>({showBankForm:!s.showBankForm})),
       nbLabel:(this.state.nb&&this.state.nb.label)||'', nbIban:(this.state.nb&&this.state.nb.iban)||'', nbBic:(this.state.nb&&this.state.nb.bic)||'',
@@ -3226,7 +3307,7 @@ class Component extends DCLogic {
       relanceSub: _firstRetard ? ('Facture en retard · '+_firstRetard.date) : 'Tout est à jour',
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
-      me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
+      me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
       cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',

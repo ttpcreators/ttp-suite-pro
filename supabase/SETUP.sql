@@ -102,6 +102,15 @@ create table if not exists public.module_rows (
   sort_order int default 0, created_at timestamptz default now()
 );
 
+-- Documents : métadonnées des fichiers (le binaire vit dans le bucket Storage
+-- `documents`). `creator` = nom du créateur propriétaire (null = doc agence).
+create table if not exists public.documents (
+  id uuid primary key default gen_random_uuid(),
+  creator text, name text not null, type text default 'autre',
+  size text, path text not null, sort_order int default 0,
+  created_at timestamptz default now()
+);
+
 create table if not exists public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   role text not null default 'creator',
@@ -174,7 +183,7 @@ do $$
 declare r record; t text;
 declare tbls text[] := array[
   'creators','contacts','invoices','prospects','module_rows',
-  'todos','briefs','ideas','events','messages','profiles'
+  'todos','briefs','ideas','events','messages','profiles','documents'
 ];
 begin
   for r in select policyname, tablename from pg_policies
@@ -214,6 +223,24 @@ create policy messages_scoped on public.messages for all to authenticated
 -- PROFILES : chacun lit le sien ; l'agence gère tout
 create policy profiles_self   on public.profiles for select to authenticated using (user_id = auth.uid());
 create policy profiles_agency on public.profiles for all    to authenticated using (public.is_agency()) with check (public.is_agency());
+
+-- DOCUMENTS (métadonnées) : agence = tout ; créateur = uniquement les siens
+create policy documents_scoped on public.documents for all to authenticated
+  using (public.is_agency() or creator = public.my_creator())
+  with check (public.is_agency() or creator = public.my_creator());
+
+-- ----------------------------------------------------------------------------
+-- 6) STORAGE : bucket privé `documents` (binaires des fichiers)
+--    Accès réservé aux comptes connectés (anonyme = rien). Le cloisonnement
+--    par créateur est assuré par la table `documents` ci-dessus + URLs signées.
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+  values ('documents','documents', false)
+  on conflict (id) do nothing;
+
+drop policy if exists documents_obj_auth on storage.objects;
+create policy documents_obj_auth on storage.objects for all to authenticated
+  using (bucket_id = 'documents') with check (bucket_id = 'documents');
 
 -- ============================================================================
 -- FIN. Vérif rapide (en étant DÉCONNECTÉ, ces requêtes doivent renvoyer 0 ligne) :
