@@ -2,50 +2,17 @@
 class Component extends DCLogic {
   state = { theme:'light', space:'agency', view:'apercu', creatorId:null, portalTab:'accueil', authed:false, authRole:null, loginTab:'agency', loginEmail:'', loginPwd:'', loginError:'', showEventForm:false, ne:{day:26,time:'',title:'',type:'call',date:'2026-06-26'}, events:null, doneSet:null, openContact:null, objForm:false, no:{name:'',target:'',pct:''}, engCreator:0, engPlatform:'instagram', engBase:'', engM0:'', engM1:'', engM2:'', priceCreator:0, priceFormat:'reel', ctType:'marque', ctCreator:0, ctBrand:'Sephora', ctValue:'32 000 €', ctCommission:'20', ctDuration:'12 mois', ctDeliverables:'3 posts · 1 reel', ctExcl:true, photos:{}, copied:null, rosterDetail:null, openThread:null, draft:'', threadMsgs:null };
 
-  rosterRaw = [
-    {name:'CAMILLE ORSINI', handle:'@camille.o', niche:'Mode', plat:'Instagram', followers:'540K', reach:'2,1 M', er:'4,8%', ca:'62 400 €', status:'live', tone:'signal', trend:6},
-    {name:'THÉO RIVIÈRE', handle:'@theogg', niche:'Gaming', plat:'Twitch', followers:'1,2M', reach:'3,4 M', er:'6,1%', ca:'54 100 €', status:'actif', tone:'indigo', trend:3},
-    {name:'LÉNA MARCHAND', handle:'@lena.mrc', niche:'Lifestyle', plat:'Instagram', followers:'480K', reach:'1,6 M', er:'5,2%', ca:'38 900 €', status:'actif', tone:'cyan', trend:-2},
-    {name:'INÈS KABORÉ', handle:'@ines.k', niche:'Beauté', plat:'TikTok', followers:'320K', reach:'1,2 M', er:'7,3%', ca:'29 700 €', status:'actif', tone:'indigo', trend:5},
-    {name:'MALO FONTAINE', handle:'@malo.fit', niche:'Fitness', plat:'YouTube', followers:'210K', reach:'780 K', er:'5,9%', ca:'21 300 €', status:'pause', tone:'cyan', trend:1},
-    {name:'JADE NGUYEN', handle:'@jade.eats', niche:'Food · UGC', plat:'UGC', followers:'95K', reach:'410 K', er:'8,1%', ca:'12 800 €', status:'actif', tone:'signal', trend:7},
-    {name:'SACHA DELAUNAY', handle:'@sacha.tech', niche:'Tech · UGC', plat:'UGC', followers:'64K', reach:'280 K', er:'9,4%', ca:'8 600 €', status:'actif', tone:'indigo', trend:4},
-    {name:'NOÉ BERGER', handle:'@noe.travels', niche:'Voyage', plat:'Instagram', followers:'175K', reach:'640 K', er:'4,4%', ca:'15 200 €', status:'pause', tone:'cyan', trend:-1},
-  ];
-  pipeRaw = [
-    {label:'Sephora × CAMILLE', amount:'32k', tone:'indigo'},
-    {label:'Logitech × THÉO', amount:'27k', tone:'signal'},
-    {label:'Nike × MALO', amount:'24k', tone:'cyan'},
-  ];
-  todoRaw = [
-    {text:'Relancer RP Sephora (CAMILLE)', tag:'AGENCE', due:'Auj.', creator:null},
-    {text:'Valider contrat Nike (MALO)', tag:'AGENCE', due:'Auj.', creator:null},
-    {text:'Valider brief créatif Sephora', tag:'CAMILLE', due:'Auj.', creator:'CAMILLE ORSINI'},
-    {text:'Envoyer factures L\u2019Oréal', tag:'AGENCE', due:'27/06', creator:null},
-    {text:'Choisir tenues shoot Galeries', tag:'CAMILLE', due:'Auj.', creator:'CAMILLE ORSINI'},
-    {text:'Stats reel Dior à transmettre', tag:'CAMILLE', due:'28/06', creator:'CAMILLE ORSINI'},
-  ];
-  ideasRaw = [
-    {text:'GRWM été × Sephora — format reel', creator:'CAMILLE ORSINI', status:'Validée', source:'agency'},
-    {text:'Série coulisses tournage en stories', creator:'CAMILLE ORSINI', status:'En cours', source:'agency'},
-    {text:'Setup gaming 2026 — vidéo longue', creator:'THÉO RIVIÈRE', status:'À explorer', source:'agency'},
-    {text:'Test produit en live + code promo', creator:'INÈS KABORÉ', status:'À explorer', source:'creator'},
-    {text:'Collab croisée gaming × lifestyle', creator:null, status:'À explorer', source:'agency'}
-  ];
-  briefRaw = [
-    {brand:'Sephora — Collection été', creator:'CAMILLE ORSINI', deliverables:'3 posts · 1 reel', due:'02/07', status:'valider', tone:'indigo', who:'CAMILLE ORSINI', consignes:'Mettre en avant la collection été : 3 posts feed (looks complets) + 1 reel tuto make-up. Ton lumineux et naturel, mention @sephorafrance. Validation des visuels 48h avant publication.', budget:'2 200 €', objectif:'Lancement collection · trafic boutique'},
-    {brand:'Dior Beauty — Gifting', creator:'CAMILLE ORSINI', deliverables:'2 reels', due:'05/07', status:'cours', tone:'cyan', who:'CAMILLE ORSINI', consignes:'2 reels gifting : déballage produit Dior, première impression spontanée. Mention @diorbeauty + lien en bio. Lumière naturelle.', budget:'1 800 €', objectif:'Notoriété gamme parfum'},
-    {brand:'Logitech — Setup', creator:'THÉO RIVIÈRE', deliverables:'1 vidéo · 3 stories', due:'08/07', status:'cours', tone:'signal', who:'THÉO RIVIÈRE', consignes:'1 vidéo YouTube setup gaming (~10 min) + 3 stories teasing. Intégration naturelle du clavier Logitech. Code promo THEO15.', budget:'2 600 €', objectif:'Ventes · conversion code promo'},
-    {brand:'Nike — Run club', creator:'MALO FONTAINE', deliverables:'2 reels · 1 post', due:'12/07', status:'attente', tone:'indigo', who:'MALO FONTAINE', consignes:'2 reels running + 1 post engagement autour du Run Club Nike. Énergie, dépassement de soi. Tag @nike + #nikerunclub.', budget:'2 000 €', objectif:'Communauté · inscriptions Run Club'},
-  ];
-  invoiceRaw = [
-    {ref:'2026-084', party:'Sephora × CAMILLE', amount:'32 000 €', date:'02/07', status:'attente'},
-    {ref:'2026-083', party:'Logitech × THÉO', amount:'27 500 €', date:'18/06', status:'payee'},
-    {ref:'2026-082', party:'Galeries Lafayette × LÉNA', amount:'14 500 €', date:'15/06', status:'payee'},
-    {ref:'2026-081', party:"L'Oréal × INÈS", amount:'18 000 €', date:'30/05', status:'retard'},
-    {ref:'2026-080', party:'Dior Beauty × CAMILLE', amount:'15 900 €', date:'28/06', status:'attente'},
-    {ref:'2026-079', party:'Nike × MALO', amount:'24 000 €', date:'—', status:'brouillon'},
-  ];
+  // Roster vierge par défaut : l'agence ajoute ses propres créateurs (aucun profil
+  // de démonstration). Les créateurs réels vivent dans la table Supabase `creators`.
+  rosterRaw = [];
+  // Anciens créateurs de démonstration livrés avec l'app — purgés une seule fois du
+  // cache local (voir _applySeeds) pour que personne ne les voie réapparaître.
+  _demoCreatorNames = ['CAMILLE ORSINI','THÉO RIVIÈRE','LÉNA MARCHAND','INÈS KABORÉ','MALO FONTAINE','JADE NGUYEN','SACHA DELAUNAY','NOÉ BERGER'];
+  pipeRaw = [];
+  todoRaw = [];
+  ideasRaw = [];
+  briefRaw = [];
+  invoiceRaw = [];
   contactRaw = [
     {brand:'Gisèle Paris', person:'Emma Sarallaih', role:'Account Manager', tone:'indigo', tag:'Agence RP', email:'emma.s@gisele-paris.fr', phone:'06 30 74 72 15', last:'jamais', deals:'Prospection'},
     {brand:'Aroma zone', person:'Jennifer Garcia', role:'Influence Manager', tone:'signal', tag:'Marque', email:'jennifer.garcia@aroma-zone.com', phone:'', last:'jamais', deals:'Prospection'},
@@ -145,12 +112,7 @@ class Component extends DCLogic {
     {brand:'Falconeri', person:'Falconeri', role:'', tone:'signal', tag:'Marque', email:'hello@falconeri.com', phone:'', last:'jamais', deals:'Mode'},
     {brand:'Disney +', person:'Nissrine Dama', role:'Influence manager', tone:'cyan', tag:'Autre', email:'nissrine.dama.-ND@disney.com', phone:'', last:'jamais', deals:'Lifestyle'},
   ];
-  objRaw = [
-    {name:'CAMILLE ORSINI', pct:104, ca:'62 400 €', target:'60 000 €', tone:'signal'},
-    {name:'THÉO RIVIÈRE', pct:90, ca:'54 100 €', target:'60 000 €', tone:'indigo'},
-    {name:'LÉNA MARCHAND', pct:78, ca:'38 900 €', target:'50 000 €', tone:'cyan'},
-    {name:'INÈS KABORÉ', pct:99, ca:'29 700 €', target:'30 000 €', tone:'indigo'},
-  ];
+  objRaw = [];
   pricingRaw = [
     {format:'Post Instagram', base:'4 500 €', excl:'+ 30%'},
     {format:'Reel', base:'6 800 €', excl:'+ 35%'},
@@ -159,62 +121,18 @@ class Component extends DCLogic {
     {format:'YouTube intégration', base:'9 500 €', excl:'+ 40%'},
     {format:'Pack mensuel', base:'18 000 €', excl:'sur devis'},
   ];
-  prospectRaw = [
-    {brand:'HelloFresh', contact:'Marc Petit', value:'~6 500 €', stage:'Prospection', tone:'cyan'},
-    {brand:'Asphalte', contact:'RP — à trouver', value:'~9 000 €', stage:'Prospection', tone:'cyan'},
-    {brand:"L'Oréal", contact:'Aïcha Benali', value:'18 000 €', stage:'Contact', tone:'indigo'},
-    {brand:'Nike', contact:'Julien Mercier', value:'24 000 €', stage:'Négociation', tone:'indigo'},
-    {brand:'Sephora', contact:'Camille Roux', value:'32 000 €', stage:'Négociation', tone:'signal'},
-    {brand:'Logitech', contact:'Tom Vasseur', value:'27 500 €', stage:'Signé', tone:'signal'},
-  ];
-  eventsRaw = [
-    {day:26, time:'10:00', title:'Shoot LÉNA × Galeries Lafayette', type:'shoot', who:'LÉNA MARCHAND'},
-    {day:26, time:'14:30', title:'Call Nike — négo MALO', type:'call', who:'MALO FONTAINE'},
-    {day:26, time:'17:00', title:'Live THÉO — Logitech', type:'collab', who:'THÉO RIVIÈRE'},
-    {day:27, time:'11:00', title:'Deadline brief Sephora', type:'deadline', who:'CAMILLE ORSINI'},
-    {day:30, time:'14:00', title:'Tournage reels Dior', type:'shoot', who:'CAMILLE ORSINI'},
-    {day:18, time:'09:30', title:'Réunion équipe agence', type:'reunion', who:null},
-    {day:23, time:'15:00', title:'Call découverte HelloFresh', type:'call', who:null},
-    {day:12, time:'16:00', title:'Collab JADE × Sephora', type:'collab', who:'JADE NGUYEN'},
-  ];
-  msgsRaw = {
-    0:[{from:'agency',text:'Salut Camille ! On a reçu les concepts Sephora.'},{from:'agency',text:'On valide les 3 idées de reels ?'}],
-    1:[{from:'me',text:'Reçu, je m\'en occupe ce soir.'},{from:'agency',text:'Parfait, merci 🙌'}],
-    2:[{from:'agency',text:'Réunion créateurs vendredi 15h en visio. Présence souhaitée !'}],
-    3:[{from:'me',text:'Salut ! Le sponso Logitech est prêt, je poste quand ?'}],
-    4:[{from:'me',text:'J\'ai envoyé les rushs UGC Sephora ✅'},{from:'agency',text:'Nickel, on regarde ça.'}],
-    5:[{from:'me',text:'Question sur le brief L\'Oréal : combien de stories ?'}],
-  };
+  prospectRaw = [];
+  eventsRaw = [];
+  msgsRaw = {};
   // Rich campaign debriefs — a polished report you can send to the brand.
-  debriefRaw = [
-    { brand:'Sephora — Collection printemps', creator:'CAMILLE ORSINI', period:'15 mars – 12 avril 2026', tone:'signal',
-      deliverables:'3 posts feed · 2 reels · 8 stories', budget:'12 000 €', revenue:'49 200 €', roi:'4,1×',
-      kpis:[{l:'Reach',v:'2,4 M'},{l:'Impressions',v:'3,8 M'},{l:'Engagements',v:'196 K'},{l:'Taux d’engagement',v:'5,2%'},{l:'Clics lien',v:'18 400'},{l:'Ventes attribuées',v:'1 240'}],
-      summary:'La campagne a largement dépassé les objectifs de notoriété et de trafic. Le reel tuto make-up a été le contenu le plus performant, portant un pic de trafic en boutique le week-end de lancement. Forte affinité de l’audience féminine 25-34 ans avec la gamme.',
-      highlights:['Reel tuto make-up : 1,2 M vues · 7,8% ER','Code promo CAMILLE15 : 1 240 utilisations','+38% de visites sur la page collection vs. moyenne'] },
-    { brand:'Logitech — Setup gaming', creator:'THÉO RIVIÈRE', period:'2 – 28 février 2026', tone:'indigo',
-      deliverables:'1 vidéo YouTube · 3 stories · 1 live', budget:'8 500 €', revenue:'27 200 €', roi:'3,2×',
-      kpis:[{l:'Reach',v:'1,8 M'},{l:'Vues vidéo',v:'640 K'},{l:'Engagements',v:'84 K'},{l:'Taux d’engagement',v:'6,1%'},{l:'Clics lien',v:'12 100'},{l:'Ventes attribuées',v:'780'}],
-      summary:'Excellente conversion grâce au format vidéo longue durée et au live. L’intégration du clavier a été perçue comme authentique par la communauté. Le code promo a généré un volume de ventes supérieur aux prévisions.',
-      highlights:['Vidéo setup : 640 K vues · 9,1% de rétention à 30 s','Live : 14 K spectateurs en simultané','Code THEO15 : 780 commandes'] },
-    { brand:'Galeries Lafayette', creator:'LÉNA MARCHAND', period:'10 – 24 janvier 2026', tone:'cyan',
-      deliverables:'2 posts · 1 reel · 5 stories', budget:'6 000 €', revenue:'16 200 €', roi:'2,7×',
-      kpis:[{l:'Reach',v:'980 K'},{l:'Impressions',v:'1,5 M'},{l:'Engagements',v:'61 K'},{l:'Taux d’engagement',v:'4,9%'},{l:'Clics lien',v:'7 300'},{l:'Ventes attribuées',v:'410'}],
-      summary:'Campagne solide sur une fenêtre courte. Bonne performance des stories swipe-up vers la sélection. L’engagement est resté au-dessus de la moyenne du compte sur toute la période.',
-      highlights:['Read shopping stories : 7 300 clics','Reel lookbook : 320 K vues','Sentiment commentaires : 94% positif'] },
-  ];
+  debriefRaw = [];
   eventTypeMap = { call:{label:'Call', tone:'indigo'}, reunion:{label:'Réunion', tone:'cyan'}, collab:{label:'Collab', tone:'signal'}, shoot:{label:'Shoot', tone:'indigo'}, event:{label:'Event', tone:'signal'}, voyage:{label:'Voyage', tone:'cyan'}, deadline:{label:'Deadline', tone:'cyan'} };
 
-  docsRaw = { 0:[{name:'Brief Sephora — Collection été.pdf', type:'brief', date:'24/06/2026', size:'248 Ko'},{name:'Media kit Camille 2026.pdf', type:'mediakit', date:'01/06/2026', size:'3,2 Mo'},{name:'Facture #2026-084.pdf', type:'facture', date:'02/07/2026', size:'96 Ko'}], 1:[{name:'Media kit Théo 2026.pdf', type:'mediakit', date:'12/06/2026', size:'4,1 Mo'}], 3:[{name:'Brief Sephora UGC.pdf', type:'brief', date:'20/06/2026', size:'180 Ko'}] };
+  docsRaw = {};
   bankAccounts = [ {label:'Compte courant — Qonto', bank:'Qonto', iban:'FR76 1695 8000 0112 3456 7890 219', bic:'QNTOFRP1XXX'}, {label:'Compte pro — BNP Paribas', bank:'BNP Paribas', iban:'FR76 3000 4002 8800 0123 4567 891', bic:'BNPAFRPPXXX'}, {label:'Compte séquestre', bank:'Crédit Mutuel', iban:'FR76 1027 8060 0100 0204 5670 155', bic:'CMCIFR2AXXX'} ];
-  rosterInfoRaw = { 'CAMILLE ORSINI':{ville:'Lyon, France', phone:'+33 6 12 48 90 33', email:'camille.orsini@gmail.com', address:'14 rue de la République, 69002 Lyon', siren:'901 234 567', birth:'12/03/1998', exclu:true, commission:'20%'}, 'THÉO RIVIÈRE':{ville:'Paris, France', phone:'+33 6 70 11 22 84', email:'theo.riviere@gmail.com', address:'8 rue Oberkampf, 75011 Paris', siren:'880 556 102', birth:'24/09/1996', exclu:true, commission:'15%'}, 'LÉNA MARCHAND':{ville:'Bordeaux, France', phone:'+33 6 22 41 09 57', email:'lena.marchand@gmail.com', address:"3 cours de l'Intendance, 33000 Bordeaux", siren:'—', birth:'05/01/2000', exclu:false, commission:'18%'} };
+  rosterInfoRaw = {};
 
-  mediaKitRaw = {
-    0:{ bio:'Camille — voix mode & beauté de référence à Lyon. Contenus éditoriaux léchés, audience féminine ultra-engagée et fort taux de conversion sur le luxe accessible.', age:'25–34 ans', agePct:'61%', gender:'Femmes 78% · Hommes 22%', geo:['Paris','Lyon','Genève'], brands:['Sephora','Dior Beauty','Sézane','Galeries Lafayette'], formats:[{label:'Reel Instagram',price:'2 200 €'},{label:'Story (×3)',price:'850 €'},{label:'Post feed',price:'1 500 €'},{label:'Pack campagne',price:'5 500 €'}] },
-    1:{ bio:'Théo — créateur gaming & tech, communauté Twitch fidèle et hyper réactive. Idéal pour lancements produit, setups et placements longue durée.', age:'18–24 ans', agePct:'54%', gender:'Hommes 71% · Femmes 29%', geo:['Paris','Lille','Montréal'], brands:['Logitech','Nvidia','Red Bull'], formats:[{label:'Live sponsorisé',price:'3 000 €'},{label:'Vidéo YouTube',price:'2 600 €'},{label:'Short',price:'900 €'},{label:'Pack stream',price:'7 000 €'}] },
-    3:{ bio:'Inès — beauté & skincare sur TikTok, formats courts viraux et démonstrations produit à très fort taux d’engagement.', age:'18–24 ans', agePct:'63%', gender:'Femmes 84% · Hommes 16%', geo:['Paris','Marseille','Abidjan'], brands:['L’Oréal','Garnier','The Ordinary'], formats:[{label:'Vidéo TikTok',price:'1 400 €'},{label:'UGC',price:'700 €'},{label:'Story',price:'500 €'},{label:'Pack 3 vidéos',price:'3 600 €'}] },
-    5:{ bio:'Jade — food & UGC, contenus authentiques pensés pour la performance paid. Excellente conteuse produit.', age:'25–34 ans', agePct:'58%', gender:'Femmes 66% · Hommes 34%', geo:['Lyon','Paris','Bruxelles'], brands:['HelloFresh','Picard','Maille'], formats:[{label:'Vidéo UGC',price:'650 €'},{label:'Pack 3 UGC',price:'1 700 €'},{label:'Reel',price:'1 100 €'},{label:'Droits paid 6 mois',price:'+40%'}] }
-  };
+  mediaKitRaw = {};
 
   toneHex(tone, dark){
     return ({ signal:'#70FC8E', indigo: dark?'#5B82F8':'#3765F6', cyan: dark?'#9AA6B4':'#8590A1', amber: dark?'#5B82F8':'#3765F6' })[tone] || (dark?'#6E6E6E':'#8A8A85');
@@ -228,7 +146,7 @@ class Component extends DCLogic {
   creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
-  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','docs','customBanks','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab']; }
+  _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','docs','customBanks','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','portalTab','demoWiped']; }
   // session/auth keys stay device-local (never synced to the shared cloud blob)
   _slugName(name){ try{ return (name||'').split(' ')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,''); }catch(_){ return (name||'').split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g,''); } }
   _creatorCreds(name){ const u=this._slugName(name); return { email:u+'@ttp.com', pwd:u }; }
@@ -310,6 +228,26 @@ class Component extends DCLogic {
         const nri={};
         Object.keys(ri).forEach(k=>{ if(/^\d+$/.test(k)){ const nm=(this.rosterRaw[+k]||{}).name; if(nm) nri[nm]=Object.assign({}, nri[nm]||{}, ri[k]); } else { nri[k]=Object.assign({}, ri[k], nri[k]||{}); } });
         this.setState({ rosterInfo:nri });
+      }
+    }catch(e){}
+    // Purge UNIQUE des anciens créateurs de démonstration (Camille, Théo, Léna…)
+    // et de toutes les données qui leur étaient rattachées : l'utilisateur ne les a
+    // jamais ajoutés. On ne touche QUE ce qui correspond à ces noms — les créateurs
+    // et données réels de l'agence sont préservés. Ne s'exécute qu'une seule fois.
+    try{
+      if(!this.state.demoWiped){
+        const DEMO=new Set(this._demoCreatorNames||[]);
+        const isDemo=(nm)=>DEMO.has(String(nm||'').trim());
+        const upd={ demoWiped:true };
+        if(Array.isArray(this.rosterRaw)&&this.rosterRaw.length) this.rosterRaw=this.rosterRaw.filter(c=>!isDemo(c&&c.name));
+        if(Array.isArray(this.state.rosterData)) upd.rosterData=this.state.rosterData.filter(c=>!isDemo(c&&c.name));
+        if(this.state.rosterInfo){ const ri2=Object.assign({},this.state.rosterInfo); Object.keys(ri2).forEach(k=>{ if(isDemo(k)) delete ri2[k]; }); upd.rosterInfo=ri2; }
+        if(Array.isArray(this.state.briefItems)) upd.briefItems=this.state.briefItems.filter(b=>!isDemo(b&&(b.who||b.creator)));
+        if(Array.isArray(this.state.todoItems)) upd.todoItems=this.state.todoItems.filter(t=>!isDemo(t&&t.creator));
+        if(Array.isArray(this.state.ideasData)) upd.ideasData=this.state.ideasData.filter(x=>!isDemo(x&&x.creator));
+        if(Array.isArray(this.state.events)) upd.events=this.state.events.filter(e=>!isDemo(e&&e.who));
+        if(Array.isArray(this.state.debriefData)) upd.debriefData=this.state.debriefData.filter(d=>!isDemo(d&&d.creator));
+        this.setState(upd);
       }
     }catch(e){}
   }
@@ -611,6 +549,11 @@ class Component extends DCLogic {
 
   renderVals(){
     const dark = this.state.theme === 'dark';
+    // Roster vide (l'agence n'a encore ajouté aucun créateur) : objet créateur
+    // neutre pour qu'aucune vue qui suppose « au moins un créateur » ne plante.
+    const _EMPTY_CR = { name:'', handle:'', niche:'', plat:'', followers:'—', reach:'—', er:'—', ca:'—', tone:'cyan', status:'', trend:0, id:null };
+    const _crAt = (i)=> (i!=null && this.rosterRaw[i]) || _EMPTY_CR;
+    const _hasRoster = (this.rosterRaw||[]).length>0;
     const mobileNav = !!this.state.mobileNav;
     const navOpenCls = mobileNav ? ' nav-open' : '';
     const openMobileNav = () => this.setState({mobileNav:true});
@@ -697,8 +640,8 @@ class Component extends DCLogic {
     const closeDebrief = ()=>this.setState({debriefOpen:null});
     const niCreatorChips = [{name:'Toutes',val:null}].concat(this.rosterRaw.map(c=>({name:c.name.split(' ')[0],val:c.name}))).map(o=>({ name:o.name, style:'padding:6px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.niCreator===undefined?null:this.state.niCreator))===o.val?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const v=o.val;return ()=>this.setState({niCreator:v});})() }));
     const niStatusChips = ['\u00c0 explorer','En cours','Valid\u00e9e'].map(s=>({ label:s, style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+((this.state.niStatus||'\u00c0 explorer')===s?'background:var(--signal);color:var(--onsignal);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=s;return ()=>this.setState({niStatus:k});})() }));
-    const _meCr=(this.state.creatorId!=null?this.rosterRaw[this.state.creatorId]:null)||this.rosterRaw[0];
-    const myCreatorName = _meCr?_meCr.name:null;
+    const _meCr=(this.state.creatorId!=null?this.rosterRaw[this.state.creatorId]:null)||this.rosterRaw[0]||_EMPTY_CR;
+    const myCreatorName = (_meCr&&_meCr.name)?_meCr.name:null;
     const _ideaCycle=['À faire','En cours','Terminée'];
     const myIdeas = ideasItems.map((o,idx)=>({o,idx})).filter(x=>x.o.creator===myCreatorName).map(x=>{ const cur=x.o.status||'À faire'; const ni=_ideaCycle.indexOf(cur); const next=_ideaCycle[(ni+1)%_ideaCycle.length]; return { text:x.o.text, status:cur, fromCreator:x.o.source==='creator', dotStyle:dotS(ideaTone(cur),false), statusStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:5px 11px;border-radius:20px;white-space:nowrap;cursor:pointer;color:"+this.toneHex(ideaTone(cur),dark)+";background:"+this.toneHex(ideaTone(cur),dark)+"18;", cycleStatus:(()=>{const obj=x.o;return ()=>{ if(this._ideasTable && obj.id) this._dbUpdate('ideas', obj.id, {status:next}); this.setState(s=>({ ideasData:(s.ideasData||this.ideasRaw).map(z=> z===obj ? Object.assign({},z,{status:next}) : z) })); };})() }; });
 
@@ -845,7 +788,7 @@ class Component extends DCLogic {
 
     // ---- creator portal (me) ----
     const ci = this.state.creatorId;
-    const cr = (ci != null) ? this.rosterRaw[ci] : this.rosterRaw[0];
+    const cr = ((ci != null) ? this.rosterRaw[ci] : this.rosterRaw[0]) || _EMPTY_CR;
     const myEvents = events.filter(e => e.who === cr.name);
     const myAgenda = (myEvents.length ? myEvents : events.slice(0,3)).map(e => { const d=eventDeco(e); return { day:e.day, time:e.time, title:e.title, dotStyle:d.dotStyle, dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);' }; });
     const pTodoFilter = this.state.pTodoFilter || 'todo';
@@ -919,7 +862,7 @@ class Component extends DCLogic {
     const fmtEur = (n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
     const pCustom = this.state.priceCreator==='autre';
     const pci = pCustom ? -1 : (this.state.priceCreator||0);
-    const pcr = pCustom ? null : this.rosterRaw[pci];
+    const pcr = pCustom ? null : (this.rosterRaw[pci]||_EMPTY_CR);
     const pFollowers = pCustom ? (Number(String(this.state.priceFollowers||'').replace(/[^0-9]/g,''))||0) : (fnum[pci]||0);
     const pErf = pCustom ? (Number(String(this.state.priceER||'').replace(',','.').replace(/[^0-9.]/g,''))||0) : parseFloat(String(pcr.er).replace(',','.'));
     const rateMap = {post:9,reel:13,story:5,ugc:4,youtube:18}; const fmtLabel = {post:'Post Instagram',reel:'Reel',story:'Story (×3)',ugc:'UGC vidéo',youtube:'YouTube intégration'};
@@ -958,7 +901,7 @@ class Component extends DCLogic {
 
     // ===== CONTRACT GENERATOR =====
     const ctt = this.state.ctType || 'marque';
-    const ctci = this.state.ctCreator || 0; const ctcr = this.rosterRaw[ctci]; const ctName = ctcr.name;
+    const ctci = this.state.ctCreator || 0; const ctcr = this.rosterRaw[ctci]||_EMPTY_CR; const ctName = ctcr.name;
     const cBrand=this.state.ctBrand, cVal=this.state.ctValue, cComm=this.state.ctCommission, cDur=this.state.ctDuration, cDeliv=this.state.ctDeliverables;
     const ctExclLabel = this.state.ctExcl ? 'Oui · 30 jours' : 'Non';
     const ctBankI = this.state.ctBank||0; const allBanks = this.bankAccounts.concat(this.state.customBanks||[]); const ctBankSel = allBanks[ctBankI]||allBanks[0];
@@ -987,7 +930,7 @@ class Component extends DCLogic {
 
     // ===== CREATOR DETAIL (ROSTER) =====
     const rdi = this.state.rosterDetail; let rd = null;
-    if(rdi!=null){ const c=this.rosterRaw[rdi]; const fn=c.name.split(' ')[0];
+    if(rdi!=null && this.rosterRaw[rdi]){ const c=this.rosterRaw[rdi]; const fn=c.name.split(' ')[0];
       const rinv=this.invoiceRaw.filter(v=>v.party.indexOf(fn)>-1).map(v=>{const st=this.invStatus(v.status);return {ref:v.ref,party:v.party,amount:v.amount,date:v.date,statusLabel:st.label,dotStyle:dotS(st.tone,false),chipStyle:this.chip()};});
       const rtd=todoItems.map((t,i)=>({t,i})).filter(x=>x.t.creator===c.name).map(x=>mkTodo(x.t,x.i));
       const rbf=briefItems.filter(b=>b.who===c.name).map(b=>{const st=this.briefStatus(b.status);return {brand:b.brand,deliverables:b.deliverables,due:b.due,statusLabel:st.label,dotStyle:dotS(b.tone,false),chipStyle:this.chip()};});
@@ -1014,7 +957,7 @@ class Component extends DCLogic {
     const docCreatorChips = this.rosterRaw.map((c,i)=>({ name:c.name.split(' ')[0], initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,24), chipStyle:'display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:30px;cursor:pointer;font:600 11px \'Inter\',sans-serif;letter-spacing:.3px;'+(i===docCi?'background:var(--text);color:var(--bg);':'background:var(--surface);color:var(--text);border:1px solid var(--hair);'), pick:(()=>{const k=i;return ()=>this.setState({docCreator:k});})() }));
     const docTypeChips = Object.keys(docTypeMeta).map(k=>({ label:docTypeMeta[k].label, style:'padding:7px 13px;border-radius:18px;font:600 9px \'Inter\',sans-serif;letter-spacing:.4px;cursor:pointer;'+(k===docTy?'background:var(--signalsoft);color:var(--signaltext);':'background:var(--panel);color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({docType:kk});})() }));
     const agencyDocs = (docBase[docCi]||[]).map((d,idx)=>mkDoc(d,docCi,idx));
-    const docCreatorName = this.rosterRaw[docCi].name.split(' ')[0];
+    const docCreatorName = (this.rosterRaw[docCi]||_EMPTY_CR).name.split(' ')[0];
     const myCi = this.state.creatorId!=null?this.state.creatorId:0;
     const myDocs = (docBase[myCi]||[]).map((d,idx)=>mkDoc(d,myCi,idx));
 
@@ -1023,7 +966,7 @@ class Component extends DCLogic {
     const _mkFirst=this.rosterRaw.findIndex((_,i)=>!_mkDel[i]);
     let mkCi = this.state.mkCreator!=null?this.state.mkCreator:(_mkFirst>=0?_mkFirst:0);
     if(_mkDel[mkCi]) mkCi=(_mkFirst>=0?_mkFirst:0);   // si le créateur sélectionné a été retiré
-    const mkc = this.rosterRaw[mkCi]; const mkSeed = this.mediaKitRaw[mkCi]||{}; const mkFn=mkc.name.split(' ')[0];
+    const mkc = this.rosterRaw[mkCi]||_EMPTY_CR; const mkSeed = this.mediaKitRaw[mkCi]||{}; const mkFn=mkc.name.split(' ')[0];
     const _mkOv = (this.state.mediaKitData&&this.state.mediaKitData[mkCi])||{};   // overrides éditables
     const _mkGet = (k,def)=> (_mkOv[k]!==undefined&&_mkOv[k]!=='') ? _mkOv[k] : (mkSeed[k]||def);
     const _mkEdit = (k)=>(e)=>{ const v=e.target.value; this.setState(s=>{ const md=Object.assign({},s.mediaKitData); md[mkCi]=Object.assign({}, md[mkCi]||{}, {[k]:v}); return {mediaKitData:md}; }); };
@@ -1307,7 +1250,7 @@ class Component extends DCLogic {
       nbObjectifV:this.state.nbObjectif||'', onNbObjectif:(e)=>{const v=e.target.value;this.setState({nbObjectif:v});},
       briefFormTitle: this.state.editBrief?'Modifier le brief':'Nouveau brief',
       briefFormCta: this.state.editBrief?'ENREGISTRER':'CR\u00c9ER LE BRIEF',
-      addBrief:()=>{ const br=(this.state.nbBrand||'').trim(); if(!br)return; const ci=this.state.nbCreator||0; const nm=this.rosterRaw[ci].name; const tone=this.rosterRaw[ci].tone; const consignes=(this.state.nbConsignes||'').trim(); const budget=(this.state.nbBudget||'').trim()||'\u2014'; const objectif=(this.state.nbObjectif||'').trim()||'\u2014'; const deliverables=this.state.nbDeliv||'\u2014'; const due=this.state.nbDue||'\u2014'; const editKey=this.state.editBrief;
+      addBrief:()=>{ const br=(this.state.nbBrand||'').trim(); if(!br)return; const ci=this.state.nbCreator||0; const _bc=this.rosterRaw[ci]; if(!_bc){ toast('Ajoute d\'abord un créateur au roster'); return; } const nm=_bc.name; const tone=_bc.tone; const consignes=(this.state.nbConsignes||'').trim(); const budget=(this.state.nbBudget||'').trim()||'\u2014'; const objectif=(this.state.nbObjectif||'').trim()||'\u2014'; const deliverables=this.state.nbDeliv||'\u2014'; const due=this.state.nbDue||'\u2014'; const editKey=this.state.editBrief;
         if(editKey){ const it=(this.state.briefItems||this.briefRaw).find(x=>x.brand===editKey); const patch={brand:br, creator:nm, who:nm, tone, deliverables, due, consignes, budget, objectif}; if(this._briefsTable && it && it.id) this._dbUpdate('briefs', it.id, patch); this.setState(s=>({ briefItems:(s.briefItems||this.briefRaw).map(x=> x.brand===editKey ? Object.assign({},x,patch) : x), showBriefForm:false, editBrief:null, briefOpen:br, nbBrand:'', nbDeliv:'', nbDue:'', nbConsignes:'', nbBudget:'', nbObjectif:'' })); toast('Brief modifi\u00e9 \u2713'); return; }
         const item={brand:br, creator:nm, deliverables, due, status:'attente', tone:tone, who:nm, consignes, budget, objectif}; const cur=(this.state.briefItems||this.briefRaw).slice(); cur.unshift(item); this.setState({briefItems:cur, showBriefForm:false, nbBrand:'', nbDeliv:'', nbDue:'', nbConsignes:'', nbBudget:'', nbObjectif:''}); if(this._briefsTable){ this._dbInsert('briefs',{brand:item.brand,creator:item.creator,who:item.who,deliverables:item.deliverables,due:item.due,status:item.status,tone:item.tone,consignes:item.consignes,budget:item.budget,objectif:item.objectif,sort_order:0}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
       briefRows, briefOpenObj, briefDetailOpen, briefListMode:!briefDetailOpen, closeBriefDetail,
