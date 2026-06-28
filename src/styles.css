@@ -130,6 +130,15 @@
     #dc-root .m-home-quick { grid-template-columns:repeat(5,1fr) !important; gap:7px !important; }
     #dc-root .m-home-quick > * { padding:13px 4px !important; min-width:0 !important; grid-column:auto !important; }
     #dc-root .m-home-quick > * span:last-child { font-size:8px !important; letter-spacing:0 !important; }
+    /* ---- CONTACTS list on phone: avatar + nom/rôle + tag on the top line,
+       email dropped to its own full-width line below (plus de chevauchement) ---- */
+    #dc-root .ct-row { flex-wrap:wrap !important; align-items:center !important; row-gap:7px; column-gap:10px !important; }
+    #dc-root .ct-row .ct-info { flex:1 1 0 !important; min-width:0; }
+    #dc-root .ct-row .ct-tag { flex-shrink:0; order:8; }
+    #dc-root .ct-row .ct-del { order:9; }
+    #dc-root .ct-row .ct-email { order:10; flex:1 1 100% !important; max-width:none !important;
+      padding-left:50px; font-size:12px !important; }
+    #dc-root .ct-row .ct-email:empty { display:none; }
     /* creator profil coordinates: single column on phone */
     #dc-root .m-prof-grid { grid-template-columns:1fr !important; }
     /* creator-portal picker: 2 columns on phone */
