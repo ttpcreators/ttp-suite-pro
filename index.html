@@ -817,7 +817,7 @@
         <div class="m-head" style="display:grid; grid-template-columns:2fr 0.9fr 1fr 2fr 0.7fr; gap:12px; padding:12px 16px; font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)"><span>CRÉATEUR</span><span style="text-align:right">ER</span><span style="text-align:right">REACH</span><span>TENDANCE</span><span style="text-align:right">△</span></div>
         <sc-for list="{{ engagement }}" as="c" hint-placeholder-count="8">
           <div class="m-row" style="display:grid; grid-template-columns:2fr 0.9fr 1fr 2fr 0.7fr; gap:12px; align-items:center; padding:11px 16px; border-radius:12px" style-hover="background:var(--rowhover)">
-            <div style="display:flex; align-items:center; gap:10px; min-width:0"><div style="{{ c.avatarStyle }}">{{ c.initials }}</div><span style="font:600 12px 'Inter',sans-serif; color:var(--text); letter-spacing:.3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ c.name }}</span></div>
+            <div onclick="{{ c.open }}" style="display:flex; align-items:center; gap:10px; min-width:0; cursor:pointer"><div style="{{ c.avatarStyle }}">{{ c.initials }}</div><span style="font:600 12px 'Inter',sans-serif; color:var(--text); letter-spacing:.3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-decoration:underline; text-decoration-color:var(--hair)">{{ c.name }}</span></div>
             <span data-l="ER" style="font:600 12px 'Inter',sans-serif; color:var(--text); text-align:right">{{ c.er }}</span>
             <span data-l="REACH" style="font:500 12px 'Inter',sans-serif; color:var(--muted); text-align:right">{{ c.reach }}</span>
             <span data-l="TENDANCE" style="display:flex; align-items:flex-end; gap:2px; height:24px"><sc-for list="{{ c.spark }}" as="s" hint-placeholder-count="10"><span style="{{ s.style }}"></span></sc-for></span>
@@ -1671,6 +1671,12 @@
         <div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:12px">{{ myStatsDetail }}</div>
       </div>
       </sc-if>
+      <sc-if value="{{ myStatsHasHistory }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:20px; padding:22px; margin-bottom:16px">
+        <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:12px">Historique de mes taux</div>
+        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ myStatsHistory }}" as="h" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:64px; flex-shrink:0; font:600 12px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+      </div>
+      </sc-if>
       <sc-if value="{{ myStatsNone }}" hint-placeholder-val="{{ false }}">
       <div style="background:var(--surface); border-radius:20px; padding:40px; text-align:center; font:400 12px 'Inter',sans-serif; color:var(--faint)">Aucune statistique pour le moment. Ton agence les met à jour depuis l'espace Engagement.</div>
       </sc-if>
@@ -1785,6 +1791,27 @@
         <div onclick="{{ closePreview }}" style="font:600 16px 'Inter',sans-serif; color:var(--faint); cursor:pointer; padding:0 4px">✕</div>
       </div>
       <div style="flex:1; background:var(--panel); min-height:0">{{ previewMedia }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- overlay : détail engagement d'un créateur (stats complètes + historique) -->
+  <sc-if value="{{ engDetailOpen }}" hint-placeholder-val="{{ false }}">
+  <div onclick="{{ closeEngDetail }}" style="position:fixed; inset:0; background:rgba(10,12,16,.55); z-index:90; display:flex; align-items:flex-start; justify-content:center; padding:40px 20px; overflow:auto">
+    <div onclick="{{ stopProp }}" style="width:min(720px,94vw); background:var(--surface); border-radius:20px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.3)">
+      <div style="display:flex; align-items:center; gap:12px; padding:20px 22px; border-bottom:1px solid var(--hair)"><div style="{{ engDetail.avatarStyle }}">{{ engDetail.initials }}</div><div style="flex:1; min-width:0"><div style="font:600 16px 'Inter',sans-serif; color:var(--text)">{{ engDetail.name }}</div><div style="font:400 11px 'Inter',sans-serif; color:var(--faint); margin-top:2px">{{ engDetail.savedAt }}</div></div><div onclick="{{ closeEngDetail }}" style="font:600 16px 'Inter',sans-serif; color:var(--faint); cursor:pointer; padding:0 4px">✕</div></div>
+      <div style="padding:22px">
+        <sc-if value="{{ engDetail.hasStats }}" hint-placeholder-val="{{ true }}">
+        <div style="background:var(--text); border-radius:16px; padding:18px 20px; color:var(--bg); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px"><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">TAUX D'ENGAGEMENT · {{ engDetail.platform }}</div><div style="font:500 11px 'Inter',sans-serif; color:var(--bg); opacity:.85; margin-top:6px">{{ engDetail.detail }}</div></div><div style="display:flex; align-items:baseline; gap:10px"><div style="font:700 32px 'Inter',sans-serif; letter-spacing:-1.5px">{{ engDetail.er }}</div><span style="font:600 9px 'Inter',sans-serif; background:var(--signal); color:#10141A; padding:5px 11px; border-radius:20px">{{ engDetail.verdict }}</span></div></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px"><sc-for list="{{ engDetail.rows }}" as="r" hint-placeholder-count="4"><div style="flex:1; min-width:110px; background:var(--panel); border-radius:12px; padding:12px 14px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint)">{{ r.label }}</div><div style="font:700 16px 'Inter',sans-serif; color:var(--text); margin-top:5px">{{ r.value }}</div></div></sc-for></div>
+        </sc-if>
+        <sc-if value="{{ engDetail.noStats }}" hint-placeholder-val="{{ false }}"><div style="background:var(--panel); border-radius:14px; padding:28px; text-align:center; font:400 12px 'Inter',sans-serif; color:var(--faint); margin-bottom:18px">Aucune mesure enregistrée pour ce créateur. Renseigne les chiffres dans le calculateur puis « Enregistrer ».</div></sc-if>
+        <div style="font:600 10px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin-bottom:10px">HISTORIQUE DES MESURES</div>
+        <sc-if value="{{ engDetail.hasHistory }}" hint-placeholder-val="{{ true }}">
+        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ engDetail.history }}" as="h" hint-placeholder-count="4"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="width:70px; flex-shrink:0; font:600 11px 'Inter',sans-serif; color:var(--text)">{{ h.er }}</div><div style="flex:1; min-width:0"><div style="font:500 11px 'Inter',sans-serif; color:var(--text)">{{ h.platform }} · {{ h.verdict }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ h.detail }}</div></div><div style="font:500 10px 'Inter',sans-serif; color:var(--faint); flex-shrink:0">{{ h.date }}</div></div></sc-for></div>
+        </sc-if>
+        <sc-if value="{{ engDetail.noStats }}" hint-placeholder-val="{{ false }}"><div style="font:400 11px 'Inter',sans-serif; color:var(--faint)">L'historique apparaîtra ici à chaque mesure enregistrée.</div></sc-if>
+      </div>
     </div>
   </div>
   </sc-if>
@@ -2160,7 +2187,7 @@ class Component extends DCLogic {
     // copy can't bring the old data back.
     try{ this._applySeeds(); }catch(e){}
   }
-  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null }; }
+  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null, statsHistory:r.stats_history||[] }; }
   // re-hydrate the in-memory roster from the persisted state (localStorage / cloud
   // blob). Without this, a refresh resets rosterRaw to the bundled seed and any
   // creator the user added is lost. rosterData is the durable source of truth.
@@ -2586,8 +2613,26 @@ class Component extends DCLogic {
     const rosterTab=(k,label)=>({ label, style:'padding:7px 13px;border-radius:9px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(rf===k?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const kk=k;return ()=>this.setState({rosterFilter:kk, rosterDetail:null});})() });
     const rosterTabs=[rosterTab('all','TOUS'),rosterTab('influence','INFLUENCE'),rosterTab('ugc','UGC')];
     const rosterCount = roster.length+' '+(rf==='ugc'?'UGC':(rf==='influence'?'influence':'représentés'));
-    const engagement = this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i}) => { const base=Math.round(parseFloat(c.er)); const spark=this.bars([40,55,48,62,58,72,66,80,76,90].map(v=>v*(0.7+base/12)).map(v=>Math.min(100,v)), this.toneHex(c.tone,dark), 3); return { name:c.name, er:c.er, reach:c.reach, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,30), spark, trend:(c.trend>0?'+':'')+c.trend+' pt', trendColor: c.trend>=0?greenText:redish, del:(()=>{const ii=i,nm=c.name,cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Retirer '+nm+' du roster ? La ligne disparaîtra de l\'engagement.'))return; this.rosterRaw=this.rosterRaw.filter((_,j)=>j!==ii); this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true, rosterDetail:null }); toast('Créateur retiré ✓'); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } };})() }; });
+    const engagement = this.rosterRaw.map((c,i)=>({c,i})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i}) => { const base=Math.round(parseFloat(c.er)); const spark=this.bars([40,55,48,62,58,72,66,80,76,90].map(v=>v*(0.7+base/12)).map(v=>Math.min(100,v)), this.toneHex(c.tone,dark), 3); return { name:c.name, er:c.er, reach:c.reach, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,30), spark, trend:(c.trend>0?'+':'')+c.trend+' pt', trendColor: c.trend>=0?greenText:redish, open:(()=>{const nm=c.name;return ()=>this.setState({engDetail:nm});})(), del:(()=>{const ii=i,nm=c.name,cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(!window.confirm('Retirer '+nm+' du roster ? La ligne disparaîtra de l\'engagement.'))return; this.rosterRaw=this.rosterRaw.filter((_,j)=>j!==ii); this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true, rosterDetail:null }); toast('Créateur retiré ✓'); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } };})() }; });
 
+    // ----- Détail engagement d'un créateur (clic sur un nom) : stats complètes + historique -----
+    const _edFmtN = (n)=>String(Math.round(Number(n)||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    const _edName = this.state.engDetail;
+    let engDetailObj = null;
+    if(_edName){ const c=this.rosterRaw.find(x=>x&&x.name===_edName);
+      if(c){ const st=c.stats||null; const hist=(c.statsHistory||[]);
+        engDetailObj = {
+          name:c.name, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,40),
+          hasStats:!!(st&&st.metrics), er:(st?st.er:'—'), platform:(st?st.platformLabel:'—'), verdict:(st?st.verdict:''),
+          savedAt:(st&&st.savedAt?('Mis à jour le '+st.savedAt):'Aucune mesure enregistrée'), detail:(st?st.detail:''),
+          rows:(st&&st.metrics?[{label:st.baseLabel,value:_edFmtN(st.base)}].concat(st.metrics.map(m=>({label:m.label,value:_edFmtN(m.value)}))):[]),
+          history: hist.map(h=>({ date:h.savedAt||'—', platform:h.platformLabel||'', er:h.er||'—', verdict:h.verdict||'', detail:h.detail||'' })),
+          hasHistory: hist.length>0, noStats:!(st&&st.metrics)
+        };
+      }
+    }
+    const engDetailOpen = engDetailObj!=null;
+    const closeEngDetail = ()=>this.setState({engDetail:null});
     const topCreators = this.rosterRaw.slice(0,4).map((c,i)=>({ name:c.name, ca:c.ca, rank:String(i+1).padStart(2,'0'), dotStyle:dotS(c.tone, c.status==='live'), open:goRoster }));
     const _aq = (this.state.activitySearch||'').trim().toLowerCase();
     const pipeline = this.pipeRaw.filter(p=> !_aq || (p.label+' '+p.amount).toLowerCase().includes(_aq)).map(p=>({ label:p.label, amount:p.amount, dotStyle:dotS(p.tone,false) }));
@@ -2711,6 +2756,9 @@ class Component extends DCLogic {
     const myStatsRows = myStatsHasDetail
       ? [{label:_myStats.baseLabel, value:_sfmt(_myStats.base)}].concat(_myStats.metrics.map(m=>({label:m.label, value:_sfmt(m.value)})))
       : [];
+    const _myStatsHist = (cr && cr.statsHistory) ? cr.statsHistory : [];
+    const myStatsHistory = _myStatsHist.map(h=>({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'—', detail:h.detail||'' }));
+    const myStatsHasHistory = _myStatsHist.length>0;
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
     const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); };
@@ -2733,7 +2781,7 @@ class Component extends DCLogic {
     // only meaningful relative to the right base. Sources: standard influencer
     // marketing benchmarks (2024-2026).
     const platCfg = {
-      instagram:{label:'Instagram', denom:'Abonnés', metrics:['Likes moyens','Commentaires','Partages','Enregistrements'], ratios:[0.82,0.07,0.06,0.05], formula:'(likes + commentaires + partages + enregistrements) ÷ abonnés × 100', viewBase:false, good:3, exc:6},
+      instagram:{label:'Instagram', denom:'Impressions 30j', metrics:['Likes moyens','Commentaires','Partages','Enregistrements'], ratios:[0.82,0.07,0.06,0.05], formula:'(likes + commentaires + partages + enregistrements) ÷ impressions × 100', viewBase:true, good:3, exc:6},
       tiktok:{label:'TikTok', denom:'Vues moyennes', metrics:['Likes','Commentaires','Partages'], ratios:[0.78,0.08,0.14], formula:'(likes + commentaires + partages) ÷ vues × 100', viewBase:true, good:5, exc:9},
       youtube:{label:'YouTube', denom:'Vues moyennes', metrics:['Likes','Commentaires','Partages'], ratios:[0.86,0.10,0.04], formula:'(likes + commentaires + partages) ÷ vues × 100', viewBase:true, good:4, exc:8},
       twitch:{label:'Twitch', denom:'Spectateurs moyens', metrics:['Messages chat','Nouveaux abonnés','Bits / dons'], ratios:[0.8,0.12,0.08], formula:'(messages + abonnés + dons) ÷ spectateurs × 100', viewBase:true, good:8, exc:15},
@@ -2769,11 +2817,13 @@ class Component extends DCLogic {
       if(engCustom || !ecr){ toast('Sélectionne un créateur du roster'); return; }
       if(!(baseVal>0) || !(interSum>0)){ toast('Renseigne d’abord les chiffres'); return; }
       const erStr = erCalc.toFixed(1).replace('.',',')+'%';
-      const statsObj = { platform:pl, platformLabel:cfg.label, base:baseVal, baseLabel:cfg.denom, metrics:cfg.metrics.map((lab,i)=>({label:lab, value:mVals[i]})), er:erStr, verdict:engVerdict, formula:cfg.formula, detail:engCalcDetail, savedAt:new Date().toLocaleDateString('fr-FR') };
-      this.rosterRaw[eci] = Object.assign({}, this.rosterRaw[eci], { er:erStr, stats:statsObj });
+      const statsObj = { platform:pl, platformLabel:cfg.label, base:baseVal, baseLabel:cfg.denom, metrics:cfg.metrics.map((lab,i)=>({label:lab, value:mVals[i]})), er:erStr, verdict:engVerdict, formula:cfg.formula, detail:engCalcDetail, savedAt:new Date().toLocaleDateString('fr-FR'), savedAtTs:Date.now() };
+      const _prevHist = (this.rosterRaw[eci]&&this.rosterRaw[eci].statsHistory)||[];
+      const _newHist = [statsObj].concat(_prevHist).slice(0,30);   // garde l'historique (30 dernières mesures)
+      this.rosterRaw[eci] = Object.assign({}, this.rosterRaw[eci], { er:erStr, stats:statsObj, statsHistory:_newHist });
       this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true });
       const row=this.rosterRaw[eci];
-      if(this._sb && row && row.id){ try{ this._sb.from('creators').update({ er:erStr, stats:statsObj }).eq('id', row.id).then(({error})=>{ if(error) console.warn('[eng] save', error.message); }); }catch(_){} }
+      if(this._sb && row && row.id){ try{ this._sb.from('creators').update({ er:erStr, stats:statsObj, stats_history:_newHist }).eq('id', row.id).then(({error})=>{ if(error) console.warn('[eng] save', error.message); }); }catch(_){} }
       try{ this._persistNow(); }catch(_){}
       toast('Stats enregistrées et envoyées à '+ecr.name.split(' ')[0]+' ✓');
     };
@@ -3233,6 +3283,7 @@ class Component extends DCLogic {
       engChips, engPlatforms, engInputs, engFormula:cfg.formula, engCalcDetail, engPlatformLabel:cfg.label, engEr:erCalc.toFixed(1).replace('.',',')+'%', engVerdict, engVerdictStyle:"padding:5px 11px;border-radius:20px;font:600 9px 'Inter',sans-serif;background:"+this.toneHex(evTone,dark)+";color:"+(evTone==='signal'?'#10141A':'#FFFFFF')+";",
       engSave, engSaveLabel, engSaveHint, engSaveDisabled:engCustom,
       engAvgEr, engReachCumul, engBestEr, engBestErName,
+      engDetailOpen, engDetail:engDetailObj, closeEngDetail,
       priceChips, priceFormatSteppers, priceLines, priceHasLines:priceLines.length>0,
       priceSubtotalV:fmtEur(pSubtotal), priceTotalV:fmtEur(pTotal), priceMinV:fmtEur(pMin),
       priceCustom:pCustom, priceFollowersV:this.state.priceFollowers||'', onPriceFollowers:(e)=>{const v=e.target.value;this.setState({priceFollowers:v});}, priceERV:this.state.priceER||'', onPriceER:(e)=>{const v=e.target.value;this.setState({priceER:v});}, priceCustomNameV:this.state.priceCustomName||'', onPriceCustomName:(e)=>{const v=e.target.value;this.setState({priceCustomName:v});},
@@ -3369,7 +3420,7 @@ class Component extends DCLogic {
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
-      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
+      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistory, myStatsHasHistory, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
       cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',

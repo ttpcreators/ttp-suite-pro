@@ -44,6 +44,7 @@ alter table public.creators add column if not exists birth text;
 alter table public.creators add column if not exists exclu boolean default false;
 alter table public.creators add column if not exists commission text;
 alter table public.creators add column if not exists stats jsonb;
+alter table public.creators add column if not exists stats_history jsonb;
 
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
