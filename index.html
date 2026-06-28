@@ -1452,6 +1452,7 @@
             <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ a.email }}</div><div style="display:flex; align-items:center; gap:8px; margin-top:3px"><span style="font:400 11px 'Inter',sans-serif; color:var(--faint)">{{ a.creator }}</span><span style="font:600 11px 'Inter',sans-serif; color:var(--muted); letter-spacing:.5px">· {{ a.pwdDisplay }}</span></div></div>
             <span onclick="{{ a.pwdToggle }}" title="Voir / masquer le mot de passe" style="flex-shrink:0; font:600 9px 'Inter',sans-serif; letter-spacing:.4px; color:var(--signaltext); cursor:pointer; padding:5px 10px; border-radius:8px; background:var(--signalsoft)">👁 {{ a.pwdToggleLabel }}</span>
             <span onclick="{{ a.copyPwd }}" title="Copier le mot de passe" style="flex-shrink:0; font:600 9px 'Inter',sans-serif; color:var(--faint); cursor:pointer; padding:5px 9px; border-radius:8px; border:1px solid var(--hair)" style-hover="color:var(--text)">⧉</span>
+            <sc-if value="{{ a.cloudShow }}" hint-placeholder-val="{{ true }}"><span title="Statut du compte base de données" style="{{ a.cloudStyle }}">{{ a.cloudLabel }}</span></sc-if>
             <span style="{{ a.roleStyle }}">{{ a.roleLabel }}</span>
             <span onclick="{{ a.del }}" title="Supprimer l'accès" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
           </div>
@@ -3283,30 +3284,47 @@ class Component extends DCLogic {
       ncoPhoneV:this.state.ncoPhone||'', onNcoPhone:_ncoField('ncoPhone'),
       // ===== ACCÈS (gestion des comptes créateurs / employés) =====
       vAcces: this.state.view==='acces',
-      accessList: (this.state.accessAccounts||[]).map((a,i)=>({ email:a.email, roleLabel:(a.role==='creator'?'Créateur':'Agence / Équipe'), creator:a.creator||'', dotStyle:dotS(a.role==='creator'?'cyan':'signal',false), roleStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 10px;border-radius:20px;white-space:nowrap;color:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+";background:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+"18;",
+      accessList: (this.state.accessAccounts||[]).map((a,i)=>{ const _cl=a.cloud; const _ci=_cl==='ok'?{t:'✓ Cloud',c:'signal'}:_cl==='pending'?{t:'… création',c:'cyan'}:_cl==='conflict'?{t:'⚠ Mot de passe',c:'indigo'}:_cl==='error'?{t:'⚠ Local seul',c:'indigo'}:_cl==='local'?{t:'Local',c:'cyan'}:null; return ({ email:a.email, roleLabel:(a.role==='creator'?'Créateur':'Agence / Équipe'), creator:a.creator||'', cloudShow:!!_ci, cloudLabel:_ci?_ci.t:'', cloudStyle:_ci?("font:600 8px 'Inter',sans-serif;letter-spacing:.4px;padding:4px 9px;border-radius:20px;white-space:nowrap;color:"+this.toneHex(_ci.c,dark)+";background:"+this.toneHex(_ci.c,dark)+"18;"):'', dotStyle:dotS(a.role==='creator'?'cyan':'signal',false), roleStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:4px 10px;border-radius:20px;white-space:nowrap;color:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+";background:"+this.toneHex(a.role==='creator'?'cyan':'signal',dark)+"18;",
         pwdShown: this.state.acReveal===a.email, pwdDisplay: (this.state.acReveal===a.email ? (a.pwd||'—') : '••••••••'), pwdToggleLabel: (this.state.acReveal===a.email?'Masquer':'Voir'),
         pwdToggle:(()=>{const em=a.email;return ()=>this.setState(s=>({ acReveal: s.acReveal===em?null:em }));})(),
         copyPwd:(()=>{const pw=a.pwd||'';return ()=>{ if(!pw)return; try{ if(navigator.clipboard) navigator.clipboard.writeText(pw).catch(()=>{}); }catch(_){} toast('Mot de passe copié'); };})(),
-        del:(()=>{const ii=i,em=a.email;return ()=>{ if(!window.confirm('Supprimer l\'accès '+em+' ?'))return; this.setState(s=>({ accessAccounts:(s.accessAccounts||[]).filter((_,j)=>j!==ii) })); };})() })),
+        del:(()=>{const ii=i,em=a.email;return ()=>{ if(!window.confirm('Supprimer l\'accès '+em+' ?'))return; this.setState(s=>({ accessAccounts:(s.accessAccounts||[]).filter((_,j)=>j!==ii) })); };})() }); }),
       accessEmpty: (this.state.accessAccounts||[]).length===0,
       acEmailV:this.state.acEmail||'', onAcEmail:(e)=>{const v=e.target.value;this.setState({acEmail:v});},
       acPwdV:this.state.acPwd||'', onAcPwd:(e)=>{const v=e.target.value;this.setState({acPwd:v});},
       acRoleCreator:(this.state.acRole||'creator')==='creator', acRoleAgency:(this.state.acRole||'creator')==='agency',
       acRoleChips:[['creator','Créateur'],['agency','Agence / Employé']].map(p=>({ label:p[1], style:'padding:9px 15px;border-radius:11px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+((this.state.acRole||'creator')===p[0]?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({acRole:k});})() })),
       acCreatorChips: this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>({ name:c.name.split(' ')[0], full:c.name, style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.acCreator||(this.rosterRaw[0]||{}).name))===c.name?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const nm=c.name;return ()=>this.setState({acCreator:nm});})() })),
-      addAccess:()=>{ const email=(this.state.acEmail||'').trim().toLowerCase(); const pwd=(this.state.acPwd||'').trim(); if(!email||!pwd){ toast('Email et mot de passe requis'); return; } const role=this.state.acRole||'creator'; const creator= role==='creator' ? (this.state.acCreator||(this.rosterRaw[0]||{}).name||null) : null; if((this.state.accessAccounts||[]).some(a=>String(a.email||'').toLowerCase()===email)){ toast('Cet email a déjà un accès'); return; }
-        // 1) enregistre l'accès localement (actif immédiatement) + relie le portail du créateur
-        this.setState(s=>{ const upd={ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator}], acEmail:'', acPwd:'' }; if(role==='creator' && creator){ const ri=Object.assign({},s.rosterInfo); ri[creator]=Object.assign({}, this.rosterInfoRaw[creator]||{}, ri[creator]||{}, {email}); upd.rosterInfo=ri; } return upd; });
-        toast('Accès créé ✓ — le portail est prêt');
-        // 2) crée le VRAI compte Supabase via un client jetable (pour ne pas remplacer
-        //    la session agence en cours), avec rôle + créateur en métadonnées : le
-        //    trigger handle_new_user crée alors le profil rattaché → isolation par créateur.
+      addAccess: async () => {
+        const email=(this.state.acEmail||'').trim().toLowerCase(); const pwd=(this.state.acPwd||'').trim();
+        if(!email||!pwd){ toast('Email et mot de passe requis'); return; }
+        if(pwd.length<6){ toast('Mot de passe trop court (6 caractères minimum)'); return; }
+        const role=this.state.acRole||'creator';
+        const creator= role==='creator' ? (this.state.acCreator||(this.rosterRaw[0]||{}).name||null) : null;
+        if(role==='creator' && !creator){ toast('Choisis le créateur rattaché'); return; }
+        if((this.state.accessAccounts||[]).some(a=>String(a.email||'').toLowerCase()===email)){ toast('Cet email a déjà un accès'); return; }
+        // 1) enregistre l'accès localement (actif côté agence) + relie le portail du créateur
+        this.setState(s=>{ const upd={ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator,cloud:'pending'}], acEmail:'', acPwd:'' }; if(role==='creator' && creator){ const ri=Object.assign({},s.rosterInfo); ri[creator]=Object.assign({}, this.rosterInfoRaw[creator]||{}, ri[creator]||{}, {email}); upd.rosterInfo=ri; } return upd; });
+        // 2) crée le VRAI compte Supabase via un client jetable (pour ne pas remplacer la
+        //    session agence en cours), rôle + créateur en métadonnées : le trigger
+        //    handle_new_user crée le profil rattaché → isolation par créateur. On ATTEND
+        //    la réponse et on affiche un statut clair (le créateur sait s'il peut se connecter).
+        const setCloud=(st)=>this.setState(s=>({ accessAccounts:(s.accessAccounts||[]).map(a=> String(a.email||'').toLowerCase()===email ? Object.assign({},a,{cloud:st}) : a) }));
         try{
           if(window.supabase && window.__SB_URL__ && window.__SB_KEY__){
             const tmp=window.supabase.createClient(window.__SB_URL__, window.__SB_KEY__, { auth:{ persistSession:false, autoRefreshToken:false, storageKey:'ttp_signup_tmp' } });
-            tmp.auth.signUp({ email, password:pwd, options:{ data:{ role, creator_name:creator } } }).then(({error})=>{ if(error){ console.warn('[supabase] signup:', error.message); toast('Accès local OK · Supabase : '+error.message); } else { toast('Compte Supabase créé ✓ (confirme l\'email)'); } }).catch(e=>console.warn('[supabase] signup failed', e));
-          }
-        }catch(e){ console.warn('[supabase] signup setup', e); }
+            const { error } = await tmp.auth.signUp({ email, password:pwd, options:{ data:{ role, creator_name:creator } } });
+            if(!error){ setCloud('ok'); toast('Compte créé ✓ — '+(creator||'la personne')+' peut se connecter de partout'); }
+            else if(/already|registered|exist/i.test(error.message||'')){
+              // email déjà inscrit : on vérifie que le mot de passe saisi ouvre bien ce compte
+              const { error: e2 } = await tmp.auth.signInWithPassword({ email, password:pwd });
+              if(!e2){ setCloud('ok'); toast('Ce compte existait déjà ✓ — identifiants valides, connexion OK'); }
+              else { setCloud('conflict'); toast('⚠ Cet email a déjà un compte avec un AUTRE mot de passe — supprime-le dans Supabase ou change d\'email'); }
+            }
+            else { setCloud('error'); console.warn('[supabase] signup:', error.message); toast('Accès local OK · cloud : '+error.message); }
+            try{ await tmp.auth.signOut(); }catch(_){}
+          } else { setCloud('local'); toast('Accès créé (mode local — base non connectée)'); }
+        }catch(e){ setCloud('error'); console.warn('[supabase] signup failed', e); toast('Accès local OK · cloud indisponible'); }
       },
       calLabel, prevMonth, nextMonth,
       todayChip: (['DIM','LUN','MAR','MER','JEU','VEN','SAM'][new Date(_todayY,_todayMo,_todayDay).getDay()])+' '+_todayDay+' '+_moNames[_todayMo].toUpperCase(),
@@ -3471,6 +3489,9 @@ class Component extends DCLogic {
                 this.rosterRaw.forEach((c,i)=>{ const seed=((this.rosterInfoRaw[c.name]||{}).email||''); const ov=((this.state.rosterInfo&&this.state.rosterInfo[c.name])||{}).email; const em=String(ov||seed||'').toLowerCase().trim(); if(em && em===uemail){ role='creator'; creatorId=i; creatorName=c.name; } });
                 // optional fallback: a profiles table if it exists
                 if(!role){ try{ const r=await this._sb.from('profiles').select('role,creator_name').eq('user_id',data.user.id).maybeSingle(); const prof=r&&r.data; if(prof){ role=prof.role; if(role==='creator'){ creatorName=prof.creator_name||null; const j=this.rosterRaw.findIndex(c=>c.name===prof.creator_name); creatorId=j>=0?j:0; } } }catch(_){} }
+                // dernier recours : métadonnées du compte (présentes dès l'inscription),
+                // robuste même si le profil n'a pas (encore) été créé par le trigger.
+                if(!role){ try{ const md=(data.user.user_metadata)||{}; if(md.role){ role=md.role; if(role==='creator'){ creatorName=md.creator_name||creatorName||null; const j=this.rosterRaw.findIndex(c=>c.name===md.creator_name); creatorId=j>=0?j:0; } } }catch(_){} }
               }
               if(!role){ try{ await this._sb.auth.signOut(); }catch(_){} this.setState({ loginError:'Compte non rattaché. Ajoute cet email à un créateur du Roster (ou connecte-toi en agence).' }); return; }
               this._authReal=true;
