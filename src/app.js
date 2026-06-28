@@ -1103,7 +1103,10 @@ class Component extends DCLogic {
     // ===== CONTRACT GENERATOR =====
     const ctt = this.state.ctType || 'marque';
     const ctci = this.state.ctCreator || 0; const ctcr = this.rosterRaw[ctci]||_EMPTY_CR; const ctName = ctcr.name;
-    const cBrand=this.state.ctBrand, cVal=this.state.ctValue, cComm=this.state.ctCommission, cDur=this.state.ctDuration, cDeliv=this.state.ctDeliverables;
+    // commission RÉELLE du créateur sélectionné (fiche roster), repli sur le champ saisi puis 20%
+    const _ctInfo = Object.assign({}, this.rosterInfoRaw[ctName]||{}, (this.state.rosterInfo&&this.state.rosterInfo[ctName])||{});
+    const ctCreatorComm = (String(_ctInfo.commission||'').replace(/[^0-9.]/g,'')) || (String(this.state.ctCommission||'').replace(/[^0-9.]/g,'')) || '20';
+    const cBrand=this.state.ctBrand, cVal=this.state.ctValue, cComm=ctCreatorComm, cDur=this.state.ctDuration, cDeliv=this.state.ctDeliverables;
     const ctExclLabel = this.state.ctExcl ? 'Oui · 30 jours' : 'Non';
     const ctBankI = this.state.ctBank||0; const allBanks = this.bankAccounts.concat(this.state.customBanks||[]); const ctBankSel = allBanks[ctBankI]||allBanks[0];
     const ctUseCo = !!this.state.ctUseCompany;
@@ -1112,7 +1115,7 @@ class Component extends DCLogic {
     const ctTitle = ctt==='marque'?'Contrat de partenariat commercial':(ctt==='repr'?'Contrat de représentation':'Cession de droits — UGC');
     let ctParties, ctTerms;
     const payTerms = [{l:'Compte de réception', v:ctBankSel.bank}, {l:'IBAN', v:ctBankSel.iban}, {l:'Modalités', v:'Virement · 30 j fin de mois'}, {l:'TVA', v: ctUseCo? (coVat?('Assujettie · '+coVat):'20% (autoliquidation UE)') : 'Non assujetti (art. 293 B CGI)'}];
-    if(ctt==='marque'){ ctParties='ENTRE '+(cBrand||'[Annonceur]')+' (l\u2019Annonceur) ET '+ctName+', représenté(e) par TTP Agency (l\u2019Agent).'+coLine; ctTerms=[{l:'Objet',v:'Campagne '+(cBrand||'—')},{l:'Livrables',v:cDeliv||'—'},{l:'Montant',v:cVal||'—'},{l:'Exclusivité',v:ctExclLabel},{l:'Durée',v:cDur||'—'},{l:'Commission TTP',v:'20% du montant'}].concat(payTerms); }
+    if(ctt==='marque'){ ctParties='ENTRE '+(cBrand||'[Annonceur]')+' (l\u2019Annonceur) ET '+ctName+', représenté(e) par TTP Agency (l\u2019Agent).'+coLine; ctTerms=[{l:'Objet',v:'Campagne '+(cBrand||'—')},{l:'Livrables',v:cDeliv||'—'},{l:'Montant',v:cVal||'—'},{l:'Exclusivité',v:ctExclLabel},{l:'Durée',v:cDur||'—'},{l:'Commission TTP',v:ctCreatorComm+'% du montant'}].concat(payTerms); }
     else if(ctt==='repr'){ ctParties='ENTRE '+ctName+' (le Créateur) ET TTP Agency (l\u2019Agent), pour la gestion de sa carrière.'+coLine; ctTerms=[{l:'Objet',v:'Représentation exclusive'},{l:'Commission',v:(cComm||'20')+'%'},{l:'Exclusivité',v:ctExclLabel},{l:'Durée',v:cDur||'—'},{l:'Périmètre',v:'Négo · contrats · facturation'}].concat(payTerms); }
     else { ctParties='ENTRE '+(cBrand||'[Client]')+' (le Client) ET '+ctName+' (Créateur UGC), via TTP Agency.'+coLine; ctTerms=[{l:'Objet',v:'Contenus UGC pour '+(cBrand||'—')},{l:'Livrables',v:cDeliv||'—'},{l:'Montant',v:cVal||'—'},{l:'Cession de droits',v:'12 mois · paid media'},{l:'Exclusivité',v:ctExclLabel},{l:'Durée',v:cDur||'—'}].concat(payTerms); }
     const ctClauses = [
@@ -1276,7 +1279,9 @@ class Component extends DCLogic {
     const _sumInv = (st)=>_invAll.filter(v=>v.status===st).reduce((a,v)=>a+_eur(v.amount),0);
     const _cntInv = (st)=>_invAll.filter(v=>v.status===st).length;
     const finEncaisse=_sumInv('payee'), finAttente=_sumInv('attente'), finRetard=_sumInv('retard');
-    const finCommission=20;                                   // commission agence (%)
+    // commission agence (%) = moyenne réelle des commissions du roster (repli 20%)
+    const _commNums = this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>{ const inf=Object.assign({},this.rosterInfoRaw[c.name]||{}, (this.state.rosterInfo&&this.state.rosterInfo[c.name])||{}); return Number(String(inf.commission||'').replace(/[^0-9.]/g,''))||0; }).filter(n=>n>0);
+    const finCommission = _commNums.length ? Math.round(_commNums.reduce((a,b)=>a+b,0)/_commNums.length) : 20;
     const finReverse=Math.round(finEncaisse*(1-finCommission/100));
     const finTotalFacture=finEncaisse+finAttente+finRetard;
     const _fmtE=(n)=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' €';
@@ -1308,6 +1313,13 @@ class Component extends DCLogic {
     const objMargeVal = String(finCommission)+'%';
     const objMargeSub = finMarge>0 ? (_fmtE(finMarge)+' encaissés') : 'commission agence';
     const objMargeBarStyle = 'width:'+Math.max(0,Math.min(100,finCommission))+'%;height:100%;background:var(--cyan);border-radius:5px;';
+    // ===== REPORTING COMMISSION / CA — par créateur + totaux (top earners) =====
+    const _eurR=(s)=>Number(String(s||'').replace(/[^0-9]/g,''))||0;
+    const commissionReport = this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>{ const inf=Object.assign({},this.rosterInfoRaw[c.name]||{}, (this.state.rosterInfo&&this.state.rosterInfo[c.name])||{}); const comm=Number(String(inf.commission||'').replace(/[^0-9.]/g,''))||0; const ca=_eurR(c.ca); const earned=Math.round(ca*comm/100); return { name:c.name, first:c.name.split(' ')[0], initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,30), caLabel:c.ca||'—', commLabel:comm?comm+'%':'—', earnedLabel:_fmtE(earned), _earned:earned, _ca:ca }; }).sort((a,b)=>b._earned-a._earned);
+    const _commTot=commissionReport.reduce((a,r)=>a+r._earned,0); const _caTot=commissionReport.reduce((a,r)=>a+r._ca,0);
+    const commissionTotal=_fmtE(_commTot); const commissionCaTotal=_fmtE(_caTot);
+    const commissionTopName = commissionReport[0]?commissionReport[0].first:'—';
+    const commissionReportEmpty = commissionReport.length===0;
     // ===== DASHBOARD ACTIVITY — biggest live deal + first overdue invoice + growth =====
     const _activeInv = _invAll.filter(v=>v.status==='attente'||v.status==='payee');
     const _bigDeal = _activeInv.slice().sort((a,b)=>_eur(b.amount)-_eur(a.amount))[0] || _invAll[0] || {amount:'—',party:'—'};
@@ -1424,7 +1436,7 @@ class Component extends DCLogic {
       genMediaPdf:()=>{ this._printPreview('Media kit — '+mk.name, 'mediakit'); },
       sendCanva:()=>toast('Envoyé vers Canva ✓'),
       genContractPdf:()=>{ this._printPreview(ctTitle, 'contract'); },
-      sendSignature:()=>toast('Envoyé pour signature ✓'),
+      sendSignature:()=>{ const _info=Object.assign({}, this.rosterInfoRaw[ctName]||{}, (this.state.rosterInfo&&this.state.rosterInfo[ctName])||{}); const to=String(_info.email||_info.emailPro||'').trim(); const body=ctTitle+'\n\n'+ctParties+'\n\n'+ctTerms.map(t=>'• '+t.l+' : '+t.v).join('\n')+'\n\nMerci de retourner ce document daté et signé.\n— TTP Agency'; const subj='Contrat à signer — '+ctTitle+(cBrand?(' · '+cBrand):''); if(to){ try{ window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body); toast('Email de signature préparé ✓'); return; }catch(_){} } try{ if(navigator.clipboard) navigator.clipboard.writeText(body); }catch(_){} toast('Contrat copié — ajoute l’email du créateur dans le Roster'); },
       editProfil:()=>toast('Édition du profil bientôt disponible'), contactAgent:()=>{ try{ window.location.href='mailto:marc@ttpcreators.pro?subject='+encodeURIComponent('Contact — '+(cr?cr.name:'créateur')); }catch(_){ toast('marc@ttpcreators.pro'); } },
       dashMore:()=>toast('Activité à jour ✓'), actFiltersOpen: this.state.actFiltersOpen!==false, toggleActFilters:()=>this.setState(s=>({actFiltersOpen: s.actFiltersOpen===false})),
       showDealsChip:!this.state.hideDeals, showBriefsChip:!this.state.hideBriefs,
@@ -1676,6 +1688,7 @@ class Component extends DCLogic {
       paidValue: _fmtE(finReverse*_perF[_per]),
       objMonthlyPct: finObjPct+'%', margePct: String(finCommission),
       objCaPct:objCaPct+'%', objCaSub, objCaBarStyle, objDealsSigned, objDealsSub, objDealsBarStyle, objMargeVal, objMargeSub, objMargeBarStyle,
+      commissionReport, commissionTotal, commissionCaTotal, commissionTopName, commissionReportEmpty,
       caHeadline: _fmtE(finEncaisse+finAttente), caCumul: _fmtE(finTotalFacture),
       finAttenteValue: _fmtE(finAttente), finRetardValue: _fmtE(finRetard), finEncaisseValue: _fmtE(finEncaisse),
       finAttenteCount: String(_cntInv('attente'))+' facture'+(_cntInv('attente')>1?'s':''),
