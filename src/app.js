@@ -180,9 +180,22 @@ class Component extends DCLogic {
     clearTimeout(this._persistT);
     this._persistT = setTimeout(()=>{ this._persistNow(); }, 350);
   }
+  // Clés de DONNÉES appartenant à l'AGENCE (vue complète). La vue d'un créateur
+  // (RLS) n'en est qu'un SOUS-ENSEMBLE — on ne doit JAMAIS la laisser écraser le
+  // cache local de l'agence quand les deux partagent le même navigateur. En mode
+  // créateur, on reconduit la valeur déjà stockée pour ces clés (préservation).
+  _AGENCY_CACHE_KEYS = ['rosterData','rosterInfo','prospectData','contactsData','invoiceData','todoItems','briefItems','ideasData','events','threadMsgs','docs'];
+  _guardAgencyCache(out){
+    try{
+      if(this.state.space!=='creator') return;
+      let prev={}; try{ prev=JSON.parse(localStorage.getItem('ttp_state_v1')||'{}'); }catch(_){}
+      this._AGENCY_CACHE_KEYS.forEach(k=>{ if(prev[k]!==undefined) out[k]=prev[k]; else delete out[k]; });
+    }catch(_){}
+  }
   _persistNow(){
     const out = {};
     this._persistKeys().forEach(k=>{ const v=this.state[k]; if (v!==undefined && v!==null) out[k]=v; });
+    this._guardAgencyCache(out);
     if (typeof localStorage !== 'undefined') {
       try { localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }
       catch(e){ try{ const o2=Object.assign({},out); delete o2.photos; localStorage.setItem('ttp_state_v1', JSON.stringify(o2)); }catch(_){} }
@@ -355,7 +368,7 @@ class Component extends DCLogic {
     try { this._restore(); } catch(e){ console.warn('[persist] restore', e); }
     // flush pending state to localStorage immediately on close/refresh/tab-hide
     try {
-      const flush=()=>{ try{ clearTimeout(this._persistT); const out={}; this._persistKeys().forEach(k=>{ const v=this.state[k]; if(v!==undefined&&v!==null) out[k]=v; }); localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }catch(_){} };
+      const flush=()=>{ try{ clearTimeout(this._persistT); const out={}; this._persistKeys().forEach(k=>{ const v=this.state[k]; if(v!==undefined&&v!==null) out[k]=v; }); this._guardAgencyCache(out); localStorage.setItem('ttp_state_v1', JSON.stringify(out)); }catch(_){} };
       window.addEventListener('beforeunload', flush);
       window.addEventListener('pagehide', flush);
       document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flush(); });
@@ -389,20 +402,51 @@ class Component extends DCLogic {
     // CROSS-DEVICE source of truth = la table `creators`. Quand on est authentifié,
     // on charge TOUJOURS depuis la table (un créateur ajouté sur un autre appareil
     // apparaît partout). rosterData ne sert que de cache local hors-ligne.
+    // On capture le cache LOCAL avant d'écraser : il peut contenir des créateurs
+    // ajoutés hors-connexion (insertion refusée à l'époque) qu'on ne veut PAS perdre.
+    const localRoster = Array.isArray(this.rosterRaw) ? this.rosterRaw.slice() : [];
+    const DEMO = new Set(this._demoCreatorNames||[]);
+    // créateurs présents en local mais JAMAIS enregistrés en base => pas d'id.
+    // (un créateur supprimé volontairement avait un id : on ne le ressuscite pas.)
+    const rec = this._recoveredNames || (this._recoveredNames=new Set());
+    const _creatorMode = this.state.space==='creator' || this.state.authRole==='creator';
+    const orphansOf = (tableNames)=> _creatorMode ? [] : localRoster.filter(c=> c && !c.id && c.name && String(c.name).trim() && !DEMO.has(String(c.name).trim()) && !tableNames.has(String(c.name).trim()) && !rec.has(String(c.name).trim()));
+    const orphanRow = (c,i)=>({ sort_order:i, name:c.name, handle:c.handle||'@', niche:c.niche||'Lifestyle', platform:c.plat||'Instagram', followers:c.followers||'0', reach:c.reach||'0', er:c.er||'0%', ca:c.ca||'0 €', status:c.status||'actif', tone:c.tone||'cyan', trend:c.trend||0 });
+    const _recoverToast=(n)=>{ try{ const m=n+' créateur(s) récupéré(s) ✓'; this.setState({toast:m}); setTimeout(()=>this.setState(s=> s.toast===m ? {toast:null} : {}), 3000); }catch(_){} };
     let data, error;
     try { ({ data, error } = await this._sb.from('creators').select('*').order('sort_order')); }
     catch(e){ console.warn('[supabase] load creators failed', e); return; }
     if (error) { console.warn('[supabase] load creators:', error.message); return; }
     if (data && data.length) {
-      this.rosterRaw = data.map(r=>this._mapCreator(r));
+      let mapped = data.map(r=>this._mapCreator(r));
       this.rosterInfoRaw = {};
       data.forEach((r)=>{ this.rosterInfoRaw[r.name] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
+      // RÉCUPÉRATION : ré-insère les créateurs locaux jamais sauvegardés au lieu de
+      // les écraser. Évite la perte silencieuse de créateurs ajoutés hors-connexion.
+      try{
+        const tableNames = new Set(mapped.map(c=>String(c.name||'').trim()));
+        const orphans = orphansOf(tableNames);
+        if(orphans.length){
+          const { data:ins, error:e2 } = await this._sb.from('creators').insert(orphans.map((c,k)=>orphanRow(c, mapped.length+k))).select();
+          if(!e2 && ins && ins.length){ mapped = mapped.concat(ins.map(x=>this._mapCreator(x))); console.warn('[creators] récupéré '+ins.length+' créateur(s) non sauvegardé(s)'); _recoverToast(ins.length); }
+          else if(e2){ console.warn('[creators] recover insert:', e2.message); }
+        }
+      }catch(_){}
+      this.rosterRaw = mapped;
       this._markSeeded('creators');
       this.setState({ deletedRoster:{}, creatorsLoaded:true, rosterData:this.rosterRaw.slice() });
       try{ this._pushRosterInfoToTable(); }catch(_){}
       return;
     }
-    // table vide : si déjà semée (tout supprimé) on respecte le vide ; sinon on sème.
+    // table vide : on récupère d'abord les créateurs locaux non sauvegardés (orphelins).
+    try{
+      const orphans = orphansOf(new Set());
+      if(orphans.length){
+        const { data:ins, error:e2 } = await this._sb.from('creators').insert(orphans.map((c,k)=>orphanRow(c,k))).select();
+        if(!e2 && ins && ins.length){ this.rosterRaw=ins.map(x=>this._mapCreator(x)); this._markSeeded('creators'); this.setState({ deletedRoster:{}, creatorsLoaded:true, rosterData:this.rosterRaw.slice() }); _recoverToast(ins.length); return; }
+      }
+    }catch(_){}
+    // si déjà semée (tout supprimé) on respecte le vide ; sinon on sème.
     if (this.state.seededTables && this.state.seededTables.creators) return;
     const seed=this.rosterRaw.map((c,i)=>({ sort_order:i, name:c.name, handle:c.handle, niche:c.niche, platform:c.plat, followers:c.followers, reach:c.reach, er:c.er, ca:c.ca, status:c.status, tone:c.tone, trend:c.trend }));
     const r=await this._seedTable('creators','creators',seed);
@@ -1529,7 +1573,7 @@ class Component extends DCLogic {
       briefRows, briefOpenObj, briefDetailOpen, briefListMode:!briefDetailOpen, closeBriefDetail,
       showCreatorForm:!!this.state.showCreatorForm, openCreatorForm:()=>this.setState({showCreatorForm:true}), closeCreatorForm:()=>this.setState({showCreatorForm:false}),
       ncName:this.state.ncName||'', ncHandle:this.state.ncHandle||'', ncNiche:this.state.ncNiche||'', onNcName:(e)=>{const v=e.target.value;this.setState({ncName:v});}, onNcHandle:(e)=>{const v=e.target.value;this.setState({ncHandle:v});}, onNcNiche:(e)=>{const v=e.target.value;this.setState({ncNiche:v});},
-      addCreator:()=>{ const nm=(this.state.ncName||'').trim(); if(!nm)return; const tones=['signal','indigo','cyan']; const nc={name:nm.toUpperCase(), handle:this.state.ncHandle||'@nouveau', niche:this.state.ncNiche||'Lifestyle', plat:'Instagram', followers:'0', reach:'0', er:'0%', ca:'0 \u20ac', status:'actif', tone:tones[this.rosterRaw.length%3], trend:0}; this.rosterRaw.push(nc); this.setState({rosterData:this.rosterRaw.slice(), rosterEdited:true, showCreatorForm:false, ncName:'', ncHandle:'', ncNiche:''}); toast('Cr\u00e9ateur ajout\u00e9 \u2713'); if(this._sb){ this._sb.from('creators').insert({sort_order:this.rosterRaw.length-1, name:nc.name, handle:nc.handle, niche:nc.niche, platform:nc.plat, followers:nc.followers, reach:nc.reach, er:nc.er, ca:nc.ca, status:nc.status, tone:nc.tone, trend:nc.trend}).select().then(({data,error})=>{ if(error){ console.warn('[supabase] insert:', error.message); return; } if(data&&data[0]){ nc.id=data[0].id; this.setState({rosterData:this.rosterRaw.slice()}); } }); } },
+      addCreator:()=>{ const nm=(this.state.ncName||'').trim(); if(!nm)return; const tones=['signal','indigo','cyan']; const nc={name:nm.toUpperCase(), handle:this.state.ncHandle||'@nouveau', niche:this.state.ncNiche||'Lifestyle', plat:'Instagram', followers:'0', reach:'0', er:'0%', ca:'0 \u20ac', status:'actif', tone:tones[this.rosterRaw.length%3], trend:0}; this.rosterRaw.push(nc); this.setState({rosterData:this.rosterRaw.slice(), rosterEdited:true, showCreatorForm:false, ncName:'', ncHandle:'', ncNiche:''}); toast('Cr\u00e9ateur ajout\u00e9 \u2713'); if(this._sb){ this._sb.from('creators').insert({sort_order:this.rosterRaw.length-1, name:nc.name, handle:nc.handle, niche:nc.niche, platform:nc.plat, followers:nc.followers, reach:nc.reach, er:nc.er, ca:nc.ca, status:nc.status, tone:nc.tone, trend:nc.trend}).select().then(({data,error})=>{ if(error){ console.warn('[supabase] insert:', error.message); toast('⚠ Ajouté en local mais NON sauvegardé en base — vérifie « Base connectée » puis recharge (il sera récupéré automatiquement)'); return; } if(data&&data[0]){ nc.id=data[0].id; this.setState({rosterData:this.rosterRaw.slice()}); } }); } else { toast('⚠ Base non connectée — créateur en local seulement'); } },
       onAddDocMe:(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const crr=this._meCreator(); const nm=crr&&crr.name; if(!nm){ e.target.value=''; return; } this._addDocFor(nm, f, 'autre'); e.target.value=''; },
       previewOpen:!!this.state.previewDoc, previewName:this.state.previewDoc?this.state.previewDoc.name:'', previewUrl:this.state.previewDoc?this.state.previewDoc.url:'', previewIsImage:!!(this.state.previewDoc&&this.state.previewDoc.isImage), previewIsDoc:!(this.state.previewDoc&&this.state.previewDoc.isImage), closePreview:()=>this.setState({previewDoc:null}), stopProp:(e)=>{e.stopPropagation();}, previewMedia: this.state.previewDoc ? (this.state.previewDoc.isImage ? React.createElement('div',{style:{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}, React.createElement('img',{src:this.state.previewDoc.url,style:{maxWidth:'100%',maxHeight:'100%',objectFit:'contain',borderRadius:'8px'}})) : React.createElement('iframe',{src:this.state.previewDoc.url,style:{width:'100%',height:'100%',border:'none',background:'#fff'}})) : null,
       bankFormOpen:!!this.state.showBankForm, toggleBankForm:()=>this.setState(s=>({showBankForm:!s.showBankForm})),
