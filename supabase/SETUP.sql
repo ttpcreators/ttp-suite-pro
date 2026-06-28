@@ -92,9 +92,11 @@ create table if not exists public.ideas (
 
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
-  day int, time text, title text, type text default 'call', who text,
+  day int, date text, time text, title text, type text default 'call', who text,
   sort_order int default 0, created_at timestamptz default now()
 );
+-- date complète (YYYY-MM-DD) d'un événement : ajoutée si la table existait sans elle.
+alter table public.events add column if not exists date text;
 
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),

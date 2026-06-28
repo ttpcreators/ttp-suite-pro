@@ -1,6 +1,6 @@
 
 class Component extends DCLogic {
-  state = { theme:'light', space:'agency', view:'apercu', creatorId:null, creatorName:null, portalTab:'accueil', authed:false, authRole:null, loginTab:'agency', loginEmail:'', loginPwd:'', loginError:'', showEventForm:false, editingEvent:null, ne:{day:26,time:'',title:'',type:'call',date:'2026-06-26'}, events:null, doneSet:null, openContact:null, objForm:false, no:{name:'',target:'',pct:''}, engCreator:0, engPlatform:'instagram', engBase:'', engM0:'', engM1:'', engM2:'', priceCreator:0, priceFormat:'reel', ctType:'marque', ctCreator:0, ctBrand:'Sephora', ctValue:'32 000 €', ctCommission:'20', ctDuration:'12 mois', ctDeliverables:'3 posts · 1 reel', ctExcl:true, photos:{}, copied:null, rosterDetail:null, openThread:null, draft:'', threadMsgs:null };
+  state = { theme:'light', space:'agency', view:'apercu', creatorId:null, creatorName:null, portalTab:'accueil', authed:false, authRole:null, loginTab:'agency', loginEmail:'', loginPwd:'', loginError:'', showEventForm:false, editingEvent:null, ne:{day:26,time:'',title:'',type:'call',date:''}, events:null, doneSet:null, openContact:null, objForm:false, no:{name:'',target:'',pct:''}, engCreator:0, engPlatform:'instagram', engBase:'', engM0:'', engM1:'', engM2:'', priceCreator:0, priceFormat:'reel', ctType:'marque', ctCreator:0, ctBrand:'Sephora', ctValue:'32 000 €', ctCommission:'20', ctDuration:'12 mois', ctDeliverables:'3 posts · 1 reel', ctExcl:true, photos:{}, copied:null, rosterDetail:null, openThread:null, draft:'', threadMsgs:null };
 
   // Roster vierge par défaut : l'agence ajoute ses propres créateurs (aucun profil
   // de démonstration). Les créateurs réels vivent dans la table Supabase `creators`.
@@ -140,7 +140,7 @@ class Component extends DCLogic {
   toneHex(tone, dark){
     return ({ signal:'#70FC8E', indigo: dark?'#5B82F8':'#3765F6', cyan: dark?'#9AA6B4':'#8590A1', amber: dark?'#5B82F8':'#3765F6' })[tone] || (dark?'#6E6E6E':'#8A8A85');
   }
-  initials(name){ return name.split(' ').map(w => w[0]).slice(0,2).join(''); }
+  initials(name){ return String(name||'').split(' ').filter(w=>w.length).map(w => w[0]).slice(0,2).join('').toUpperCase(); }
   dots(n, pct, fill, empty, size){ const s=size||8; const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:'+s+'px;height:'+s+'px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
@@ -594,7 +594,7 @@ class Component extends DCLogic {
   }
   async _loadEvents(){
     const rows = await this._dbList('events'); if(rows===null) return;
-    const map=(r)=>({ id:r.id, day:r.day, time:r.time||'—', title:r.title, type:r.type||'call', who:r.who||null });
+    const map=(r)=>({ id:r.id, day:r.day, date:r.date||null, time:r.time||'—', title:r.title, type:r.type||'call', who:r.who||null });
     if(rows.length){ this._eventsTable=true; this._markSeeded('events'); this.setState({ events: rows.map(map) }); return; }
     const seed=this.eventsRaw.map((e,i)=>({ day:e.day, time:e.time, title:e.title, type:e.type, who:e.who, sort_order:i }));
     const r=await this._seedTable('events','events',seed);
@@ -831,7 +831,11 @@ class Component extends DCLogic {
     const _calY = _calD.getFullYear(), _calM = _calD.getMonth();
     const calLabel = _moNames[_calM] + ' ' + _calY;
     const _daysIn = new Date(_calY, _calM + 1, 0).getDate();
-    const _showEv = calOffset === 0;                       // évènements rattachés au mois courant
+    const _showEv = calOffset === 0;                       // (conservé pour le surlignage "aujourd'hui")
+    // Date effective d'un événement : sa date complète YYYY-MM-DD si présente, sinon
+    // (anciens événements ne stockant qu'un n° de jour) rattaché au mois réel courant.
+    const _evDate = (e)=>{ if(e && e.date && /^\d{4}-\d{2}-\d{2}$/.test(e.date)) return e.date; const d=Number(e&&e.day)||1; return String(_todayY)+'-'+String(_todayMo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); };
+    const _todayStr = String(_todayY)+'-'+String(_todayMo+1).padStart(2,'0')+'-'+String(_todayDay).padStart(2,'0');
     const prevMonth = () => this.setState(s=>({ calOffset:(s.calOffset||0)-1 }));
     const nextMonth = () => this.setState(s=>({ calOffset:(s.calOffset||0)+1 }));
     const firstDow = _calD.getDay(); // 0 Sun
@@ -841,9 +845,10 @@ class Component extends DCLogic {
     for (let i = 0; i < totalCells; i++){
       const day = i - lead + 1;
       const has = day >= 1 && day <= _daysIn;
-      const dayEvents = (has && _showEv) ? events.filter(e => Number(e.day) === day).map(eventDeco) : [];
+      const _cellDate = has ? (String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(day).padStart(2,'0')) : '';
+      const dayEvents = has ? events.filter(e => _evDate(e) === _cellDate).map(eventDeco) : [];
       const isToday = _showEv && day === _todayDay;
-      const _sel = _showEv && has && day === this.state.planSelDay;
+      const _sel = has && _cellDate === this.state.planSelDate;
       cells.push({
         day: has ? day : '', hasDay: has, isToday,
         chips: dayEvents.slice(0,2),
@@ -851,8 +856,8 @@ class Component extends DCLogic {
         moreLabel: '+' + (dayEvents.length - 2),
         cellStyle: 'min-height:88px;min-width:0;overflow:hidden;border-radius:12px;padding:8px;cursor:'+(has?'pointer':'default')+';'+(has?('background:'+(isToday?'var(--signalsoft)':'var(--panel)')+';'):'background:transparent;')+(_sel?'border:2px solid var(--text);':(isToday?'border:1px solid var(--signal);':'border:2px solid transparent;')),
         numStyle: 'font:600 12px \'Inter\',sans-serif;color:'+(isToday?'var(--signaltext)':'var(--text)')+';',
-        select: (has && _showEv) ? (()=>{ const _d=day, _ds=String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(_d).padStart(2,'0'); return () => this.setState(s => ({ planSelDay:_d, showEventForm:false, ne: Object.assign({}, s.ne, { day:_d, date:_ds }) })); })() : (has ? (()=>{ const _d=day; return ()=>this.setState(s=>({ showEventForm:true, ne:Object.assign({},s.ne,{day:_d, date:String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(_d).padStart(2,'0')}) })); })() : (()=>{})),
-        selected: _showEv && day===this.state.planSelDay,
+        select: has ? (()=>{ const _d=day, _ds=_cellDate; return () => this.setState(s => ({ planSelDay:_d, planSelDate:_ds, showEventForm:false, ne: Object.assign({}, s.ne, { day:_d, date:_ds }) })); })() : (()=>{}),
+        selected: has && _cellDate===this.state.planSelDate,
       });
     }
     const eventTypes = Object.keys(this.eventTypeMap).map(k => { const t=this.eventTypeMap[k]; const sel=this.state.ne.type===k; return { label:t.label, dotStyle:'width:7px;height:7px;border-radius:50%;background:'+this.toneHex(t.tone,dark)+';', chipStyle:'display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(sel?'background:var(--text);color:var(--bg);':'border:1px solid var(--hair);color:var(--muted);'), pick:()=>this.setState(s=>({ne:Object.assign({},s.ne,{type:k})})) }; });
@@ -871,7 +876,7 @@ class Component extends DCLogic {
     // ----- Détail engagement d'un créateur (clic sur un nom) : stats complètes + historique -----
     const _edFmtN = (n)=>String(Math.round(Number(n)||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
     const _moNamesH=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const _monthLabel=(h)=>{ const s=String((h&&h.savedAt)||''); const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?((_moNamesH[(+m[2])-1]||'')+' '+m[3]):'Autres mesures'; };
+    const _monthLabel=(h)=>{ if(h&&h.savedAtTs){ const d=new Date(h.savedAtTs); if(!isNaN(d.getTime())) return (_moNamesH[d.getMonth()]||'')+' '+d.getFullYear(); } const s=String((h&&h.savedAt)||''); const m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?((_moNamesH[(+m[2])-1]||'')+' '+m[3]):'Autres mesures'; };
     // Groupe une liste de mesures par MOIS (l'agence fait les stats chaque mois).
     const _groupByMonth=(list)=>{ const grp=[], idx={}; (list||[]).forEach(h=>{ const ml=_monthLabel(h); if(idx[ml]==null){ idx[ml]=grp.length; grp.push({month:ml, entries:[]}); } grp[idx[ml]].entries.push({ er:h.er||'—', platform:h.platformLabel||'', verdict:h.verdict||'', date:h.savedAt||'', detail:h.detail||'', followers:(h.followers?(h.followers+' abonnés'):'') }); }); return grp; };
     const _edName = this.state.engDetail;
@@ -908,7 +913,7 @@ class Component extends DCLogic {
     // ---- Objectifs par mois (édition / suppression / navigation) ----
     const _objMo=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
     const objOffset = this.state.objOffset||0;
-    const _objD = new Date(2026, 5+objOffset, 1);
+    const _objD = new Date(_todayY, _todayMo+objOffset, 1);
     const objMonthLabel = _objMo[_objD.getMonth()]+' '+_objD.getFullYear();
     const _objSeed0 = this.objRaw.map(o=>({name:o.name,ca:o.ca,target:o.target,pct:o.pct,tone:o.tone})).concat((this.state.customObjs||[]).map(o=>({name:String(o.name).toUpperCase(),ca:o.ca||'—',target:o.target,pct:o.pct,tone:'indigo'})));
     const _omAll = this.state.objByMonth||{};
@@ -940,7 +945,7 @@ class Component extends DCLogic {
     }); } }
     const briefDetailOpen = briefOpenObj!=null;
     const closeBriefDetail = ()=>this.setState({briefOpen:null});
-    const rdvPreview = events.slice().sort((a,b)=>a.day-b.day).slice(0,4).map(e=>{ const d=eventDeco(e); return { when:(e.day===26?"Auj. ":(e.day+'/06 '))+e.time, title:e.title, dotStyle:d.dotStyle }; });
+    const rdvPreview = events.filter(e=>_evDate(e)>=_todayStr).sort((a,b)=>_evDate(a).localeCompare(_evDate(b))).slice(0,4).map(e=>{ const d=eventDeco(e); const ed=_evDate(e); const _p=ed.split('-'); return { when:(ed===_todayStr?"Auj. ":(Number(_p[2])+'/'+_p[1]+' '))+e.time, title:e.title, dotStyle:d.dotStyle }; });
 
     // prospection columns
     const stages = ['Prospection','Contact','Négociation','Signé'];
@@ -1135,18 +1140,18 @@ class Component extends DCLogic {
     if(oc!=null){ const k=(this._contacts())[oc]; const cp=(key,val)=>()=>{ try{ navigator.clipboard && navigator.clipboard.writeText(val); }catch(e){} this.setState({copied:key}); setTimeout(()=>this.setState(s=> s.copied===key?{copied:null}:{}),1500); }; openContactObj={ brand:k.brand, person:k.person, role:k.role, email:k.email, phone:k.phone, last:k.last, deals:k.deals, initials:this.initials(k.person), avatarStyle:this.avatarStyle(k.tone,dark,52), copyEmail:cp('email',k.email), copyPhone:cp('phone',k.phone), emailLabel:this.state.copied==='email'?'COPIÉ ✓':'COPIER', phoneLabel:this.state.copied==='phone'?'COPIÉ ✓':'COPIER' }; }
     // ===== PLANNING UPCOMING =====
     const dowFr = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
-    const _mkAgendaRow = (e)=>{ const d=eventDeco(e); const tp=this.eventTypeMap[e.type]||this.eventTypeMap.call; return { day:e.day, dow:dowFr[new Date(_calY,_calM,Number(e.day)).getDay()], time:e.time, title:e.title, who:e.who||'', dotStyle:d.dotStyle, typeLabel:tp.label, tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);padding:4px 9px;border-radius:6px;background:var(--rowhover);", dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);', edit:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); const date=String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(e.day).padStart(2,'0'); this.setState({ showEventForm:true, editingEvent:e, ne:{ day:e.day, date:date, time:(e.time&&e.time!=='—'?e.time:''), title:e.title, type:e.type||'call' }, neWho:(e.who?String(e.who).split(',').map(s=>s.trim()).filter(Boolean):[]) }); }, del:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); if(!window.confirm('Supprimer cet événement ?'))return; if(this._eventsTable && e.id) this._dbDelete('events', e.id); this.setState(s=>({ events:(s.events||this.eventsRaw).filter(x=>x!==e) })); } }; };
-    const upcoming = events.filter(e=>Number(e.day)>=_todayDay).sort((a,b)=>a.day-b.day).slice(0,6).map(_mkAgendaRow);
+    const _mkAgendaRow = (e)=>{ const d=eventDeco(e); const tp=this.eventTypeMap[e.type]||this.eventTypeMap.call; return { day:(Number(_evDate(e).split('-')[2])||e.day), dow:(()=>{const p=_evDate(e).split('-').map(Number);return dowFr[new Date(p[0],p[1]-1,p[2]).getDay()];})(), time:e.time, title:e.title, who:e.who||'', dotStyle:d.dotStyle, typeLabel:tp.label, tagStyle:"font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);padding:4px 9px;border-radius:6px;background:var(--rowhover);", dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);', edit:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); const date=_evDate(e); this.setState({ showEventForm:true, editingEvent:e, ne:{ day:Number(date.split('-')[2])||e.day, date:date, time:(e.time&&e.time!=='—'?e.time:''), title:e.title, type:e.type||'call' }, neWho:(e.who?String(e.who).split(',').map(s=>s.trim()).filter(Boolean):[]) }); }, del:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); if(!window.confirm('Supprimer cet événement ?'))return; if(this._eventsTable && e.id) this._dbDelete('events', e.id); this.setState(s=>({ events:(s.events||this.eventsRaw).filter(x=>x!==e) })); } }; };
+    const upcoming = events.filter(e=>_evDate(e)>=_todayStr).sort((a,b)=>_evDate(a).localeCompare(_evDate(b))).slice(0,6).map(_mkAgendaRow);
     // ===== PLANNING: day detail (click a date to see its events) =====
     const _moNamesFull = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
     const _dowFull = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-    const planSelDay = this.state.planSelDay;
-    const planDayOpen = planSelDay!=null;
-    let planDayLabel='', planDayEvents=[];
-    if(planDayOpen){ const jsd=new Date(_calY,_calM,Number(planSelDay)); planDayLabel=_dowFull[jsd.getDay()]+' '+planSelDay+' '+_moNamesFull[_calM]+' '+_calY; planDayEvents=events.filter(e=>Number(e.day)===Number(planSelDay)).sort((a,b)=>String(a.time).localeCompare(String(b.time))).map(_mkAgendaRow); }
+    const planSelDate = this.state.planSelDate;
+    const planDayOpen = planSelDate!=null;
+    let planDayLabel='', planDayEvents=[], _planSelDay=null;
+    if(planDayOpen){ const p=String(planSelDate).split('-').map(Number); _planSelDay=p[2]; const jsd=new Date(p[0],p[1]-1,p[2]); planDayLabel=_dowFull[jsd.getDay()]+' '+p[2]+' '+_moNamesFull[p[1]-1]+' '+p[0]; planDayEvents=events.filter(e=>_evDate(e)===planSelDate).sort((a,b)=>String(a.time).localeCompare(String(b.time))).map(_mkAgendaRow); }
     const planDayHasEvents = planDayEvents.length>0;
-    const closePlanDay = ()=>this.setState({planSelDay:null});
-    const addEventForDay = ()=>this.setState(s=>({ showEventForm:true, ne:Object.assign({},s.ne,{ day:planSelDay, date:String(_calY)+'-'+String(_calM+1).padStart(2,'0')+'-'+String(planSelDay).padStart(2,'0') }) }));
+    const closePlanDay = ()=>this.setState({planSelDate:null, planSelDay:null});
+    const addEventForDay = ()=>this.setState(s=>({ showEventForm:true, ne:Object.assign({},s.ne,{ day:_planSelDay, date:planSelDate }) }));
 
     // ===== CONTRACT GENERATOR =====
     const ctt = this.state.ctType || 'marque';
@@ -1255,7 +1260,7 @@ class Component extends DCLogic {
     const aMetaSeed = { 0:{creator:'CAMILLE ORSINI', campaign:'Sephora — Collection été', tone:'indigo'}, 1:{creator:'CAMILLE ORSINI', campaign:'Dior Beauty — Gifting', tone:'cyan'}, 3:{creator:'THÉO RIVIÈRE', campaign:'Logitech — Sponso', tone:'indigo'}, 4:{creator:'JADE NGUYEN', campaign:'Sephora UGC', tone:'signal'}, 5:{creator:'INÈS KABORÉ', campaign:"L'Oréal — Soin", tone:'cyan'} };
     const _customConvos = this.state.customConvos || [];           // [{key, creator, tone}]
     const _delConvos = this.state.deletedConvos || {};
-    const _toneOf = (name)=>{ const c=this.rosterRaw.find(x=>x.name===name); return c?c.tone:'indigo'; };
+    const _toneOf = (name)=>{ const c=this.rosterRaw.find(x=>x&&x.name===name); return c?c.tone:'indigo'; };
     // full meta map : seed campaigns + broadcast + conversations directes créées
     const aMetaAll = Object.assign({ 2:{creator:'__all__', campaign:'Annonce agence', tone:'signal'} }, aMetaSeed);
     _customConvos.forEach(c=>{ aMetaAll[c.key]={ creator:c.creator, campaign:(c.kind==='agencyDM'?'Échange avec l’agence':'Conversation directe'), tone:c.tone||_toneOf(c.creator) }; });
@@ -1403,7 +1408,7 @@ class Component extends DCLogic {
       const status = this.state.niFacStatus || 'brouillon';
       const ed=this.state.editingInvoice;
       if(ed){ const patch={party, amount, date:due, status, creator:crFull||null}; this.setState(s=>({ invoiceData:(s.invoiceData||this.invoiceRaw).map(x=> x===ed?Object.assign({},x,patch):x), showInvoiceForm:false, editingInvoice:null, niFacBrand:'', niFacAmount:'', niFacDue:'', niFacCreator:null, niFacStatus:'brouillon' })); if(this._invoicesTable && ed.id) this._dbUpdate('invoices', ed.id, patch); toast('Facture modifiée ✓'); return; }
-      const base=(this.state.invoiceData||this.invoiceRaw); const ref='2026-'+String(180+base.length).padStart(3,'0');
+      const base=(this.state.invoiceData||this.invoiceRaw); const ref=String(_todayY)+'-'+String(180+base.length).padStart(3,'0');
       const row={ref, party, amount, date:due, status, creator:crFull||null};
       const prepend=(r)=>{ const item=r?Object.assign({id:r.id},row):row; this.setState(s=>({ invoiceData:[item].concat(s.invoiceData||this.invoiceRaw), showInvoiceForm:false, niFacBrand:'', niFacAmount:'', niFacDue:'', niFacCreator:null, niFacStatus:'brouillon' })); toast('Facture créée ✓'); };
       if(this._invoicesTable){ this._dbInsert('invoices', row).then(prepend); } else { prepend(null); }
@@ -1757,12 +1762,12 @@ class Component extends DCLogic {
       onNETime: (e)=>{ const v=e.target.value; this.setState(s=>({ne:Object.assign({},s.ne,{time:v})})); },
       neWhoChips: this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>{ const sel=(this.state.neWho||[]).indexOf(c.name)>=0; return { name:c.name.split(' ')[0], full:c.name, style:'display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;font:600 10px \'Inter\',sans-serif;cursor:pointer;'+(sel?'background:var(--text);color:var(--bg);':'background:var(--surface);border:1px solid var(--hair);color:var(--muted);'), check:sel?'✓ ':'', pick:(()=>{const nm=c.name;return ()=>this.setState(s=>{ const w=(s.neWho||[]).slice(); const j=w.indexOf(nm); if(j>=0) w.splice(j,1); else w.push(nm); return {neWho:w}; });})() }; }),
       neWhoLabel: (this.state.neWho&&this.state.neWho.length) ? (this.state.neWho.length+' créateur'+(this.state.neWho.length>1?'s':'')+' concerné'+(this.state.neWho.length>1?'s':'')) : 'Aucun créateur sélectionné (événement agence)',
-      addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const who=((this.state.neWho||[]).join(', '))||null; const ed=this.state.editingEvent;
-        if(ed){ const patch={ day:Number(ne.day)||ed.day, time:ne.time||'—', title:ne.title, type:ne.type, who:who }; this.setState(s=>({ events:(s.events||this.eventsRaw).map(x=> x===ed?Object.assign({},x,patch):x), showEventForm:false, editingEvent:null, neWho:[], ne:{day:ne.day,time:'',title:'',type:'call'} })); if(this._eventsTable && ed.id) this._dbUpdate('events', ed.id, patch); toast('Événement modifié ✓'); return; }
-        const item={day:Number(ne.day)||26, time:ne.time||'—', title:ne.title, type:ne.type, who:who}; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, item], showEventForm:false, ne:{day:ne.day,time:'',title:'',type:'call'}, neWho:[] }); if(this._eventsTable){ this._dbInsert('events',{day:item.day,time:item.time,title:item.title,type:item.type,who:item.who,sort_order:cur.length}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
-      addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const crr=this._meCreator(); const cr2=crr?crr.name:null; const day=ne.date?Number(String(ne.date).split('-')[2]):(Number(ne.day)||26); const ed=this.state.editingEvent;
-        if(ed){ const patch={ day:day||ed.day, time:ne.time||'—', title:ne.title, type:ne.type }; this.setState(s=>({ events:(s.events||this.eventsRaw).map(x=> x===ed?Object.assign({},x,patch):x), showEventForm:false, editingEvent:null, ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'} })); if(this._eventsTable && ed.id) this._dbUpdate('events', ed.id, patch); toast('Événement modifié ✓'); return; }
-        const item={day:day||26, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, item], showEventForm:false, ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'} }); if(this._eventsTable){ this._dbInsert('events',{day:item.day,time:item.time,title:item.title,type:item.type,who:item.who,sort_order:cur.length}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
+      addEvent: () => { const ne=this.state.ne; if(!ne.title) return; const who=((this.state.neWho||[]).join(', '))||null; const ed=this.state.editingEvent; const _dt=ne.date||null; const _d=_dt?Number(String(_dt).split('-')[2]):(Number(ne.day)||_todayDay);
+        if(ed){ const patch={ day:_d||ed.day, date:_dt||ed.date||null, time:ne.time||'—', title:ne.title, type:ne.type, who:who }; this.setState(s=>({ events:(s.events||this.eventsRaw).map(x=> x===ed?Object.assign({},x,patch):x), showEventForm:false, editingEvent:null, neWho:[], ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'} })); if(this._eventsTable && ed.id) this._dbUpdate('events', ed.id, patch); toast('Événement modifié ✓'); return; }
+        const item={day:_d||_todayDay, date:_dt, time:ne.time||'—', title:ne.title, type:ne.type, who:who}; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, item], showEventForm:false, ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'}, neWho:[] }); if(this._eventsTable){ this._dbInsert('events',{day:item.day,date:item.date,time:item.time,title:item.title,type:item.type,who:item.who,sort_order:cur.length}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
+      addEventMe: () => { const ne=this.state.ne; if(!ne.title) return; const crr=this._meCreator(); const cr2=crr?crr.name:null; const _dt=ne.date||null; const day=_dt?Number(String(_dt).split('-')[2]):(Number(ne.day)||_todayDay); const ed=this.state.editingEvent;
+        if(ed){ const patch={ day:day||ed.day, date:_dt||ed.date||null, time:ne.time||'—', title:ne.title, type:ne.type }; this.setState(s=>({ events:(s.events||this.eventsRaw).map(x=> x===ed?Object.assign({},x,patch):x), showEventForm:false, editingEvent:null, ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'} })); if(this._eventsTable && ed.id) this._dbUpdate('events', ed.id, patch); toast('Événement modifié ✓'); return; }
+        const item={day:day||_todayDay, date:_dt, time:ne.time||'—', title:ne.title, type:ne.type, who:cr2}; const cur=this.state.events||this.eventsRaw; this.setState({ events:[...cur, item], showEventForm:false, ne:{day:ne.day,date:ne.date,time:'',title:'',type:'call'} }); if(this._eventsTable){ this._dbInsert('events',{day:item.day,date:item.date,time:item.time,title:item.title,type:item.type,who:item.who,sort_order:cur.length}).then(r=>{ if(r&&r.id){ item.id=r.id; this.setState({}); } }); } },
       incomeDots: this.dots(126, _incomeFill, sig, empty, 11),
       paidDots: this.dots(126, Math.max(8,Math.min(100,Math.round(finReverse/(finEncaisse||1)*100))), sig, empty, 11),
       periodLabel: ({hebdo:'HEBDO',mensuel:'MENSUEL',trimestre:'TRIMESTRE',annuel:'ANNUEL'})[this.state.caPeriod||'mensuel'],
