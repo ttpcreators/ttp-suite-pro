@@ -2008,7 +2008,7 @@ class Component extends DCLogic {
 
   docsRaw = { 0:[{name:'Brief Sephora — Collection été.pdf', type:'brief', date:'24/06/2026', size:'248 Ko'},{name:'Media kit Camille 2026.pdf', type:'mediakit', date:'01/06/2026', size:'3,2 Mo'},{name:'Facture #2026-084.pdf', type:'facture', date:'02/07/2026', size:'96 Ko'}], 1:[{name:'Media kit Théo 2026.pdf', type:'mediakit', date:'12/06/2026', size:'4,1 Mo'}], 3:[{name:'Brief Sephora UGC.pdf', type:'brief', date:'20/06/2026', size:'180 Ko'}] };
   bankAccounts = [ {label:'Compte courant — Qonto', bank:'Qonto', iban:'FR76 1695 8000 0112 3456 7890 219', bic:'QNTOFRP1XXX'}, {label:'Compte pro — BNP Paribas', bank:'BNP Paribas', iban:'FR76 3000 4002 8800 0123 4567 891', bic:'BNPAFRPPXXX'}, {label:'Compte séquestre', bank:'Crédit Mutuel', iban:'FR76 1027 8060 0100 0204 5670 155', bic:'CMCIFR2AXXX'} ];
-  rosterInfoRaw = { 0:{ville:'Lyon, France', phone:'+33 6 12 48 90 33', email:'camille.orsini@gmail.com', address:'14 rue de la République, 69002 Lyon', siren:'901 234 567', birth:'12/03/1998', exclu:true, commission:'20%'}, 1:{ville:'Paris, France', phone:'+33 6 70 11 22 84', email:'theo.riviere@gmail.com', address:'8 rue Oberkampf, 75011 Paris', siren:'880 556 102', birth:'24/09/1996', exclu:true, commission:'15%'}, 2:{ville:'Bordeaux, France', phone:'+33 6 22 41 09 57', email:'lena.marchand@gmail.com', address:"3 cours de l'Intendance, 33000 Bordeaux", siren:'—', birth:'05/01/2000', exclu:false, commission:'18%'} };
+  rosterInfoRaw = { 'CAMILLE ORSINI':{ville:'Lyon, France', phone:'+33 6 12 48 90 33', email:'camille.orsini@gmail.com', address:'14 rue de la République, 69002 Lyon', siren:'901 234 567', birth:'12/03/1998', exclu:true, commission:'20%'}, 'THÉO RIVIÈRE':{ville:'Paris, France', phone:'+33 6 70 11 22 84', email:'theo.riviere@gmail.com', address:'8 rue Oberkampf, 75011 Paris', siren:'880 556 102', birth:'24/09/1996', exclu:true, commission:'15%'}, 'LÉNA MARCHAND':{ville:'Bordeaux, France', phone:'+33 6 22 41 09 57', email:'lena.marchand@gmail.com', address:"3 cours de l'Intendance, 33000 Bordeaux", siren:'—', birth:'05/01/2000', exclu:false, commission:'18%'} };
 
   mediaKitRaw = {
     0:{ bio:'Camille — voix mode & beauté de référence à Lyon. Contenus éditoriaux léchés, audience féminine ultra-engagée et fort taux de conversion sur le luxe accessible.', age:'25–34 ans', agePct:'61%', gender:'Femmes 78% · Hommes 22%', geo:['Paris','Lyon','Genève'], brands:['Sephora','Dior Beauty','Sézane','Galeries Lafayette'], formats:[{label:'Reel Instagram',price:'2 200 €'},{label:'Story (×3)',price:'850 €'},{label:'Post feed',price:'1 500 €'},{label:'Pack campagne',price:'5 500 €'}] },
@@ -2101,6 +2101,17 @@ class Component extends DCLogic {
       const dr=this.state.deletedRoster||{};
       const set=new Set(Object.keys(dr).filter(k=>dr[k]).map(Number));
       if(set.size){ this.rosterRaw=this.rosterRaw.filter((_,i)=>!set.has(i)); this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true, deletedRoster:{} }); }
+    }catch(e){}
+    // Migration : rosterInfo était indexé par POSITION (0,1,2…). On rattache chaque
+    // bloc de coordonnées au NOM du créateur, pour qu'une suppression ne décale plus
+    // les infos (téléphone/email/réseaux affichés sur le mauvais créateur).
+    try{
+      const ri=this.state.rosterInfo;
+      if(ri && Object.keys(ri).some(k=>/^\d+$/.test(k))){
+        const nri={};
+        Object.keys(ri).forEach(k=>{ if(/^\d+$/.test(k)){ const nm=(this.rosterRaw[+k]||{}).name; if(nm) nri[nm]=Object.assign({}, nri[nm]||{}, ri[k]); } else { nri[k]=Object.assign({}, ri[k], nri[k]||{}); } });
+        this.setState({ rosterInfo:nri });
+      }
     }catch(e){}
   }
   // effective contact list — fall back to the bundled seed when the stored list
@@ -2201,7 +2212,7 @@ class Component extends DCLogic {
     if (data && data.length) {
       this.rosterRaw = data.map(r=>this._mapCreator(r));
       this.rosterInfoRaw = {};
-      data.forEach((r,i)=>{ this.rosterInfoRaw[i] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
+      data.forEach((r)=>{ this.rosterInfoRaw[r.name] = { ville:r.ville, phone:r.phone, email:r.email, address:r.address, siren:r.siren, birth:r.birth, exclu:!!r.exclu, commission:r.commission }; });
       this._markSeeded('creators');
       this.setState({ deletedRoster:{}, creatorsLoaded:true, rosterData:this.rosterRaw.slice() });
       return;
@@ -2660,9 +2671,9 @@ class Component extends DCLogic {
     const loginCreators = this.rosterRaw.map((c,i)=>({i,c})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name, niche:c.niche, handle:c.handle, followers:c.followers, er:c.er, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,52), dotStyle:dotS(c.tone,c.status==='live'), login:(()=>{const ii=i;return ()=>this.setState({creatorId:ii, portalTab:'accueil'});})() }));
     // creator's own editable coordinates — shared with the agency roster detail
     // (same rosterInfo store, keyed by creator index) so the agency sees updates.
-    const _meIdx = ci!=null?ci:0;
-    const mkMeInfo=(field)=>(e)=>{ const v=e.target.value; this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); ri[_meIdx]=Object.assign({}, this.rosterInfoRaw[_meIdx]||{}, ri[_meIdx]||{}, {[field]:v}); return {rosterInfo:ri}; }); };
-    const meInfoBase=Object.assign({ville:'',phone:'',email:'',address:'',siren:'',birth:''}, this.rosterInfoRaw[_meIdx]||{}, (this.state.rosterInfo&&this.state.rosterInfo[_meIdx])||{});
+    const _meKey = (cr && cr.name) || '';   // coordonnées rattachées au CRÉATEUR (par nom), pas à l'index
+    const mkMeInfo=(field)=>(e)=>{ const v=e.target.value; this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); ri[_meKey]=Object.assign({}, this.rosterInfoRaw[_meKey]||{}, ri[_meKey]||{}, {[field]:v}); return {rosterInfo:ri}; }); };
+    const meInfoBase=Object.assign({ville:'',phone:'',email:'',address:'',siren:'',birth:''}, this.rosterInfoRaw[_meKey]||{}, (this.state.rosterInfo&&this.state.rosterInfo[_meKey])||{});
     const meInfoFields=[ {label:'Téléphone',value:meInfoBase.phone,onInput:mkMeInfo('phone'),placeholder:'+33 6 …'}, {label:'Email',value:meInfoBase.email,onInput:mkMeInfo('email'),placeholder:'prenom@email.com'}, {label:'Ville / Pays',value:meInfoBase.ville,onInput:mkMeInfo('ville'),placeholder:'Lyon, France'}, {label:'Adresse postale',value:meInfoBase.address,onInput:mkMeInfo('address'),placeholder:'Rue, code postal, ville'}, {label:'SIREN / SIRET',value:meInfoBase.siren,onInput:mkMeInfo('siren'),placeholder:'123 456 789'}, {label:'Date de naissance',value:meInfoBase.birth,onInput:mkMeInfo('birth'),placeholder:'JJ/MM/AAAA'} ];
 
     // ===== ENGAGEMENT CALCULATOR =====
@@ -2782,16 +2793,17 @@ class Component extends DCLogic {
       const rtd=todoItems.map((t,i)=>({t,i})).filter(x=>x.t.creator===c.name).map(x=>mkTodo(x.t,x.i));
       const rbf=briefItems.filter(b=>b.who===c.name).map(b=>{const st=this.briefStatus(b.status);return {brand:b.brand,deliverables:b.deliverables,due:b.due,statusLabel:st.label,dotStyle:dotS(b.tone,false),chipStyle:this.chip()};});
       const rid=[{a:'Format '+c.niche+' tendance',b:'Reel · à valider',tone:'indigo'},{a:'Collab croisée roster',b:'Story · idée',tone:'signal'}].map(o=>({a:o.a,b:o.b,dotStyle:dotS(o.tone,false)}));
-      const mkRdInfo=(field)=>(e)=>{ const v=e.target.value; this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); ri[rdi]=Object.assign({}, this.rosterInfoRaw[rdi]||{}, ri[rdi]||{}, {[field]:v}); return {rosterInfo:ri}; }); };
-      const rinfoBase=Object.assign({ville:'',phone:'',email:'',emailPro:'',address:'',siren:'',birth:'',instagram:'',tiktok:'',exclu:false,commission:'20%'}, this.rosterInfoRaw[rdi]||{}, (this.state.rosterInfo&&this.state.rosterInfo[rdi])||{});
+      const _rdKey = c.name;   // coordonnées rattachées au CRÉATEUR (par nom)
+      const mkRdInfo=(field)=>(e)=>{ const v=e.target.value; this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); ri[_rdKey]=Object.assign({}, this.rosterInfoRaw[_rdKey]||{}, ri[_rdKey]||{}, {[field]:v}); return {rosterInfo:ri}; }); };
+      const rinfoBase=Object.assign({ville:'',phone:'',email:'',emailPro:'',address:'',siren:'',birth:'',instagram:'',tiktok:'',exclu:false,commission:'20%'}, this.rosterInfoRaw[_rdKey]||{}, (this.state.rosterInfo&&this.state.rosterInfo[_rdKey])||{});
       const _social=(val,kind)=>{ let v=String(val||'').trim(); if(!v) return ''; if(/^https?:\/\//i.test(v)) return v; v=v.replace(/^@/,'').replace(/\s/g,''); return kind==='tiktok'?('https://www.tiktok.com/@'+v):('https://www.instagram.com/'+v); };
       const _igUrl=_social(rinfoBase.instagram||(/instagram/i.test(c.plat||'')?c.handle:''),'ig');
       const _ttUrl=_social(rinfoBase.tiktok||(/tiktok/i.test(c.plat||'')?c.handle:''),'tiktok');
       const _rinfoCopy=(label,val)=>()=>{ const v=String(val||''); if(!v.trim())return; try{ if(navigator.clipboard) navigator.clipboard.writeText(v).catch(()=>{}); }catch(_){} this.setState({rinfoCopied:label}); toast('Copié : '+v); setTimeout(()=>this.setState(s=> s.rinfoCopied===label?{rinfoCopied:null}:{}),1500); };
       const _mkRf=(label,key)=>({ label, value:rinfoBase[key]||'', onInput:mkRdInfo(key), copy:_rinfoCopy(label,rinfoBase[key]), canCopy:!!(rinfoBase[key]&&String(rinfoBase[key]).trim()), copyLabel:(this.state.rinfoCopied===label?'COPIÉ ✓':'COPIER') });
       const rinfoFields=[ _mkRf('Ville / Pays','ville'), _mkRf('Téléphone','phone'), _mkRf('Email','email'), _mkRf('Email pro','emailPro'), _mkRf('Adresse postale','address'), _mkRf('SIREN / SIRET','siren'), _mkRf('Date de naissance','birth'), _mkRf('Instagram (@ ou lien)','instagram'), _mkRf('TikTok (@ ou lien)','tiktok'), _mkRf('Commission TTP (%)','commission') ];
-      const mkPaste = async () => { try{ const txt = await navigator.clipboard.readText(); if(!txt) return; const cur = Object.assign({}, this.rosterInfoRaw[rdi]||{}, (this.state.rosterInfo&&this.state.rosterInfo[rdi])||{}); const set=(k,v)=>{ if(v && String(v).trim()) cur[k]=String(v).trim(); }; txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>{ const m=l.match(/^([^:]{2,30}):\s*(.+)$/); if(!m) return; const key=m[1].toLowerCase(); const val=m[2]; if(/ville|pays|localit/.test(key)) set('ville',val); else if(/t[ée]l|phone|mobile|portable|num/.test(key)) set('phone',val); else if(/mail/.test(key)) set('email',val); else if(/adresse|address|rue|postal/.test(key)) set('address',val); else if(/siren|siret|tva/.test(key)) set('siren',val); else if(/naiss|date|dob/.test(key)) set('birth',val); }); const email=txt.match(/[\w.+-]+@[\w-]+\.[\w.-]+/); if(email) set('email',email[0]); const siren=txt.match(/\b\d{3}[\s.]?\d{3}[\s.]?\d{3}\b/); if(siren) set('siren',siren[0]); const phone=txt.match(/(\+?\d[\d\s().-]{8,}\d)/); if(phone){ const d=phone[0].replace(/\D/g,''); const sd=siren?siren[0].replace(/\D/g,''):''; if(d!==sd) set('phone',phone[0].trim()); } const ri=Object.assign({}, this.state.rosterInfo); ri[rdi]=cur; this.setState({rosterInfo:ri}); }catch(e){ alert('Autorise l\'accès au presse-papier pour coller les infos.'); } };
-      const toggleExclu = () => { this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); const base=Object.assign({}, this.rosterInfoRaw[rdi]||{}, ri[rdi]||{}); base.exclu=!base.exclu; ri[rdi]=base; return {rosterInfo:ri}; }); };
+      const mkPaste = async () => { try{ const txt = await navigator.clipboard.readText(); if(!txt) return; const cur = Object.assign({}, this.rosterInfoRaw[_rdKey]||{}, (this.state.rosterInfo&&this.state.rosterInfo[_rdKey])||{}); const set=(k,v)=>{ if(v && String(v).trim()) cur[k]=String(v).trim(); }; txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).forEach(l=>{ const m=l.match(/^([^:]{2,30}):\s*(.+)$/); if(!m) return; const key=m[1].toLowerCase(); const val=m[2]; if(/ville|pays|localit/.test(key)) set('ville',val); else if(/t[ée]l|phone|mobile|portable|num/.test(key)) set('phone',val); else if(/mail/.test(key)) set('email',val); else if(/adresse|address|rue|postal/.test(key)) set('address',val); else if(/siren|siret|tva/.test(key)) set('siren',val); else if(/naiss|date|dob/.test(key)) set('birth',val); }); const email=txt.match(/[\w.+-]+@[\w-]+\.[\w.-]+/); if(email) set('email',email[0]); const siren=txt.match(/\b\d{3}[\s.]?\d{3}[\s.]?\d{3}\b/); if(siren) set('siren',siren[0]); const phone=txt.match(/(\+?\d[\d\s().-]{8,}\d)/); if(phone){ const d=phone[0].replace(/\D/g,''); const sd=siren?siren[0].replace(/\D/g,''):''; if(d!==sd) set('phone',phone[0].trim()); } const ri=Object.assign({}, this.state.rosterInfo); ri[_rdKey]=cur; this.setState({rosterInfo:ri}); }catch(e){ alert('Autorise l\'accès au presse-papier pour coller les infos.'); } };
+      const toggleExclu = () => { this.setState(s=>{ const ri=Object.assign({},s.rosterInfo); const base=Object.assign({}, this.rosterInfoRaw[_rdKey]||{}, ri[_rdKey]||{}); base.exclu=!base.exclu; ri[_rdKey]=base; return {rosterInfo:ri}; }); };
       rd={ name:c.name, niche:c.niche, plat:c.plat, handle:c.handle, followers:c.followers, er:c.er, ca:c.ca, reach:c.reach, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), bigAvatarStyle:this.avatarFor(c.name,c.tone,dark,64), avatarInner:this.creatorPhoto(c.name)?'':this.initials(c.name), onPhoto:mkPhoto('cre:'+c.name), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone,c.status==='live'), invoices:rinv, todos:rtd, briefs:rbf, ideas:rid, infoFields:rinfoFields, igUrl:_igUrl, tiktokUrl:_ttUrl, hasIg:!!_igUrl, hasTiktok:!!_ttUrl, paste:mkPaste, save:()=>{ try{ this._persistNow(); }catch(_){} toast('Informations enregistrées ✓'); }, exclu:!!rinfoBase.exclu, commission:rinfoBase.commission||'—', excluLabel:rinfoBase.exclu?'EXCLUSIF':'NON EXCLUSIF', excluStyle:'padding:8px 14px;border-radius:10px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(rinfoBase.exclu?'background:var(--signal);color:var(--onsignal);':'border:1px solid var(--hair);color:var(--muted);'), toggleExclu }; }
 
     // ===== DOCUMENTS (shared store) =====
@@ -3011,7 +3023,7 @@ class Component extends DCLogic {
       acCreatorChips: this.rosterRaw.filter((_,i)=>!(this.state.deletedRoster||{})[i]).map(c=>({ name:c.name.split(' ')[0], full:c.name, style:'padding:7px 12px;border-radius:18px;font:600 9px \'Inter\',sans-serif;cursor:pointer;'+(((this.state.acCreator||(this.rosterRaw[0]||{}).name))===c.name?'background:var(--text);color:var(--bg);':'background:var(--rowhover);color:var(--muted);'), pick:(()=>{const nm=c.name;return ()=>this.setState({acCreator:nm});})() })),
       addAccess:()=>{ const email=(this.state.acEmail||'').trim().toLowerCase(); const pwd=(this.state.acPwd||'').trim(); if(!email||!pwd){ toast('Email et mot de passe requis'); return; } const role=this.state.acRole||'creator'; const creator= role==='creator' ? (this.state.acCreator||(this.rosterRaw[0]||{}).name||null) : null; if((this.state.accessAccounts||[]).some(a=>String(a.email||'').toLowerCase()===email)){ toast('Cet email a déjà un accès'); return; }
         // 1) enregistre l'accès localement (actif immédiatement) + relie le portail du créateur
-        this.setState(s=>{ const upd={ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator}], acEmail:'', acPwd:'' }; if(role==='creator' && creator){ const idx=this.rosterRaw.findIndex(c=>c.name===creator); if(idx>=0){ const ri=Object.assign({},s.rosterInfo); ri[idx]=Object.assign({}, this.rosterInfoRaw[idx]||{}, ri[idx]||{}, {email}); upd.rosterInfo=ri; } } return upd; });
+        this.setState(s=>{ const upd={ accessAccounts:[...(s.accessAccounts||[]), {email,pwd,role,creator}], acEmail:'', acPwd:'' }; if(role==='creator' && creator){ const ri=Object.assign({},s.rosterInfo); ri[creator]=Object.assign({}, this.rosterInfoRaw[creator]||{}, ri[creator]||{}, {email}); upd.rosterInfo=ri; } return upd; });
         toast('Accès créé ✓ — le portail est prêt');
         // 2) crée le VRAI compte Supabase via un client jetable (pour ne pas remplacer
         //    la session agence en cours), avec rôle + créateur en métadonnées : le
@@ -3178,7 +3190,7 @@ class Component extends DCLogic {
               if(agencyEmails.indexOf(uemail)>=0){ role='agency'; }
               else {
                 // match the login email against the roster's creator emails (gérés dans le Roster)
-                this.rosterRaw.forEach((c,i)=>{ const seed=((this.rosterInfoRaw[i]||{}).email||''); const ov=((this.state.rosterInfo&&this.state.rosterInfo[i])||{}).email; const em=String(ov||seed||'').toLowerCase().trim(); if(em && em===uemail){ role='creator'; creatorId=i; } });
+                this.rosterRaw.forEach((c,i)=>{ const seed=((this.rosterInfoRaw[c.name]||{}).email||''); const ov=((this.state.rosterInfo&&this.state.rosterInfo[c.name])||{}).email; const em=String(ov||seed||'').toLowerCase().trim(); if(em && em===uemail){ role='creator'; creatorId=i; } });
                 // optional fallback: a profiles table if it exists
                 if(!role){ try{ const r=await this._sb.from('profiles').select('role,creator_name').eq('user_id',data.user.id).maybeSingle(); const prof=r&&r.data; if(prof){ role=prof.role; if(role==='creator'){ const j=this.rosterRaw.findIndex(c=>c.name===prof.creator_name); creatorId=j>=0?j:0; } } }catch(_){} }
               }
