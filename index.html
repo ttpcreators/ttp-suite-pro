@@ -2002,7 +2002,22 @@ class Component extends DCLogic {
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
   // per-creator photo, keyed by name so the Roster (agency) and the creator's
   // own portal edit the SAME photo and it shows everywhere the creator appears.
-  creatorPhoto(name){ return (this.state.photos||{})['cre:'+name] || ''; }
+  creatorPhoto(name){ const local=(this.state.photos||{})['cre:'+name]; if(local) return local; const c=(this.rosterRaw||[]).find(x=>x&&x.name===name); return (c&&c.photoUrl)||''; }
+  // Upload d'une photo de profil créateur vers le bucket public `avatars` + sauvegarde
+  // de l'URL sur la fiche `creators` (visible partout, cross-device, agence↔créateur).
+  async _uploadCreatorPhoto(name, file){
+    if(!this._sb||!name) return; const row=(this.rosterRaw||[]).find(c=>c&&c.name===name); if(!row||!row.id) return;
+    try{
+      const ext=(String(file.name).match(/\.[a-z0-9]+$/i)||['.jpg'])[0];
+      const slug=String(name).toLowerCase().replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'creator';
+      const path=slug+'/'+Date.now()+ext;
+      const up=await this._sb.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type||'image/jpeg'});
+      if(up.error){ console.warn('[avatar] upload', up.error.message); return; }
+      const pub=this._sb.storage.from('avatars').getPublicUrl(path); const url=pub&&pub.data&&pub.data.publicUrl; if(!url) return;
+      row.photoUrl=url; this.setState({rosterData:this.rosterRaw.slice()});
+      await this._sb.from('creators').update({photo_url:url}).eq('id', row.id);
+    }catch(e){ console.warn('[avatar] failed', e); }
+  }
   avatarFor(name, tone, dark, s){ const base=this.avatarStyle(tone,dark,s); const p=this.creatorPhoto(name); return p ? base+'background-image:url('+p+');background-size:cover;background-position:center;color:transparent;' : base; }
   // keys that hold real data (not transient UI) — these survive a refresh
   _persistKeys(){ return ['theme','deletedRoster','rosterData','rosterEdited','seededTables','deletedDebriefs','debriefData','invoiceData','contactsData','prospectData','moduleRows','briefItems','todoItems','doneSet','ideasData','events','dismissedAlerts','dismissedNotifs','photos','briefVal','briefDone','briefNotes','customObjs','objByMonth','checklistDone','checklistHidden','checklistCustom','collabs','threadMsgs','msgsData','rosterInfo','contactsSeedV','pricingData','mediaKitData','priceHistory','docs','customBanks','accessAccounts','customConvos','deletedConvos','authed','authRole','space','creatorId','creatorName','portalTab','demoWiped','demoProspWiped']; }
@@ -2217,7 +2232,7 @@ class Component extends DCLogic {
     // copy can't bring the old data back.
     try{ this._applySeeds(); }catch(e){}
   }
-  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null, statsHistory:r.stats_history||[] }; }
+  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null, statsHistory:r.stats_history||[], photoUrl:r.photo_url||'' }; }
   // re-hydrate the in-memory roster from the persisted state (localStorage / cloud
   // blob). Without this, a refresh resets rosterRaw to the bundled seed and any
   // creator the user added is lost. rosterData is the durable source of truth.
@@ -2817,7 +2832,7 @@ class Component extends DCLogic {
     const myStatsHasHistory = _myStatsHist.length>0;
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
-    const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); };
+    const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); if(key.indexOf('cre:')===0){ try{ this._uploadCreatorPhoto(key.slice(4), f); }catch(_){} } };
     const loginCreators = this.rosterRaw.map((c,i)=>({i,c})).filter(x=>!(this.state.deletedRoster||{})[x.i]).map(({c,i})=>({ name:c.name, niche:c.niche, handle:c.handle, followers:c.followers, er:c.er, initials:this.creatorPhoto(c.name)?'':this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,52), dotStyle:dotS(c.tone,c.status==='live'), login:(()=>{const ii=i, nm=c.name;return ()=>this.setState({creatorId:ii, creatorName:nm, portalTab:'accueil'});})() }));
     // creator's own editable coordinates — shared with the agency roster detail
     // (same rosterInfo store, keyed by creator index) so the agency sees updates.

@@ -45,6 +45,7 @@ alter table public.creators add column if not exists exclu boolean default false
 alter table public.creators add column if not exists commission text;
 alter table public.creators add column if not exists stats jsonb;
 alter table public.creators add column if not exists stats_history jsonb;
+alter table public.creators add column if not exists photo_url text;
 
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
@@ -247,6 +248,17 @@ insert into storage.buckets (id, name, public)
 drop policy if exists documents_obj_auth on storage.objects;
 create policy documents_obj_auth on storage.objects for all to authenticated
   using (bucket_id = 'documents') with check (bucket_id = 'documents');
+
+-- Bucket PUBLIC pour les photos de profil (avatars) : lecture publique (URL
+-- permanente), écriture réservée aux comptes connectés. Permet que la photo
+-- posée par l'agence OU le créateur soit visible partout (cross-device).
+insert into storage.buckets (id, name, public)
+  values ('avatars','avatars', true)
+  on conflict (id) do nothing;
+
+drop policy if exists avatars_obj_rw on storage.objects;
+create policy avatars_obj_rw on storage.objects for all to authenticated
+  using (bucket_id = 'avatars') with check (bucket_id = 'avatars');
 
 -- ============================================================================
 -- FIN. Vérif rapide (en étant DÉCONNECTÉ, ces requêtes doivent renvoyer 0 ligne) :
