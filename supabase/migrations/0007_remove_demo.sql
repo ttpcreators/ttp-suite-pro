@@ -21,4 +21,17 @@ begin
      'Marc Petit','RP — à trouver','Aïcha Benali',
      'Julien Mercier','Camille Roux','Tom Vasseur'
    ]);
+  -- To-do / events de démo « agence » qui ne citaient les créateurs que dans leur
+  -- texte (creator/who = null) : repérés par leur libellé exact.
+  delete from public.todos where text = any(array[
+     'Relancer RP Sephora (CAMILLE)','Valider contrat Nike (MALO)',
+     'Valider brief créatif Sephora','Choisir tenues shoot Galeries',
+     'Stats reel Dior à transmettre'
+   ]);
+  delete from public.events where title = any(array[
+     'Réunion équipe agence','Call découverte HelloFresh',
+     'Shoot LÉNA × Galeries Lafayette','Call Nike — négo MALO',
+     'Live THÉO — Logitech','Deadline brief Sephora',
+     'Tournage reels Dior','Collab JADE × Sephora'
+   ]);
 end $$;
