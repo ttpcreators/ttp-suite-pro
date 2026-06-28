@@ -50,8 +50,10 @@ alter table public.creators add column if not exists photo_url text;
 create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
   ref text, party text, amount text, date text, status text default 'brouillon',
+  creator text,
   sort_order int default 0, created_at timestamptz default now()
 );
+alter table public.invoices add column if not exists creator text;
 
 create table if not exists public.contacts (
   id uuid primary key default gen_random_uuid(),
@@ -205,7 +207,10 @@ create policy creators_scoped on public.creators for all to authenticated
 
 -- DONNÉES AGENCE PURES : agence seulement
 create policy contacts_agency    on public.contacts    for all to authenticated using (public.is_agency()) with check (public.is_agency());
-create policy invoices_agency    on public.invoices    for all to authenticated using (public.is_agency()) with check (public.is_agency());
+-- invoices : agence = tout ; créateur = uniquement ses factures (creator = son nom)
+create policy invoices_agency    on public.invoices    for all to authenticated
+  using (public.is_agency() or creator = public.my_creator())
+  with check (public.is_agency() or creator = public.my_creator());
 create policy prospects_agency   on public.prospects   for all to authenticated using (public.is_agency()) with check (public.is_agency());
 create policy module_rows_agency on public.module_rows for all to authenticated using (public.is_agency()) with check (public.is_agency());
 

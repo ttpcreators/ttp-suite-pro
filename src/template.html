@@ -1262,6 +1262,12 @@
       <sc-if value="{{ myStatsNone }}" hint-placeholder-val="{{ false }}">
       <div style="background:var(--surface); border-radius:20px; padding:40px; text-align:center; font:400 12px 'Inter',sans-serif; color:var(--faint)">Aucune statistique pour le moment. Ton agence les met à jour depuis l'espace Engagement.</div>
       </sc-if>
+      <sc-if value="{{ myInvoicesHas }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:20px; padding:22px; margin-top:16px">
+        <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:12px">Mes factures</div>
+        <div style="background:var(--panel); border-radius:14px; padding:6px 16px"><sc-for list="{{ myInvoices }}" as="v" hint-placeholder-count="3"><div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair)"><div style="flex:1; min-width:0"><div style="font:600 12px 'Inter',sans-serif; color:var(--text)">{{ v.party }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:2px">#{{ v.ref }} · éch. {{ v.date }}</div></div><span style="font:600 13px 'Inter',sans-serif; color:var(--text)">{{ v.amount }}</span><span style="{{ v.chipStyle }}"><span style="{{ v.dotStyle }}"></span>{{ v.statusLabel }}</span></div></sc-for></div>
+      </div>
+      </sc-if>
       </sc-if>
 
       <!-- portal: MESSAGES (Communication agence) -->
