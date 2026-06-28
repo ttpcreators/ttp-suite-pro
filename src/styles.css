@@ -21,6 +21,10 @@
     .dc-shell.nav-open .dc-backdrop { opacity:1; pointer-events:auto; }
     .dc-main { border-radius:0 !important; max-height:none !important; min-height:100vh; }
     .dc-content { padding:8px 14px 92px !important; }
+    /* To-do : sur mobile, la méta (créateur/priorité/échéance + actions) passe sous le texte */
+    .td-row { flex-wrap:wrap !important; align-items:flex-start !important; }
+    .td-main { flex-basis:calc(100% - 28px) !important; }
+    .td-meta { flex-basis:100% !important; flex-wrap:wrap !important; padding-left:27px !important; margin-top:8px !important; }
     /* compact top bar: single-line search, hide user name/role text, keep avatar */
     .dc-topbar { gap:8px !important; padding:10px 14px 2px !important; }
     .dc-search { max-width:none !important; padding:10px 13px !important; }
