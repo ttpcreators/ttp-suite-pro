@@ -1246,6 +1246,23 @@
         <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ENGAGEMENT</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">{{ me.er }}</div></div>
         <div style="background:var(--surface); border-radius:18px; padding:18px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">REACH · 30J</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">{{ me.reach }}</div></div>
       </div>
+      <!-- Suivi des abonnés par plateforme (cumul + évolution mensuelle) -->
+      <div style="background:var(--surface); border-radius:20px; padding:22px; margin-bottom:16px">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px">
+          <div><div style="font:600 13px 'Inter',sans-serif; color:var(--text)">Mes abonnés par plateforme</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:4px">Renseigne tes abonnés chaque mois pour suivre l'évolution.</div></div>
+          <div style="text-align:right"><div style="font:700 26px 'Inter',sans-serif; letter-spacing:-1px; color:var(--text)">{{ myFollTotalLabel }}</div><div style="font:600 9px 'Inter',sans-serif; color:var(--faint); letter-spacing:.4px">TOTAL CUMULÉ · {{ myFollDeltaLabel }}</div></div>
+        </div>
+        <div class="foll-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px">
+          <sc-for list="{{ myFollInputs }}" as="f" hint-placeholder-count="5"><div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.6px; color:var(--faint); margin-bottom:6px">{{ f.label }}</div><input value="{{ f.value }}" oninput="{{ f.onInput }}" inputmode="numeric" placeholder="0" style="width:100%; padding:11px 13px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:600 13px 'Inter',sans-serif; outline:none"></div></sc-for>
+        </div>
+        <div onclick="{{ saveFollowers }}" style="margin-top:16px; display:inline-block; padding:12px 22px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">✓ ENREGISTRER CE MOIS</div>
+      </div>
+      <sc-if value="{{ myFollHasHistory }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--surface); border-radius:20px; padding:22px; margin-bottom:16px">
+        <div style="font:600 13px 'Inter',sans-serif; color:var(--text); margin-bottom:10px">Évolution de mes abonnés · par mois</div>
+        <div style="background:var(--panel); border-radius:14px; padding:4px 16px"><sc-for list="{{ myFollHistory }}" as="h" hint-placeholder-count="4"><div style="display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--hair)"><div style="width:78px; flex-shrink:0; font:700 15px 'Inter',sans-serif; color:var(--text)">{{ h.total }}</div><div style="flex:1; min-width:0; font:400 10px 'Inter',sans-serif; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ h.breakdown }}</div><div style="flex-shrink:0; font:700 12px 'Inter',sans-serif; {{ h.deltaStyle }}">{{ h.delta }}</div><div style="width:74px; flex-shrink:0; text-align:right; font:500 10px 'Inter',sans-serif; color:var(--faint)">{{ h.date }}</div></div></sc-for></div>
+      </div>
+      </sc-if>
       <sc-if value="{{ myStatsHasDetail }}" hint-placeholder-val="{{ false }}">
       <div style="background:var(--surface); border-radius:20px; padding:22px; margin-bottom:16px">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px"><div><div style="font:600 13px 'Inter',sans-serif; color:var(--text)">Dernier taux d'engagement · {{ myStatsPlatform }}</div><div style="font:400 10px 'Inter',sans-serif; color:var(--faint); margin-top:4px">{{ myStatsSavedAt }}</div></div><div style="display:flex; align-items:baseline; gap:10px"><div style="font:700 30px 'Inter',sans-serif; letter-spacing:-1.5px; color:var(--text)">{{ myStatsEr }}</div><span style="font:600 9px 'Inter',sans-serif; color:var(--signaltext); background:var(--signalsoft); padding:5px 11px; border-radius:20px">{{ myStatsVerdict }}</span></div></div>

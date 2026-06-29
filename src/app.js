@@ -389,7 +389,7 @@ class Component extends DCLogic {
     // copy can't bring the old data back.
     try{ this._applySeeds(); }catch(e){}
   }
-  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null, statsHistory:r.stats_history||[], photoUrl:r.photo_url||'' }; }
+  _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null, statsHistory:r.stats_history||[], followersHistory:r.followers_history||[], photoUrl:r.photo_url||'' }; }
   // re-hydrate the in-memory roster from the persisted state (localStorage / cloud
   // blob). Without this, a refresh resets rosterRaw to the bundled seed and any
   // creator the user added is lost. rosterData is the durable source of truth.
@@ -1027,6 +1027,35 @@ class Component extends DCLogic {
     const _myStatsHist = (cr && cr.statsHistory) ? cr.statsHistory : [];
     const myStatsHistoryMonths = _groupByMonth(_myStatsHist);
     const myStatsHasHistory = _myStatsHist.length>0;
+    // ---- Suivi des abonnés PAR PLATEFORME (cumul + évolution mensuelle) ----
+    const _FPLATS = [['ig','Instagram'],['tt','TikTok'],['yt','YouTube'],['tw','Twitch'],['sc','Snapchat']];
+    const _platName = {ig:'Instagram',tt:'TikTok',yt:'YouTube',tw:'Twitch',sc:'Snapchat'};
+    const _fmtFollBig = (n)=>{ n=Number(n)||0; return n>=1e6?((n/1e6).toFixed(n>=1e7?0:1).replace(/\.0$/,'').replace('.',',')+'M'):(n>=1e4?(Math.round(n/1e3)+'K'):String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')); };
+    const _mf = this.state.mf || {};
+    const _mfN = (k)=> Number(String(_mf[k]||'').replace(/[^0-9]/g,''))||0;
+    const _follTotal = _FPLATS.reduce((a,p)=> a+_mfN(p[0]), 0);
+    const myFollInputs = _FPLATS.map(p=>({ label:p[1], value:String(_mf[p[0]]||''), onInput:(()=>{const kk=p[0];return (e)=>{const v=e.target.value;this.setState(s=>({mf:Object.assign({},s.mf,{[kk]:v})}));};})() }));
+    const _follHist = (cr && cr.followersHistory) ? cr.followersHistory.slice() : [];
+    const myFollHasHistory = _follHist.length>0;
+    const myFollHistory = _follHist.map((h,i)=>{ const prev=_follHist[i+1]; const d=prev?(h.total-prev.total):null; const br=Object.keys(h.plats||{}).map(k=>(_platName[k]||k)+' '+_fmtFollBig(h.plats[k])).join(' · '); return { total:_fmtFollBig(h.total), breakdown:br||'—', date:h.date||'', delta:(d==null?'—':(d>=0?('+'+_fmtFollBig(d)):('-'+_fmtFollBig(-d)))), deltaStyle:'color:'+(d==null?'var(--faint)':(d>=0?'var(--signaltext)':'#E5484D')) }; });
+    const myFollTotalLabel = _fmtFollBig(_follTotal>0 ? _follTotal : (myFollHasHistory?_follHist[0].total:0));
+    const myFollDeltaLabel = (myFollHistory[0] && myFollHistory[0].delta!=='—') ? ('vs mois préc. '+myFollHistory[0].delta) : 'Premier relevé';
+    const saveFollowers = ()=>{
+      if(_follTotal<=0){ toast('Renseigne au moins une plateforme'); return; }
+      const crr=this._meCreator(); const idx=crr?this.rosterRaw.findIndex(c=>c.name===crr.name):-1;
+      if(idx<0){ toast('Créateur introuvable'); return; }
+      const plats={}; _FPLATS.forEach(p=>{ const n=_mfN(p[0]); if(n>0) plats[p[0]]=n; });
+      const snap={ savedAtTs:Date.now(), date:new Date().toLocaleDateString('fr-FR'), plats, total:_follTotal };
+      const prev=(this.rosterRaw[idx].followersHistory)||[];
+      const newHist=[snap].concat(prev).slice(0,36);
+      const totalStr=_fmtFollBig(_follTotal);
+      this.rosterRaw[idx]=Object.assign({},this.rosterRaw[idx],{followersHistory:newHist, followers:totalStr});
+      this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true, mf:{} });
+      const row=this.rosterRaw[idx];
+      if(this._sb && row && row.id){ this._sb.from('creators').update({followers_history:newHist, followers:totalStr}).eq('id',row.id).then(({error})=>{ if(error){ console.warn('[foll] save', error.message); try{ this._sb.from('creators').update({followers:totalStr}).eq('id',row.id).then(()=>{}); }catch(_){} } }); }
+      try{ this._persistNow(); }catch(_){}
+      toast('Abonnés enregistrés ✓ — total '+totalStr);
+    };
     const agencyPhoto = (this.state.photos||{}).agency || '';
     const agencyAvatarStyle = "width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:700 12px 'Inter',sans-serif;position:relative;" + (agencyPhoto ? 'background-image:url('+agencyPhoto+');background-size:cover;background-position:center;color:transparent;' : 'background:var(--signal);color:var(--onsignal);');
     const mkPhoto = (key)=>(e)=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>this.setState(s=>({photos:Object.assign({},s.photos,{[key]:r.result})})); r.readAsDataURL(f); if(key.indexOf('cre:')===0){ try{ this._uploadCreatorPhoto(key.slice(4), f); }catch(_){} } };
@@ -1747,7 +1776,8 @@ class Component extends DCLogic {
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, todoCreatorTabs, todoDetailOpen, todoDetail, closeTodoDetail, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
-      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistoryMonths, myStatsHasHistory, myInvoices, myInvoicesHas, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
+      myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistoryMonths, myStatsHasHistory, myInvoices, myInvoicesHas,
+      myFollInputs, myFollTotalLabel, myFollDeltaLabel, myFollHasHistory, myFollHistory, saveFollowers, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
       agencyAvatarStyle, agencyInner: agencyPhoto?'':'MG', onPhotoAgency: mkPhoto('agency'), onPhotoMe: mkPhoto('cre:'+(cr?cr.name:'')),
       cloudOn: !!this._authReal, cloudLabel: this._authReal?'Base connectée':'Mode local',
       cloudDotStyle: 'width:7px;height:7px;border-radius:50%;flex-shrink:0;background:'+(this._authReal?'var(--signal)':'var(--faint)')+';',

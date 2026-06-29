@@ -109,6 +109,8 @@
     #dc-root .acc-row .acc-dot { display:none !important; }
     #dc-root .acc-row .acc-main { flex:1 1 100% !important; min-width:0; }
     #dc-root .acc-row .acc-actions { flex:1 1 100% !important; flex-wrap:wrap; gap:8px !important; }
+    /* Abonnés par plateforme : 3 colonnes -> 2 sur mobile pour rester lisible. */
+    #dc-root .foll-grid { grid-template-columns:1fr 1fr !important; }
     /* ---- ROSTER: list view on mobile — one compact tappable row per creator;
        tap opens the full detail (all stats/invoices/briefs/etc.) ---- */
     #dc-root .r-head { display:none !important; }

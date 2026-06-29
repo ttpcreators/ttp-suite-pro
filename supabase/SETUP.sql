@@ -45,6 +45,7 @@ alter table public.creators add column if not exists exclu boolean default false
 alter table public.creators add column if not exists commission text;
 alter table public.creators add column if not exists stats jsonb;
 alter table public.creators add column if not exists stats_history jsonb;
+alter table public.creators add column if not exists followers_history jsonb;
 alter table public.creators add column if not exists photo_url text;
 
 create table if not exists public.invoices (
