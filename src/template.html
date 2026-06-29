@@ -995,7 +995,7 @@
         <div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:8px">CRÉATEUR RATTACHÉ</div>
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px"><sc-for list="{{ acCreatorChips }}" as="c" hint-placeholder-count="8"><div onclick="{{ c.pick }}" style="{{ c.style }}">{{ c.name }}</div></sc-for></div>
         </sc-if>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+        <div class="acc-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
           <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">EMAIL</div><input value="{{ acEmailV }}" oninput="{{ onAcEmail }}" type="email" placeholder="prenom@email.com" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
           <div><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint); margin-bottom:6px">MOT DE PASSE</div><input value="{{ acPwdV }}" oninput="{{ onAcPwd }}" placeholder="Mot de passe" style="width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--hair); background:var(--panel); color:var(--text); font:500 12px 'Inter',sans-serif; outline:none"></div>
         </div>
@@ -1004,14 +1004,16 @@
       <div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint); margin:0 0 10px 4px">ACCÈS ACTIFS</div>
       <div style="background:var(--surface); border-radius:20px; padding:8px; max-width:760px">
         <sc-for list="{{ accessList }}" as="a" hint-placeholder-count="3">
-          <div style="display:flex; align-items:center; gap:14px; padding:14px 14px; border-radius:12px" style-hover="background:var(--rowhover)">
-            <span style="{{ a.dotStyle }}"></span>
-            <div style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ a.email }}</div><div style="display:flex; align-items:center; gap:8px; margin-top:3px"><span style="font:400 11px 'Inter',sans-serif; color:var(--faint)">{{ a.creator }}</span><span style="font:600 11px 'Inter',sans-serif; color:var(--muted); letter-spacing:.5px">· {{ a.pwdDisplay }}</span></div></div>
+          <div class="acc-row" style="display:flex; align-items:center; gap:14px; padding:14px 14px; border-radius:12px; flex-wrap:wrap" style-hover="background:var(--rowhover)">
+            <span class="acc-dot" style="{{ a.dotStyle }}"></span>
+            <div class="acc-main" style="flex:1; min-width:0"><div style="font:600 13px 'Inter',sans-serif; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ a.email }}</div><div style="display:flex; align-items:center; gap:8px; margin-top:3px"><span style="font:400 11px 'Inter',sans-serif; color:var(--faint)">{{ a.creator }}</span><span style="font:600 11px 'Inter',sans-serif; color:var(--muted); letter-spacing:.5px">· {{ a.pwdDisplay }}</span></div></div>
+            <div class="acc-actions" style="display:flex; align-items:center; gap:10px; flex-shrink:0; flex-wrap:wrap">
             <span onclick="{{ a.pwdToggle }}" title="Voir / masquer le mot de passe" style="flex-shrink:0; font:600 9px 'Inter',sans-serif; letter-spacing:.4px; color:var(--signaltext); cursor:pointer; padding:5px 10px; border-radius:8px; background:var(--signalsoft)">👁 {{ a.pwdToggleLabel }}</span>
             <span onclick="{{ a.copyPwd }}" title="Copier le mot de passe" style="flex-shrink:0; font:600 9px 'Inter',sans-serif; color:var(--faint); cursor:pointer; padding:5px 9px; border-radius:8px; border:1px solid var(--hair)" style-hover="color:var(--text)">⧉</span>
             <sc-if value="{{ a.cloudShow }}" hint-placeholder-val="{{ true }}"><span title="Statut du compte base de données" style="{{ a.cloudStyle }}">{{ a.cloudLabel }}</span></sc-if>
             <span style="{{ a.roleStyle }}">{{ a.roleLabel }}</span>
-            <span onclick="{{ a.del }}" title="Supprimer l'accès" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
+            <span onclick="{{ a.del }}" title="Supprimer l'accès" style="flex-shrink:0; width:26px; height:26px; display:flex; align-items:center; justify-content:center; border-radius:7px; cursor:pointer; color:var(--faint); font:600 12px 'Inter',sans-serif; margin-left:auto" style-hover="background:var(--rowhover); color:#E5484D">✕</span>
+            </div>
           </div>
         </sc-for>
         <sc-if value="{{ accessEmpty }}" hint-placeholder-val="{{ true }}"><div style="padding:22px 14px; text-align:center; font:400 12px 'Inter',sans-serif; color:var(--faint)">Aucun accès créé pour l'instant.</div></sc-if>
