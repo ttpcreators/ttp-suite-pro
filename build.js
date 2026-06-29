@@ -11,9 +11,13 @@ let template = r("src/template.html")
   .replace("/*__STYLES__*/", () => r("src/styles.css"));
 
 // 2. Inject the template + app logic into the document shell
+const BUILD = new Date().toISOString();
 const out = r("src/index.shell.html")
   .replace("<!--__TEMPLATE__-->", () => template)
-  .replace("/*__APP__*/", () => r("src/app.js"));
+  .replace("/*__APP__*/", () => r("src/app.js"))
+  // stamp de build : permet de vérifier en console (window.__BUILD__) quelle
+  // version est réellement chargée — utile pour diagnostiquer un cache tenace.
+  .replace("window.__SB_URL__", 'window.__BUILD__="' + BUILD + '";window.__SB_URL__');
 
 fs.writeFileSync(path.join(__dirname, "index.html"), out);
-console.log("Built index.html (" + out.length + " bytes) from src/.");
+console.log("Built index.html (" + out.length + " bytes, build " + BUILD + ") from src/.");
