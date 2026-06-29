@@ -16,7 +16,7 @@
 <script src="assets/react.production.min.js"></script>
 <script src="assets/react-dom.production.min.js"></script>
 <!-- Supabase: config + client (clé publishable, publique par design — sécurité via RLS) -->
-<script>window.__BUILD__="2026-06-29T09:41:14.895Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
+<script>window.__BUILD__="2026-06-29T09:44:04.909Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
 <script src="assets/supabase.js"></script>
 <script src="assets/dc-runtime.js"></script>
 </head>
@@ -2920,7 +2920,9 @@ class Component extends DCLogic {
     const meInfoFields=[ {label:'Téléphone',value:meInfoBase.phone,onInput:mkMeInfo('phone'),placeholder:'+33 6 …'}, {label:'Email',value:meInfoBase.email,onInput:mkMeInfo('email'),placeholder:'prenom@email.com'}, {label:'Ville / Pays',value:meInfoBase.ville,onInput:mkMeInfo('ville'),placeholder:'Lyon, France'}, {label:'Adresse postale',value:meInfoBase.address,onInput:mkMeInfo('address'),placeholder:'Rue, code postal, ville'}, {label:'SIREN / SIRET',value:meInfoBase.siren,onInput:mkMeInfo('siren'),placeholder:'123 456 789'}, {label:'Date de naissance',value:meInfoBase.birth,onInput:mkMeInfo('birth'),placeholder:'JJ/MM/AAAA'} ];
 
     // ===== ENGAGEMENT CALCULATOR =====
-    const fnum = [540000,1200000,480000,320000,210000,95000,64000,175000];
+    // Nombre d'abonnés RÉEL du créateur sélectionné (lu sur sa fiche roster) —
+    // connecte Engagement & Pricing aux vraies données, plus de chiffres bidons.
+    const _folNum = (c)=>{ let s=String((c&&c.followers)||'').trim().toLowerCase().replace(/\s/g,'').replace(',','.'); const m=s.match(/^([0-9.]+)([km]?)/); if(!m) return 0; let n=parseFloat(m[1])||0; if(m[2]==='k') n*=1e3; else if(m[2]==='m') n*=1e6; return Math.round(n); };
     const engCustom = this.state.engCreator === 'autre';
     const eci = engCustom ? -1 : (this.state.engCreator || 0);
     const ecr = engCustom ? null : this.rosterRaw[eci];
@@ -2937,7 +2939,7 @@ class Component extends DCLogic {
       snapchat:{label:'Snapchat', denom:'Vues de story', metrics:['Captures écran','Réponses'], ratios:[0.6,0.4], formula:'(captures + réponses) ÷ vues × 100', viewBase:true, good:5, exc:10},
     };
     const pl = this.state.engPlatform || 'instagram'; const cfg = platCfg[pl];
-    const baseDefault = engCustom ? 0 : (cfg.viewBase ? Math.round(fnum[eci]*0.35) : fnum[eci]);
+    const baseDefault = engCustom ? 0 : (cfg.viewBase ? Math.round(_folNum(ecr)*0.35) : _folNum(ecr));
     const totalInter = baseDefault*ecErf/100;
     const metricDefaults = cfg.ratios.map(r=>Math.round(totalInter*r));
     const engReset = { engBase:'', engM0:'', engM1:'', engM2:'', engM3:'', engFollowers:'' };
@@ -2998,7 +3000,7 @@ class Component extends DCLogic {
     const pCustom = this.state.priceCreator==='autre';
     const pci = pCustom ? -1 : (this.state.priceCreator||0);
     const pcr = pCustom ? null : (this.rosterRaw[pci]||_EMPTY_CR);
-    const pFollowers = pCustom ? (Number(String(this.state.priceFollowers||'').replace(/[^0-9]/g,''))||0) : (fnum[pci]||0);
+    const pFollowers = pCustom ? (Number(String(this.state.priceFollowers||'').replace(/[^0-9]/g,''))||0) : _folNum(this.rosterRaw[pci]);
     const pErf = pCustom ? (Number(String(this.state.priceER||'').replace(',','.').replace(/[^0-9.]/g,''))||0) : parseFloat(String(pcr.er).replace(',','.'));
     const rateMap = {post:9,reel:13,story:5,ugc:4,youtube:18}; const fmtLabel = {post:'Post Instagram',reel:'Reel',story:'Story (×3)',ugc:'UGC vidéo',youtube:'YouTube intégration'};
     const pErMult = Math.max(0.6, 0.85 + (isFinite(pErf)?pErf:0)/12);
