@@ -1803,6 +1803,7 @@ class Component extends DCLogic {
       relanceSub: _firstRetard ? ('Facture en retard · '+_firstRetard.date) : 'Tout est à jour',
       growthValue: (growthPctN>=0?'+':'')+growthPctN+'%', growthUp: growthPctN>=0,
       prospCount: String(_prospCount), prospLabel: _prospCount+' marque'+(_prospCount>1?'s':'')+' à relancer', objCreators, pricing, briefs, briefPreview, rdvPreview, todos, todoPreview: todos.slice(0,6), todoFilterTabs, todoCreatorTabs, todoDetailOpen, todoDetail, closeTodoDetail, prospectCols, mod, vTemplatesMsg, msgChannelTabs, msgTemplatesList,
+      rosterEmpty: roster.length===0, todosEmpty: todos.length===0, invoicesEmpty: invoices.length===0, contactsEmpty: contacts.length===0, prospectsEmpty: prospectCols.reduce((a,c)=>a+(c.count||0),0)===0,
       me, myAgenda, myTodos, myBriefs, loginCreators, meInfoFields, meSave:()=>{ try{ this._persistNow(); }catch(_){} try{ this._saveCreatorInfo(_meKey); }catch(_){} toast('Informations enregistrées ✓'); }, briefFilterTabs, pTodoFilterTabs,
       myStatsHasDetail, myStatsNone:!myStatsHasDetail, myStatsRows, myStatsHistoryMonths, myStatsHasHistory, myInvoices, myInvoicesHas,
       myFollInputs, myFollTotalLabel, myFollDeltaLabel, myFollHasHistory, myFollHistory, saveFollowers, myStatsPlatform:(_myStats?_myStats.platformLabel:''), myStatsFormula:(_myStats?_myStats.formula:''), myStatsDetail:(_myStats?_myStats.detail:''), myStatsEr:(_myStats?_myStats.er:''), myStatsVerdict:(_myStats?_myStats.verdict:''), myStatsSavedAt:(_myStats?('Mis à jour le '+_myStats.savedAt):''),
