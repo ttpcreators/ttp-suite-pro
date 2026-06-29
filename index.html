@@ -2872,7 +2872,7 @@ class Component extends DCLogic {
     const _eventConcerns=(e,nm)=> !!nm && String((e&&e.who)||'').split(',').map(s=>s.trim()).indexOf(nm)>=0;
     const myEvents = events.filter(e => _eventConcerns(e, cr.name));
     // N'affiche QUE les events du créateur (jamais ceux des autres en repli).
-    const myAgenda = myEvents.map(e => { const d=eventDeco(e); return { day:e.day, time:e.time, title:e.title, dotStyle:d.dotStyle, dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);', edit:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); const _n=new Date(); const date=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(e.day).padStart(2,'0'); this.setState({ showEventForm:true, editingEvent:e, ne:{ day:e.day, date:date, time:(e.time&&e.time!=='—'?e.time:''), title:e.title, type:e.type||'call' } }); }, del:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); if(!window.confirm('Supprimer cet événement ?'))return; if(this._eventsTable && e.id) this._dbDelete('events', e.id); this.setState(s=>({ events:(s.events||this.eventsRaw).filter(x=>x!==e) })); } }; });
+    const myAgenda = myEvents.slice().sort((a,b)=>_evDate(a).localeCompare(_evDate(b))).map(e => { const d=eventDeco(e); return { day:(Number(_evDate(e).split('-')[2])||e.day), time:e.time, title:e.title, dotStyle:d.dotStyle, dayBoxStyle:'width:46px;flex-shrink:0;text-align:center;background:var(--rowhover);border-radius:10px;padding:6px 0;color:var(--text);', edit:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); const date=_evDate(e); this.setState({ showEventForm:true, editingEvent:e, ne:{ day:Number(date.split('-')[2])||e.day, date:date, time:(e.time&&e.time!=='—'?e.time:''), title:e.title, type:e.type||'call' } }); }, del:(ev)=>{ if(ev&&ev.stopPropagation)ev.stopPropagation(); if(!window.confirm('Supprimer cet événement ?'))return; if(this._eventsTable && e.id) this._dbDelete('events', e.id); this.setState(s=>({ events:(s.events||this.eventsRaw).filter(x=>x!==e) })); } }; });
     const pTodoFilter = this.state.pTodoFilter || 'todo';
     const pTodoFilterTabs = [['todo','À faire'],['done','Terminées'],['all','Toutes']].map(p=>({ label:p[1], style:"padding:7px 13px;border-radius:9px;font:600 10px 'Inter',sans-serif;cursor:pointer;white-space:nowrap;"+(pTodoFilter===p[0]?'background:var(--text);color:var(--bg);':'color:var(--muted);'), pick:(()=>{const k=p[0];return ()=>this.setState({pTodoFilter:k});})() }));
     const myTodosArr = todoItems.map((t,i)=>({t,i})).filter(x => x.t.creator === cr.name);
@@ -3627,7 +3627,7 @@ class Component extends DCLogic {
       calendarCells: cells, eventTypes,
       planDayOpen, planDayLabel, planDayEvents, planDayHasEvents, planDayEmpty:planDayOpen&&!planDayHasEvents, closePlanDay, addEventForDay,
       showEventForm: this.state.showEventForm,
-      openEventForm: () => this.setState({ showEventForm:true }),
+      openEventForm: () => this.setState({ showEventForm:true, editingEvent:null, neWho:[], ne:{ day:_todayDay, date:_todayStr, time:'', title:'', type:'call' } }),
       closeEventForm: () => this.setState({ showEventForm:false, editingEvent:null }),
       eventFormTitle: this.state.editingEvent ? 'Modifier l’événement' : 'Nouvel événement',
       eventFormCta: this.state.editingEvent ? 'ENREGISTRER' : 'AJOUTER',
