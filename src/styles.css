@@ -111,6 +111,10 @@
     #dc-root .acc-row .acc-actions { flex:1 1 100% !important; flex-wrap:wrap; gap:8px !important; }
     /* Abonnés par plateforme : 3 colonnes -> 2 sur mobile pour rester lisible. */
     #dc-root .foll-grid { grid-template-columns:1fr 1fr !important; }
+    /* anti-débordement sur très petits écrans : les cellules grille ne forcent
+       pas leur largeur intrinsèque (inputs/chips restent dans le cadre). */
+    #dc-root .foll-grid > div { min-width:0 !important; }
+    #dc-root .acc-row, #dc-root .acc-row .acc-actions, #dc-root .acc-row .acc-main { min-width:0 !important; max-width:100% !important; }
     /* ---- ROSTER: list view on mobile — one compact tappable row per creator;
        tap opens the full detail (all stats/invoices/briefs/etc.) ---- */
     #dc-root .r-head { display:none !important; }

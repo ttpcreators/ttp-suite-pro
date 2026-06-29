@@ -16,7 +16,7 @@
 <script src="assets/react.production.min.js"></script>
 <script src="assets/react-dom.production.min.js"></script>
 <!-- Supabase: config + client (clé publishable, publique par design — sécurité via RLS) -->
-<script>window.__BUILD__="2026-06-29T13:33:17.620Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
+<script>window.__BUILD__="2026-06-29T14:04:46.639Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
 <script src="assets/supabase.js"></script>
 <script src="assets/dc-runtime.js"></script>
 </head>
@@ -391,6 +391,10 @@
     #dc-root .acc-row .acc-actions { flex:1 1 100% !important; flex-wrap:wrap; gap:8px !important; }
     /* Abonnés par plateforme : 3 colonnes -> 2 sur mobile pour rester lisible. */
     #dc-root .foll-grid { grid-template-columns:1fr 1fr !important; }
+    /* anti-débordement sur très petits écrans : les cellules grille ne forcent
+       pas leur largeur intrinsèque (inputs/chips restent dans le cadre). */
+    #dc-root .foll-grid > div { min-width:0 !important; }
+    #dc-root .acc-row, #dc-root .acc-row .acc-actions, #dc-root .acc-row .acc-main { min-width:0 !important; max-width:100% !important; }
     /* ---- ROSTER: list view on mobile — one compact tappable row per creator;
        tap opens the full detail (all stats/invoices/briefs/etc.) ---- */
     #dc-root .r-head { display:none !important; }
