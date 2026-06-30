@@ -152,11 +152,13 @@
     /* hide detailed metrics in the list (they live in the creator detail) */
     #dc-root .r-row > [data-l="ABONNÉS"], #dc-root .r-row > [data-l="ER"], #dc-root .r-row > [data-l="CA · MOIS"] { display:none !important; }
     /* keep niche as a small muted hint on the right */
-    #dc-root .r-row > [data-l="NICHE"] { display:block !important; flex:0 0 auto; text-align:right !important; font:500 11px 'Inter',sans-serif !important; color:var(--faint) !important; }
+    #dc-root .r-row > [data-l="NICHE"] { display:inline-block !important; flex:0 0 auto; text-align:center !important; font:600 10px 'Inter',sans-serif !important; letter-spacing:.2px; color:var(--muted) !important; background:var(--rowhover); padding:4px 9px !important; border-radius:6px; }
     #dc-root .r-row > [data-l="NICHE"]::before { content:none !important; }
     /* status: just the dot + label on the right */
     #dc-root .r-row > [data-l="STATUT"] { display:flex !important; flex:0 0 auto; align-items:center; gap:5px; justify-content:flex-end !important; }
     #dc-root .r-row > [data-l="STATUT"]::before { content:none !important; }
+    /* sur mobile, on garde juste la pastille de statut (le mot « ACTIF » est redondant) */
+    #dc-root .r-row > [data-l="STATUT"] > span:last-child { display:none !important; }
     #dc-root .r-row > [data-l="RETIRER"] { position:static !important; flex:0 0 auto; width:26px !important; height:26px !important; }
     /* ---- wide non-table grids (the month calendar) -> contained horizontal scroll
        so only the calendar scrolls sideways, never the whole page ---- */

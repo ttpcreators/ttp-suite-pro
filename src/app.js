@@ -141,6 +141,8 @@ class Component extends DCLogic {
     return ({ signal:'#70FC8E', indigo: dark?'#5B82F8':'#3765F6', cyan: dark?'#9AA6B4':'#8590A1', amber: dark?'#5B82F8':'#3765F6' })[tone] || (dark?'#6E6E6E':'#8A8A85');
   }
   initials(name){ return String(name||'').split(' ').filter(w=>w.length).map(w => w[0]).slice(0,2).join('').toUpperCase(); }
+  // « CANDICE MAISSA » -> « Candice Maissa » : noms en Title Case pour l'affichage (moins « crié »).
+  _title(s){ return String(s||'').toLowerCase().replace(/(^|[\s'’-])([a-zà-ÿ])/g, function(m,a,b){ return a+b.toUpperCase(); }); }
   // Coche animée (effet « draw-in » inspiré du checkbox Radix) : la coche se dessine
   // toute seule quand la tâche passe à « terminée ». Le binding {{ }} accepte un élément React.
   _check(){ return React.createElement('svg',{className:'ttp-check',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:3.4,strokeLinecap:'round',strokeLinejoin:'round'}, React.createElement('path',{d:'M4.5 12.75l6 6 9-13.5'})); }
@@ -911,7 +913,7 @@ class Component extends DCLogic {
 
     // ---- roster / engagement ----
     const rf = this.state.rosterFilter||'all';
-    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,34), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.rosterRaw=this.rosterRaw.filter((_,j)=>j!==ii); this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true, rosterDetail:null }); toast('Créateur retiré ✓'); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
+    const rosterAll = this.rosterRaw.map((c,i) => ({ name:c.name, displayName:this._title(c.name), handle:c.handle, niche:c.niche, isUgc:/ugc/i.test(c.niche), followers:c.followers, er:c.er, ca:c.ca, initials:this.initials(c.name), avatarStyle:this.avatarFor(c.name,c.tone,dark,40), statusLabel:statusLabelOf(c.status), dotStyle:dotS(c.tone, c.status==='live'), open:(()=>{const ii=i;return ()=>this.setState({rosterDetail:ii});})(), del:(()=>{const ii=i, nm=c.name, cid=c.id;return (e)=>{ if(e&&e.stopPropagation)e.stopPropagation(); if(window.confirm('Retirer '+nm+' du roster ?')){ this.rosterRaw=this.rosterRaw.filter((_,j)=>j!==ii); this.setState({ rosterData:this.rosterRaw.slice(), rosterEdited:true, rosterDetail:null }); toast('Créateur retiré ✓'); if(this._sb && cid){ this._sb.from('creators').delete().eq('id', cid).then(({error})=>{ if(error) console.warn('[supabase] delete:', error.message); }); } } };})() })).filter((_,i)=>!(this.state.deletedRoster||{})[i]);
     const q = (this.state.topSearch||'').trim().toLowerCase();
     const _match = (...parts) => !q || parts.join(' ').toLowerCase().includes(q);
     const roster = rosterAll.filter(c=> rf==='all'?true:(rf==='ugc'?c.isUgc:!c.isUgc)).filter(c=> _match(c.name,c.handle,c.niche));
