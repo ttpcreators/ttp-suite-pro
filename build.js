@@ -14,7 +14,9 @@ let template = r("src/template.html")
 const BUILD = new Date().toISOString();
 const out = r("src/index.shell.html")
   .replace("<!--__TEMPLATE__-->", () => template)
-  .replace("/*__APP__*/", () => r("src/app.js"))
+  // icons.js (table d'icônes Radix) doit être défini AVANT app.js (la méthode icon()
+  // lit window.__APPICONS__). On le préfixe au bloc applicatif.
+  .replace("/*__APP__*/", () => r("src/icons.js") + "\n" + r("src/app.js"))
   // stamp de build : permet de vérifier en console (window.__BUILD__) quelle
   // version est réellement chargée — utile pour diagnostiquer un cache tenace.
   .replace("window.__SB_URL__", 'window.__BUILD__="' + BUILD + '";window.__SB_URL__');
