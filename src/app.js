@@ -144,6 +144,33 @@ class Component extends DCLogic {
   // Coche animée (effet « draw-in » inspiré du checkbox Radix) : la coche se dessine
   // toute seule quand la tâche passe à « terminée ». Le binding {{ }} accepte un élément React.
   _check(){ return React.createElement('svg',{className:'ttp-check',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:3.4,strokeLinecap:'round',strokeLinejoin:'round'}, React.createElement('path',{d:'M4.5 12.75l6 6 9-13.5'})); }
+  // Effet « décodage » (type EncryptedText) : à sa PREMIÈRE apparition, un élément
+  // marqué [data-enc] voit son texte se révéler en se désembrouillant. Une seule fois
+  // par clé/session (sinon l'app, qui se redessine souvent, le rejouerait sans cesse).
+  // Le vrai texte est rendu normalement → repli propre si le JS ne tourne pas.
+  _runEncrypt(){
+    var els = document.querySelectorAll('[data-enc]');
+    for(var i=0;i<els.length;i++){
+      var el=els[i]; var key=el.getAttribute('data-enc');
+      if(!key || this._encSeen[key]) continue;
+      var real=el.textContent;
+      if(!real || !real.trim()) continue;
+      this._encSeen[key]=true;
+      this._encAnimate(el, real);
+    }
+  }
+  _encAnimate(el, real){
+    var pool='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#%&@$';
+    var txt=String(real); var n=txt.length; var per=2; var frame=0;
+    var isL=function(c){ return /[a-zA-ZÀ-ÿ0-9]/.test(c); };
+    function step(){
+      var revealed=Math.floor(frame/per); var out='';
+      for(var i=0;i<n;i++){ var c=txt[i]; out += (i<revealed || !isL(c)) ? c : pool[Math.floor(Math.random()*pool.length)]; }
+      el.textContent=out; frame++;
+      if(revealed<=n) setTimeout(step, 26); else el.textContent=txt;
+    }
+    step();
+  }
   dots(n, pct, fill, empty, size){ const s=size||8; const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:'+s+'px;height:'+s+'px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
@@ -393,6 +420,9 @@ class Component extends DCLogic {
     // _loadCloudState re-applies after the cloud snapshot lands so a stale cloud
     // copy can't bring the old data back.
     try{ this._applySeeds(); }catch(e){}
+    // Démarre l'effet de décodage des accueils (Hello …) : vérifie périodiquement
+    // l'apparition d'un élément [data-enc] et l'anime une seule fois.
+    try{ this._encSeen=this._encSeen||{}; this._encTimer=setInterval(()=>{ try{ this._runEncrypt(); }catch(_){} }, 300); }catch(_){}
   }
   _mapCreator(r){ return { id:r.id, name:r.name, handle:r.handle, niche:r.niche, plat:r.platform, followers:r.followers, reach:r.reach, er:r.er, ca:r.ca, status:r.status, tone:r.tone, trend:r.trend, stats:r.stats||null, statsHistory:r.stats_history||[], followersHistory:r.followers_history||[], photoUrl:r.photo_url||'' }; }
   // re-hydrate the in-memory roster from the persisted state (localStorage / cloud
