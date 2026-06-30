@@ -184,3 +184,10 @@
        than letting the whole page grow and leave a grey gap under the panel */
     .dc-shell { height: calc(100vh - 28px); }
   }
+
+  /* Coche animée des cases à cocher (to-do, checklist) — effet « draw-in » type Radix :
+     le trait de la coche se dessine en ~0,26 s quand on coche. */
+  .ttp-check { width: 72%; height: 72%; display: block; }
+  .ttp-check path { stroke-dasharray: 30; animation: ttp-check-draw .26s cubic-bezier(.65,0,.35,1) both; }
+  @keyframes ttp-check-draw { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) { .ttp-check path { animation: none; } }

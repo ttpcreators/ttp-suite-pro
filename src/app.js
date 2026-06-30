@@ -141,6 +141,9 @@ class Component extends DCLogic {
     return ({ signal:'#70FC8E', indigo: dark?'#5B82F8':'#3765F6', cyan: dark?'#9AA6B4':'#8590A1', amber: dark?'#5B82F8':'#3765F6' })[tone] || (dark?'#6E6E6E':'#8A8A85');
   }
   initials(name){ return String(name||'').split(' ').filter(w=>w.length).map(w => w[0]).slice(0,2).join('').toUpperCase(); }
+  // Coche animée (effet « draw-in » inspiré du checkbox Radix) : la coche se dessine
+  // toute seule quand la tâche passe à « terminée ». Le binding {{ }} accepte un élément React.
+  _check(){ return React.createElement('svg',{className:'ttp-check',viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:3.4,strokeLinecap:'round',strokeLinejoin:'round'}, React.createElement('path',{d:'M4.5 12.75l6 6 9-13.5'})); }
   dots(n, pct, fill, empty, size){ const s=size||8; const o=[]; for(let i=0;i<n;i++){ o.push({style:'width:'+s+'px;height:'+s+'px;border-radius:50%;background:'+(((i*37+11)%100)<pct?fill:empty)+';'}); } return o; }
   bars(h, color, w){ return h.map(v => ({ style:'flex:1;min-width:'+(w||3)+'px;height:'+v+'%;border-radius:3px;background:'+color+';' })); }
   avatarStyle(tone, dark, s){ const bg=this.toneHex(tone,dark); const fg=tone==='signal'?'#10141A':'#FFFFFF'; s=s||34; return 'width:'+s+'px;height:'+s+'px;border-radius:'+(s>40?14:9)+'px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 '+(s>44?20:(s>40?15:11))+'px \'Inter\',sans-serif;background:'+bg+';color:'+fg+';'; }
@@ -759,7 +762,7 @@ class Component extends DCLogic {
       return {
         done: isDone,
         text: t.text, tag: t.tag||'', due: t.due||'', desc: t.desc||'', hasDesc: !!t.desc, creator: t.creator||null, creatorLabel: t.creator||'Agence', fromCreator: t.source==='creator', hasPriority: !!t.priority, priorityLabel: t.priority?t.priority.toUpperCase():'', priorityStyle: "font:600 8px 'Inter',sans-serif;letter-spacing:.5px;padding:3px 8px;border-radius:6px;color:"+this.toneHex(t.priority==='haute'?'indigo':(t.priority==='basse'?'signal':'cyan'),dark)+";background:"+this.toneHex(t.priority==='haute'?'indigo':(t.priority==='basse'?'signal':'cyan'),dark)+"18;",
-        check: isDone ? '✓' : '',
+        check: isDone ? this._check() : '',
         boxStyle: 'width:16px;height:16px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(isDone?'background:var(--signal);color:var(--onsignal);':'border:1.5px solid var(--faint);color:transparent;'),
         textStyle: "flex:1;font:400 13px 'Inter',sans-serif;"+(isDone?'color:var(--faint);text-decoration:line-through;':'color:var(--text);'),
         tagStyle: "font:600 8px 'Inter',sans-serif;letter-spacing:.5px;color:var(--muted);padding:3px 8px;border-radius:6px;background:var(--rowhover);",
@@ -969,7 +972,7 @@ class Component extends DCLogic {
     const _collabs = this.state.collabs || _collabSeed;
     const collabOpen = this.state.openCollab || null;
     const _stepsForCollab=(cid)=>{ let tot=0,ok=0; const phases=this.checklistTemplate.map((ph,pi)=>{ const ckey=cid+'#'+pi; const all=ph.items.concat(_clCus[ckey]||[]); const items=all.map(it=>({it,id:cid+'#'+pi+'|'+it.t})).filter(x=>!_clHid[x.id]).map(x=>{ const done=!!_clDone[x.id]; tot++; if(done)ok++; return {
-        text:x.it.t, who:x.it.who, whoStyle:_whoStyle(x.it.who), done, check:done?'✓':'',
+        text:x.it.t, who:x.it.who, whoStyle:_whoStyle(x.it.who), done, check:done?this._check():'',
         boxStyle:'width:18px;height:18px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 10px \'Inter\',sans-serif;'+(done?'background:var(--signal);color:var(--onsignal);':'border:1.5px solid var(--faint);color:transparent;'),
         textStyle:"flex:1;font:500 13px 'Inter',sans-serif;"+(done?'color:var(--faint);text-decoration:line-through;':'color:var(--text);'),
         toggle:(()=>{const k=x.id;return ()=>this.setState(s=>({checklistDone:Object.assign({},s.checklistDone,{[k]:!(s.checklistDone&&s.checklistDone[k])})}));})(),
