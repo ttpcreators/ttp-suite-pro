@@ -16,7 +16,7 @@
 <script src="assets/react.production.min.js"></script>
 <script src="assets/react-dom.production.min.js"></script>
 <!-- Supabase: config + client (clé publishable, publique par design — sécurité via RLS) -->
-<script>window.__BUILD__="2026-06-30T09:51:25.198Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
+<script>window.__BUILD__="2026-06-30T09:56:41.800Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
 <script src="assets/supabase.js"></script>
 <script src="assets/dc-runtime.js"></script>
 </head>
@@ -1236,8 +1236,8 @@
           <div onclick="{{ closeContact }}" style="font:600 15px 'Inter',sans-serif; color:var(--faint); cursor:pointer">{{ icDel }}</div>
         </div>
         <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:20px">
-          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="display:flex; justify-content:space-between; align-items:center; gap:8px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">EMAIL</div><div onclick="{{ openContactObj.copyEmail }}" style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); cursor:pointer; white-space:nowrap">⧉ {{ openContactObj.emailLabel }}</div></div><div style="font:500 12px 'Inter',sans-serif; color:var(--text); margin-top:6px; word-break:break-all">{{ openContactObj.email }}</div></div>
-          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="display:flex; justify-content:space-between; align-items:center; gap:8px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">TÉLÉPHONE</div><div onclick="{{ openContactObj.copyPhone }}" style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); cursor:pointer; white-space:nowrap">⧉ {{ openContactObj.phoneLabel }}</div></div><div style="font:500 12px 'Inter',sans-serif; color:var(--text); margin-top:6px">{{ openContactObj.phone }}</div></div>
+          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="display:flex; justify-content:space-between; align-items:center; gap:8px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">EMAIL</div><div onclick="{{ openContactObj.copyEmail }}" style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:4px">{{ icCopy }} {{ openContactObj.emailLabel }}</div></div><div style="font:500 12px 'Inter',sans-serif; color:var(--text); margin-top:6px; word-break:break-all">{{ openContactObj.email }}</div></div>
+          <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="display:flex; justify-content:space-between; align-items:center; gap:8px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">TÉLÉPHONE</div><div onclick="{{ openContactObj.copyPhone }}" style="font:600 8px 'Inter',sans-serif; letter-spacing:.5px; color:var(--signaltext); cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:4px">{{ icCopy }} {{ openContactObj.phoneLabel }}</div></div><div style="font:500 12px 'Inter',sans-serif; color:var(--text); margin-top:6px">{{ openContactObj.phone }}</div></div>
           <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">DERNIER CONTACT</div><div style="font:500 12px 'Inter',sans-serif; color:var(--text); margin-top:6px">{{ openContactObj.last }}</div></div>
           <div style="background:var(--panel); border-radius:14px; padding:14px 16px"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:.8px; color:var(--faint)">HISTORIQUE</div><div style="font:500 12px 'Inter',sans-serif; color:var(--text); margin-top:6px">{{ openContactObj.deals }}</div></div>
         </div>
@@ -1614,7 +1614,7 @@
           <div style="background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px"><div style="font:600 14px 'Inter',sans-serif; color:var(--text)">{{ m.title }}</div><span style="{{ m.chanStyle }}">{{ m.channelLabel }}</span></div>
             <div style="font:400 12px 'Inter',sans-serif; color:var(--muted); line-height:1.6; margin-top:10px; white-space:pre-wrap; flex:1">{{ m.preview }}</div>
-            <div onclick="{{ m.copy }}" style="margin-top:14px; padding:10px 0; text-align:center; border-radius:11px; background:var(--text); color:var(--bg); font:600 10px 'Inter',sans-serif; cursor:pointer">⧉ {{ m.copyLabel }}</div>
+            <div onclick="{{ m.copy }}" style="margin-top:14px; padding:10px 0; text-align:center; border-radius:11px; background:var(--text); color:var(--bg); font:600 10px 'Inter',sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:5px">{{ icCopy }} {{ m.copyLabel }}</div>
           </div>
         </sc-for>
       </div>
