@@ -80,6 +80,10 @@
     #dc-root [style*="grid-template-columns: repeat(3,"] > *,
     #dc-root [style*="grid-template-columns: repeat(4,"] > *,
     #dc-root [style*="grid-template-columns: repeat(5,"] > * { grid-column:auto !important; min-width:0 !important; }
+    /* Cartes de stats : 2x2 sur mobile (au lieu d'1 par ligne, qui prenait 4 lignes) + plus compactes */
+    #dc-root .m-stats, #dc-root .m-home-stats { grid-template-columns:1fr 1fr !important; gap:10px !important; }
+    #dc-root .m-stats > *, #dc-root .m-home-stats > * { padding:13px 14px !important; }
+    #dc-root .m-stats > * > div + div, #dc-root .m-home-stats > * > div + div { font-size:21px !important; margin-top:5px !important; }
     /* scale down oversized page titles */
     #dc-root [style*="font: 500 46px"],
     #dc-root [style*="font: 500 40px"],

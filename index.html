@@ -16,7 +16,7 @@
 <script src="assets/react.production.min.js"></script>
 <script src="assets/react-dom.production.min.js"></script>
 <!-- Supabase: config + client (clé publishable, publique par design — sécurité via RLS) -->
-<script>window.__BUILD__="2026-06-30T09:30:04.663Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
+<script>window.__BUILD__="2026-06-30T09:33:24.288Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
 <script src="assets/supabase.js"></script>
 <script src="assets/dc-runtime.js"></script>
 </head>
@@ -360,6 +360,10 @@
     #dc-root [style*="grid-template-columns: repeat(3,"] > *,
     #dc-root [style*="grid-template-columns: repeat(4,"] > *,
     #dc-root [style*="grid-template-columns: repeat(5,"] > * { grid-column:auto !important; min-width:0 !important; }
+    /* Cartes de stats : 2x2 sur mobile (au lieu d'1 par ligne, qui prenait 4 lignes) + plus compactes */
+    #dc-root .m-stats, #dc-root .m-home-stats { grid-template-columns:1fr 1fr !important; gap:10px !important; }
+    #dc-root .m-stats > *, #dc-root .m-home-stats > * { padding:13px 14px !important; }
+    #dc-root .m-stats > * > div + div, #dc-root .m-home-stats > * > div + div { font-size:21px !important; margin-top:5px !important; }
     /* scale down oversized page titles */
     #dc-root [style*="font: 500 46px"],
     #dc-root [style*="font: 500 40px"],
@@ -823,7 +827,7 @@
           <sc-if value="{{ rd.hasTiktok }}" hint-placeholder-val="{{ true }}"><a href="{{ rd.tiktokUrl }}" target="_blank" rel="noopener" title="Voir le compte TikTok" onclick="event.stopPropagation()" style="display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:9px; background:var(--rowhover); color:var(--text); text-decoration:none" style-hover="background:var(--text); color:var(--bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.4 2.4 1.9 4 4.2 4.2v3.1c-1.5.1-2.9-.4-4.2-1.2v6.4a6 6 0 1 1-6-6c.3 0 .6 0 .9.1v3.2a3 3 0 1 0 2.1 2.9V3h3z"></path></svg></a></sc-if>
         </div></div>
       </div>
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
+      <div class="m-stats" style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
         <div style="background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ABONNÉS</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">{{ rd.followers }}</div></div>
         <div style="background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ENGAGEMENT</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px">{{ rd.er }}</div></div>
         <div style="background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">CA · MOIS</div><div style="font:700 24px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ rd.ca }}</div></div>
@@ -1124,7 +1128,7 @@
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center"><sc-for list="{{ invFacStatusChips }}" as="s" hint-placeholder-count="4"><div onclick="{{ s.pick }}" style="{{ s.style }}">{{ s.label }}</div></sc-for><div onclick="{{ addInvoice }}" style="margin-left:auto; padding:12px 24px; border-radius:11px; background:var(--signal); color:var(--onsignal); font:600 10px 'Inter',sans-serif; cursor:pointer">{{ invFormCta }}</div></div>
       </div>
       </sc-if>
-      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
+      <div class="m-stats" style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px">
         <div style="background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">FACTURÉ · TOTAL</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ caCumul }}</div></div>
         <div style="background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">ENCAISSÉ</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ finEncaisseValue }}</div><div style="font:600 10px 'Inter',sans-serif; color:var(--signaltext); margin-top:5px">payé</div></div>
         <div style="background:var(--surface); border:1px solid var(--hair); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm)"><div style="font:600 9px 'Inter',sans-serif; letter-spacing:1px; color:var(--faint)">EN ATTENTE</div><div style="font:700 23px 'Inter',sans-serif; color:var(--text); margin-top:9px; letter-spacing:-1px; white-space:nowrap">{{ finAttenteValue }}</div><div style="font:600 10px 'Inter',sans-serif; color:var(--indigo); margin-top:5px">{{ finAttenteCount }}</div></div>
