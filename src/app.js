@@ -795,7 +795,7 @@ class Component extends DCLogic {
       const isDone = _todoTableMode ? !!t.done : !!done[i];
       return {
         done: isDone,
-        text: t.text, tag: t.tag||'', due: t.due||'', desc: t.desc||'', hasDesc: !!t.desc, creator: t.creator||null, creatorLabel: t.creator||'Agence', fromCreator: t.source==='creator', hasPriority: !!t.priority, priorityLabel: t.priority?t.priority.toUpperCase():'', priorityStyle: this._prioStyle(t.priority, dark),
+        text: t.text, tag: t.tag||'', due: t.due||'', hasDue: !!(t.due && t.due!=='—' && String(t.due).trim()), desc: t.desc||'', hasDesc: !!t.desc, creator: t.creator||null, creatorLabel: t.creator||'Agence', fromCreator: t.source==='creator', hasPriority: !!t.priority, priorityLabel: t.priority?t.priority.toUpperCase():'', priorityStyle: this._prioStyle(t.priority, dark),
         check: isDone ? this._check() : '',
         boxStyle: 'width:16px;height:16px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 9px \'Inter\',sans-serif;'+(isDone?'background:var(--signal);color:var(--onsignal);':'border:1.5px solid var(--faint);color:transparent;'),
         textStyle: "flex:1;font:400 13px 'Inter',sans-serif;"+(isDone?'color:var(--faint);text-decoration:line-through;':'color:var(--text);'),
@@ -1880,8 +1880,8 @@ class Component extends DCLogic {
       incomeDots: this.dots(126, _incomeFill, sig, empty, 11),
       paidDots: this.dots(126, Math.max(8,Math.min(100,Math.round(finReverse/(finEncaisse||1)*100))), sig, empty, 11),
       periodLabel: ({hebdo:'HEBDO',mensuel:'MENSUEL',trimestre:'TRIMESTRE',annuel:'ANNUEL'})[this.state.caPeriod||'mensuel'],
-      incomeValue: _fmtE(finEncaisse*_perF[_per]),
-      paidValue: _fmtE(finReverse*_perF[_per]),
+      incomeValue: _fmtE(finEncaisse),
+      paidValue: _fmtE(finReverse),
       objMonthlyPct: finObjPct+'%', margePct: String(finCommission),
       objCaPct:objCaPct+'%', objCaSub, objCaBarStyle, objDealsSigned, objDealsSub, objDealsBarStyle, objMargeVal, objMargeSub, objMargeBarStyle,
       commissionReport, commissionTotal, commissionCaTotal, commissionTopName, commissionReportEmpty,
