@@ -191,3 +191,11 @@
   .ttp-check path { stroke-dasharray: 30; animation: ttp-check-draw .26s cubic-bezier(.65,0,.35,1) both; }
   @keyframes ttp-check-draw { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
   @media (prefers-reduced-motion: reduce) { .ttp-check path { animation: none; } }
+
+  /* Zones tactiles plus grandes sur mobile pour les icônes d'action des listes
+     (édition / suppression / aperçu / téléchargement) — évite les fausses manips. */
+  @media (max-width: 860px) {
+    .td-meta [onclick], .ct-del, .dc-docrow [onclick], .dc-docrow a[download] {
+      min-width: 36px; min-height: 36px;
+    }
+  }

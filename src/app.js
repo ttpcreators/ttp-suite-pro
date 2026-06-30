@@ -757,10 +757,14 @@ class Component extends DCLogic {
     const toast = (msg) => { this.setState({toast:msg}); setTimeout(()=>this.setState(s=> s.toast===msg ? {toast:null} : {}), 2200); };
     const _bbStyle = (key) => "flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:"+(this.state.view===key?'var(--text)':'var(--faint)')+";font:600 9px 'Inter',sans-serif";
     const _bbMk = (key,label,extra) => ({ icon:this.icon(key), iconTxt:'', label, cls:'bn-item'+(this.state.view===key?' bn-active':''), style:_bbStyle(key), tap:()=>this.setState(Object.assign({view:key, mobileNav:false}, extra||{})) });
-    const _menuItem = { icon:'', iconTxt:'☰', label:'Menu', cls:'bn-item bn-menu'+(this.state.mobileNav?' bn-active':''), style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:var(--faint);font:600 9px 'Inter',sans-serif", tap:openMobileNav };
-    const bottomNav = [ _bbMk('apercu','Accueil'), _bbMk('roster','Roster',{rosterDetail:null}), _bbMk('messages','Messages'), _bbMk('planning','Planning'), _menuItem ];
+    const _menuItem = { icon:'', iconTxt:'⋯', label:'Plus', cls:'bn-item bn-menu'+(this.state.mobileNav?' bn-active':''), style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:var(--faint);font:600 9px 'Inter',sans-serif", tap:openMobileNav };
+    // Barre du bas mobile (agence) = vues les plus quotidiennes : Aperçu, À faire,
+    // Roster, Messages. Le reste reste accessible via « Plus ».
+    const bottomNav = [ _bbMk('apercu','Aperçu'), _bbMk('todo','À faire'), _bbMk('roster','Roster',{rosterDetail:null}), _bbMk('messages','Messages'), _menuItem ];
     const _pbMk = (key,label) => ({ icon:this.icon(key), iconTxt:'', label, cls:'bn-item'+(this.state.portalTab===key?' bn-active':''), style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:"+(this.state.portalTab===key?'var(--text)':'var(--faint)')+";font:600 9px 'Inter',sans-serif", tap:()=>this.setState({portalTab:key, mobileNav:false}) });
-    const portalBottomNav = [ _pbMk('accueil','Accueil'), _pbMk('briefs','Briefs'), _pbMk('planning','Planning'), _pbMk('messages','Messages'), _menuItem ];
+    // Barre du bas mobile (créateur) = ce qu'il consulte le plus : Accueil, Briefs,
+    // Planning, Documents. Messages reste accessible via « Plus ».
+    const portalBottomNav = [ _pbMk('accueil','Accueil'), _pbMk('briefs','Briefs'), _pbMk('planning','Planning'), _pbMk('documents','Documents'), _menuItem ];
     const themeVars = dark
       ? '--bg:#000000;--panel:#0B0B0C;--surface:#161616;--text:#F2F3F6;--muted:#A8B0BA;--faint:#74808C;--hair:#242424;--rowhover:#1A1A1A;--signal:#70FC8E;--signaltext:#70FC8E;--signalsoft:#15301E;--indigo:#5B82F8;--amber:#5B82F8;--cyan:#9AA6B4;--onsignal:#10141A;'
       : '--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25;';
