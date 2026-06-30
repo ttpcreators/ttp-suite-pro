@@ -100,22 +100,33 @@
        Each data row (.m-row) becomes a card; the header row (.m-head) is hidden
        and every value cell shows its column name from data-l (no horizontal scroll). */
     #dc-root .m-head { display:none !important; }
-    #dc-root .m-row { display:block !important; min-width:0 !important; padding:13px 15px !important;
-      border:1px solid var(--hair); border-radius:14px; margin:0 0 10px; background:var(--surface); }
+    #dc-root .m-row { display:block !important; min-width:0 !important; padding:12px 14px !important;
+      border:1px solid var(--hair); border-radius:12px; margin:0 0 8px; background:var(--surface); }
     #dc-root .m-row > * { min-width:0 !important; grid-column:auto !important; }
-    /* first cell (avatar + name) sits on top */
-    #dc-root .m-row > :first-child { padding-bottom:6px; }
-    /* value cells: label (data-l) on the left, value on the right */
-    #dc-root .m-row > [data-l] { display:flex !important; justify-content:space-between !important;
-      align-items:center; gap:12px; width:auto !important; height:auto !important;
-      text-align:left !important; padding:9px 0 !important;
-      border-top:1px solid var(--hair); font:600 13px 'Inter',sans-serif !important; }
+    /* first cell (réf / avatar + name) sits on top */
+    #dc-root .m-row > :first-child { padding-bottom:8px; }
+    /* value cells: compact inline chips (label + value) flowing on 1-2 lines (au lieu d'1 par ligne) */
+    #dc-root .m-row > [data-l] { display:inline-flex !important; align-items:baseline; gap:5px;
+      width:auto !important; height:auto !important; text-align:left !important;
+      padding:0 !important; margin:5px 16px 0 0 !important; border:none !important;
+      font:600 13px 'Inter',sans-serif !important; }
     #dc-root .m-row > [data-l]::before { content:attr(data-l); color:var(--faint);
-      font:600 9px 'Inter',sans-serif; letter-spacing:.8px; flex-shrink:0; }
+      font:600 9px 'Inter',sans-serif; letter-spacing:.5px; flex-shrink:0; }
+    /* la cellule ACTIONS : pleine largeur, boutons à droite (placée APRÈS pour gagner sur le base) */
+    #dc-root .m-row > [data-l="ACTIONS"] { display:flex !important; width:100% !important; justify-content:flex-end !important;
+      align-items:center; gap:6px; height:auto !important; margin:8px 0 0 !important; padding-top:8px !important;
+      border-top:1px solid var(--hair) !important; }
+    #dc-root .m-row > [data-l="ACTIONS"]::before { content:none !important; }
     /* Engagement : sur mobile, on masque le reach (souvent 0) et la sparkline
        décorative ; on garde nom + ER + tendance/✕ pour une carte lisible. */
     #dc-root .eng-row > [data-l="REACH"], #dc-root .eng-row > [data-l="TENDANCE"] { display:none !important; }
     #dc-root .eng-row > [data-l="ER"] { font:700 15px 'Inter',sans-serif !important; }
+    /* colonne △ (tendance "0 pt" peu utile sur mobile) : on masque le chiffre, on garde
+       seulement le bouton supprimer, aligné à droite sur sa propre ligne. */
+    #dc-root .eng-row > [data-l="△"] { display:flex !important; width:100% !important; justify-content:flex-end !important;
+      margin:8px 0 0 !important; padding-top:8px !important; border-top:1px solid var(--hair) !important; }
+    #dc-root .eng-row > [data-l="△"]::before { content:none !important; }
+    #dc-root .eng-row > [data-l="△"] > span:first-child { display:none !important; }
     /* Accès : sur mobile, chaque accès devient une CARTE — email en haut, puis les
        actions (voir / copier / statut / rôle / ✕) regroupées dessous, sans débordement. */
     #dc-root .acc-form-grid { grid-template-columns:1fr !important; }
