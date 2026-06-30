@@ -207,6 +207,14 @@
      (édition / suppression / aperçu / téléchargement) — évite les fausses manips. */
   @media (max-width: 860px) {
     .td-meta [onclick], .ct-del, .dc-docrow [onclick], .dc-docrow a[download] {
-      min-width: 36px; min-height: 36px;
+      min-width: 40px; min-height: 40px;
     }
+  }
+  /* Feedback au TAP sur tactile (pas de survol au doigt) : léger retour visuel. */
+  @media (hover: none) {
+    [onclick]:active { opacity: .6; transition: opacity .05s; }
+  }
+  /* Respecte la préférence « mouvement réduit » : coupe le pulse des pastilles. */
+  @media (prefers-reduced-motion: reduce) {
+    [style*="ttp-pulse"] { animation: none !important; }
   }
