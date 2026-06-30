@@ -16,7 +16,7 @@
 <script src="assets/react.production.min.js"></script>
 <script src="assets/react-dom.production.min.js"></script>
 <!-- Supabase: config + client (clé publishable, publique par design — sécurité via RLS) -->
-<script>window.__BUILD__="2026-06-30T09:33:24.288Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
+<script>window.__BUILD__="2026-06-30T09:36:35.586Z";window.__SB_URL__="https://tytbkyyfhlyhxpbcwnkw.supabase.co";window.__SB_KEY__="sb_publishable_LQS5P8cn2kd8pKnN7kiilg_y9UgGLAx";</script>
 <script src="assets/supabase.js"></script>
 <script src="assets/dc-runtime.js"></script>
 </head>
@@ -3777,7 +3777,7 @@ class Component extends DCLogic {
       secApercuOpen:!(this.state.secClosed&&this.state.secClosed.apercu), secCreateursOpen:!(this.state.secClosed&&this.state.secClosed.creators), secAgenceOpen:!(this.state.secClosed&&this.state.secClosed.agence), secOutilsOpen:!(this.state.secClosed&&this.state.secClosed.outils),
       chevApercu:(this.state.secClosed&&this.state.secClosed.apercu)?'▸':'▾', chevCreateurs:(this.state.secClosed&&this.state.secClosed.creators)?'▸':'▾', chevAgence:(this.state.secClosed&&this.state.secClosed.agence)?'▸':'▾', chevOutils:(this.state.secClosed&&this.state.secClosed.outils)?'▸':'▾',
       toggleSecApercu:()=>this.setState(s=>({secClosed:Object.assign({},s.secClosed,{apercu:!(s.secClosed&&s.secClosed.apercu)})})), toggleSecCreateurs:()=>this.setState(s=>({secClosed:Object.assign({},s.secClosed,{creators:!(s.secClosed&&s.secClosed.creators)})})), toggleSecAgence:()=>this.setState(s=>({secClosed:Object.assign({},s.secClosed,{agence:!(s.secClosed&&s.secClosed.agence)})})), toggleSecOutils:()=>this.setState(s=>({secClosed:Object.assign({},s.secClosed,{outils:!(s.secClosed&&s.secClosed.outils)})})),
-      portalNav: [ this.pNavItem('accueil','▦','Accueil'), this.pNavItem('messages','✉','Messages'), this.pNavItem('briefs','✎','Briefs'), this.pNavItem('todo','☑','To-do'), this.pNavItem('idees','◆','Idées'), this.pNavItem('planning','◷','Planning'), this.pNavItem('stats','✦','Stats'), this.pNavItem('documents','▤','Documents'), this.pNavItem('profil','◎','Profil') ],
+      portalNav: [ this.pNavItem('accueil','▦','Accueil'), this.pNavItem('briefs','✎','Briefs'), this.pNavItem('todo','☑','To-do'), this.pNavItem('idees','◆','Idées'), this.pNavItem('planning','◷','Planning'), this.pNavItem('stats','✦','Stats'), this.pNavItem('documents','▤','Documents'), this.pNavItem('profil','◎','Profil') ],
       vApercu:this.state.view==='apercu', vRoster:this.state.view==='roster', vEngagement:this.state.view==='engagement',
       vPricing:this.state.view==='pricing', vBriefs:this.state.view==='briefs', vTodo:this.state.view==='todo',
       vFacturation:this.state.view==='facturation', vObjectifs:this.state.view==='objectifs', vContacts:this.state.view==='contacts',
