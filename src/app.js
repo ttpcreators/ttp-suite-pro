@@ -764,7 +764,7 @@ class Component extends DCLogic {
     const _menuItem = { icon:'', iconTxt:'⋯', label:'Plus', cls:'bn-item bn-menu'+(this.state.mobileNav?' bn-active':''), style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:var(--faint);font:600 9px 'Inter',sans-serif", tap:openMobileNav };
     // Barre du bas mobile (agence) = vues les plus quotidiennes : Aperçu, À faire,
     // Roster, Messages. Le reste reste accessible via « Plus ».
-    const bottomNav = [ _bbMk('apercu','Aperçu'), _bbMk('todo','À faire'), _bbMk('roster','Roster',{rosterDetail:null}), _bbMk('messages','Messages'), _menuItem ];
+    const bottomNav = [ _bbMk('apercu','Aperçu'), _bbMk('todo','À faire'), _bbMk('roster','Roster',{rosterDetail:null}), _bbMk('facturation','Facturation'), _menuItem ];
     const _pbMk = (key,label) => ({ icon:this.icon(key), iconTxt:'', label, cls:'bn-item'+(this.state.portalTab===key?' bn-active':''), style:"flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;cursor:pointer;color:"+(this.state.portalTab===key?'var(--text)':'var(--faint)')+";font:600 9px 'Inter',sans-serif", tap:()=>this.setState({portalTab:key, mobileNav:false}) });
     // Barre du bas mobile (créateur) = ce qu'il consulte le plus : Accueil, Briefs,
     // Planning, Documents. Messages reste accessible via « Plus ».
@@ -1813,7 +1813,7 @@ class Component extends DCLogic {
       backToAgency: () => this.setState({ space:'agency', creatorId:null, creatorName:null }),
       navApercu: [ this.navItem('apercu','◴','Aperçu'), this.navItem('objectifs','◎','Objectifs') ],
       navCreators: [ this.navItem('roster','◵','Roster'), this.navItem('engagement','✦','Engagement'), this.navItem('pricing','€','Pricing'), this.navItem('briefs','✎','Briefs'), this.navItem('todo','☑','À faire'), this.navItem('documents','▤','Documents'), this.navItem('mediakit','△','Media kit') ],
-      navAgence: [ this.navItem('messages','✉','Messages'), this.navItem('contacts','☎','Contacts'), this.navItem('planning','◷','Planning'), this.navItem('contrats','▤','Contrats'), this.navItem('facturation','⊞','Facturation'), this.navItem('checklist','▣','Checklist'), this.navItem('acces','⚷','Accès') ],
+      navAgence: [ this.navItem('contacts','☎','Contacts'), this.navItem('planning','◷','Planning'), this.navItem('contrats','▤','Contrats'), this.navItem('facturation','⊞','Facturation'), this.navItem('checklist','▣','Checklist'), this.navItem('acces','⚷','Accès') ],
       navOutils: [ this.navItem('prospection','⌖','Prospection'), this.navItem('alertes','⚠','Alertes'), this.navItem('idees','◆','Idées'), this.navItem('debrief','⟲','Debrief'), this.navItem('templates','▦','Templates') ],
       secApercuOpen:!(this.state.secClosed&&this.state.secClosed.apercu), secCreateursOpen:!(this.state.secClosed&&this.state.secClosed.creators), secAgenceOpen:!(this.state.secClosed&&this.state.secClosed.agence), secOutilsOpen:!(this.state.secClosed&&this.state.secClosed.outils),
       chevApercu:(this.state.secClosed&&this.state.secClosed.apercu)?'▸':'▾', chevCreateurs:(this.state.secClosed&&this.state.secClosed.creators)?'▸':'▾', chevAgence:(this.state.secClosed&&this.state.secClosed.agence)?'▸':'▾', chevOutils:(this.state.secClosed&&this.state.secClosed.outils)?'▸':'▾',
