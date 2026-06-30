@@ -377,7 +377,7 @@ class Component extends DCLogic {
       ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
       document.body.appendChild(ifr);
       const doc=ifr.contentWindow.document;
-      const vars=':root{--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25;}';
+      const vars=':root{--bg:#FAFAFA;--panel:#F4F4F5;--surface:#FFFFFF;--text:#18181B;--muted:#52525B;--faint:#A1A1AA;--hair:#E4E4E7;--rowhover:#F4F4F5;--signal:#16A34A;--signaltext:#15803D;--signalsoft:#F0FDF4;--indigo:#6366F1;--amber:#F59E0B;--cyan:#71717A;--onsignal:#FFFFFF;}';
       const css='*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;background:#fff;font-family:Inter,Helvetica,Arial,sans-serif}.print-wrap{max-width:820px;margin:22px auto;padding:0 16px}@media print{.print-wrap{margin:0;padding:0;max-width:none}}';
       doc.open();
       doc.write('<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title><base href="'+location.href+'"><style>'+vars+css+'</style></head><body><div class="print-wrap">'+clone.outerHTML+'</div></body></html>');
@@ -766,8 +766,8 @@ class Component extends DCLogic {
     // Planning, Documents. Messages reste accessible via « Plus ».
     const portalBottomNav = [ _pbMk('accueil','Accueil'), _pbMk('briefs','Briefs'), _pbMk('planning','Planning'), _pbMk('documents','Documents'), _menuItem ];
     const themeVars = dark
-      ? '--bg:#000000;--panel:#0B0B0C;--surface:#161616;--text:#F2F3F6;--muted:#A8B0BA;--faint:#74808C;--hair:#242424;--rowhover:#1A1A1A;--signal:#70FC8E;--signaltext:#70FC8E;--signalsoft:#15301E;--indigo:#5B82F8;--amber:#5B82F8;--cyan:#9AA6B4;--onsignal:#10141A;'
-      : '--bg:#FFFFFF;--panel:#F4F5F7;--surface:#FFFFFF;--text:#181D25;--muted:#606E80;--faint:#9AA6B4;--hair:#EAECEF;--rowhover:#F4F5F7;--signal:#70FC8E;--signaltext:#16A34A;--signalsoft:#E6FBEC;--indigo:#3765F6;--amber:#3765F6;--cyan:#8590A1;--onsignal:#181D25;';
+      ? '--bg:#09090B;--panel:#18181B;--surface:#18181B;--text:#FAFAFA;--muted:#A1A1AA;--faint:#71717A;--hair:#27272A;--rowhover:#27272A;--signal:#16A34A;--signaltext:#4ADE80;--signalsoft:#052E16;--indigo:#818CF8;--amber:#FBBF24;--cyan:#A1A1AA;--onsignal:#FFFFFF;'
+      : '--bg:#FAFAFA;--panel:#F4F4F5;--surface:#FFFFFF;--text:#18181B;--muted:#52525B;--faint:#A1A1AA;--hair:#E4E4E7;--rowhover:#F4F4F5;--signal:#16A34A;--signaltext:#15803D;--signalsoft:#F0FDF4;--indigo:#6366F1;--amber:#F59E0B;--cyan:#71717A;--onsignal:#FFFFFF;';
 
     const sig = this.toneHex('signal', dark);
     const empty = dark ? '#232323' : '#E2E5EA';

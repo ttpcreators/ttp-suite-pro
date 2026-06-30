@@ -2,6 +2,17 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   input { font-family:'Inter',sans-serif; }
+  /* Tokens shadcn : ombres subtiles (look app pro) */
+  :root{
+    --shadow-xs:0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.04),0 1px 3px rgba(0,0,0,.06);
+    --shadow-md:0 4px 6px -1px rgba(0,0,0,.06),0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-lg:0 10px 24px -8px rgba(0,0,0,.12),0 4px 8px -4px rgba(0,0,0,.08);
+  }
+  /* Anneau de focus clavier cohérent (était absent partout) */
+  a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px var(--signalsoft); border-color: var(--signal);
+  }
   ::selection { background: var(--signal); color: var(--onsignal); }
   @keyframes ttp-pulse { 0%,100% { opacity:1; transform:scale(1);} 50% { opacity:.25; transform:scale(.6);} }
   ::-webkit-scrollbar { width: 9px; height: 9px; }
